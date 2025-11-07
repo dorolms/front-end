@@ -3,6 +3,7 @@
 import Image from "next/image";
 import styled from "styled-components";
 import Header from "@/components/common/Header";
+import { useRouter } from "next/navigation";
 
 const Shell = styled.div`
   height: 100%;
@@ -102,6 +103,8 @@ const Right = styled.section`
 `;
 
 export default function LoginPage() {
+  const router = useRouter();
+
   return (
     <>
       <Header isAuth={false} />
@@ -116,7 +119,7 @@ export default function LoginPage() {
           <Input type="text" placeholder="ID" />
           <Input type="password" placeholder="PW" />
           <Button>Login</Button>
-          <Button>회원가입</Button>
+          <Button onClick={() => router.push("/auth/signup")}>회원가입</Button>
         </Left>
 
         <Center>

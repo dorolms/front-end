@@ -6,6 +6,7 @@ import styled from "styled-components";
 type HeaderProps = {
   isAuth: boolean; // 로그인 여부
   userName?: string; // 우측에 표시할 이름
+  userRole?: "instructor" | "manager";
   onLogout?: () => void; // 로그아웃 핸들러(선택)
 };
 
@@ -22,8 +23,9 @@ const Inner = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  width: min(1200px, 100% - 48px); /* 가로 상한 + 좌우 여백 */
+  width: 100%;
   margin: 0 auto;
+  padding: 0 32px;
 `;
 
 const Left = styled.div`
@@ -86,7 +88,19 @@ function MailIcon() {
   );
 }
 
-export default function Header({ isAuth, userName, onLogout }: HeaderProps) {
+export default function Header({
+  isAuth,
+  userName,
+  userRole,
+  onLogout,
+}: HeaderProps) {
+  const roleLabel =
+    userRole === "instructor"
+      ? "강사님"
+      : userRole === "manager"
+      ? "매니저님"
+      : "";
+
   return (
     <Bar>
       <Inner>
@@ -100,7 +114,9 @@ export default function Header({ isAuth, userName, onLogout }: HeaderProps) {
         {/* 우측: 로그인했을 때만 표시 */}
         {isAuth ? (
           <Right>
-            <Name>{userName}</Name>
+            <Name>
+              {userName} {roleLabel}{" "}
+            </Name>
             <IconBtn aria-label="알림">
               <BellIcon />
             </IconBtn>
