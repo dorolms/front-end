@@ -5,7 +5,7 @@
 ## ✨ Tech Stack
 
 - **Next.js 14 (App Router)**, **React 18**, **TypeScript**
-- **Tailwind CSS**
+- styled-components
 - Package: npm
 
 ## 📦 Requirements
