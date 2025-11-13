@@ -1,4 +1,4 @@
-import { EventItem } from "../_types";
+import { EventItem } from "../types";
 
 export const mockEvents: EventItem[] = [
   /* -----------------------------

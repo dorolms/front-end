@@ -27,10 +27,9 @@ export const Grid = styled.div`
   display: flex;
   flex-direction: column;
   gap: 24px;
-  align-items: center;    /* 자식들을 중앙 정렬해서 폭을 맞춘다 */
+  align-items: center;    /* 캘린더/카드 전체를 가운데 정렬 */
 `;
 
-/** 캘린더 박스 – 피그마 기준 width */
 export const CalendarBox = styled.div`
   width: 1064px;
   height: 375px;
@@ -42,15 +41,22 @@ export const CalendarBox = styled.div`
   overflow: hidden;
 `;
 
-/** 두 번째 줄: 카드 줄, 캘린더와 같은 폭으로 맞춤 */
+/** 2번째 줄: 왼쪽 최신 공지 / 오른쪽 다음 강의 */
 export const CardRow = styled.div`
   width: 1064px;
   display: flex;
-  justify-content: flex-end;  /* 폭 안에서 오른쪽 끝에 카드 붙이기 */
+  justify-content: space-between;  /* 왼쪽, 오른쪽으로 배치 */
+  gap: 24px;
 `;
 
-/** 다음 강의 카드 – 피그마 사이즈 */
+/** 최신 공지 박스 (왼쪽) */
+export const LatestNoticeBox = styled.div`
+  flex: 0 0 500px; /* 대략적인 폭, 필요하면 수치 조절 */
+  height: 220px;
+`;
+
+/** 다음 강의 카드 (오른쪽) */
 export const CardBox = styled.div`
-  width: 571px;
+  flex: 0 0 530px;
   height: 342px;
 `;

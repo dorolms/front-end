@@ -1,7 +1,9 @@
+// src/app/instructor/dashboard/ClientPage.tsx
 'use client';
 
 import { useState } from 'react';
 import { mockEvents } from './data/mock';
+import { latestNotices } from './data/latestNotices';
 import { useDashboard } from './hooks/useDashboard';
 import {
   Wrap,
@@ -9,12 +11,14 @@ import {
   Title,
   Grid,
   CalendarBox,
+  CardRow,
   CardBox,
-  CardRow,          // ⬅ 추가
+  LatestNoticeBox,
 } from './styles';
 import WeeklyCalendar from './components/WeeklyCalendar';
 import NextLectureCard from './components/NextLectureCard';
 import EventDetailModal from './components/EventDetailModal';
+import LatestNoticesPanel from './components/LatestNoticesPanel';
 import type { EventItem } from './types';
 
 export default function ClientPage() {
@@ -31,12 +35,16 @@ export default function ClientPage() {
         <CalendarBox>
           <WeeklyCalendar
             events={confirmed}
-            onEventClick={(e) => setSelectedEvent(e)}
+            onEventClick={(event) => setSelectedEvent(event)}
           />
         </CalendarBox>
 
-        {/* 2줄: 오른쪽 정렬된 '다음 강의' 카드 */}
+        {/* 2줄: 왼쪽 최신 공지 / 오른쪽 다음 강의 */}
         <CardRow>
+          <LatestNoticeBox>
+            <LatestNoticesPanel notices={latestNotices} />
+          </LatestNoticeBox>
+
           <CardBox>
             <NextLectureCard event={nextConfirmed} />
           </CardBox>
