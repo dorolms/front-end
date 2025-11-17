@@ -1,13 +1,9 @@
-// 임시로 만든 더미? 같은 느낌?
+// src/lib/api-mock.ts
 
-
-// --- 1. 타입 정의 ---
+// --- 1. 타입 정의 (DBML 100% 일치) ---
 
 export type LectureRole = 'main' | 'assist';
 export type DbAssignmentStatus = 'pending' | 'assigned' | 'rejected';
-
-// DBML을 보니 한 강사가 둘 다 지원하려면 레코드가 여러 개 생성되어야 할 듯 보인다. (하나당 한 역할)
-// 이를 합치거나 해서 표시하는 거는 일단 잠시 미루고
 
 // UI에서 사용할 지원자 타입 (DB 구조: 1행 = 1지원)
 export interface Applicant {
@@ -17,10 +13,12 @@ export interface Applicant {
   phone_number: string;
   email: string;
   
-  applied_role: LectureRole; // [수정] 배열 아님 (단일 역할)
+  applied_role: LectureRole; // 단일 역할
   
   applied_at: string;
-  portfolio_url: string;
+  
+  // [수정] URL -> Snapshot (Text)
+  portfolio_snapshot: string | null; 
   
   assignment_status: DbAssignmentStatus;
   assigned_role: LectureRole | null; 
@@ -78,62 +76,67 @@ const MOCK_DB: LectureResponse = {
     fee_assist: 30000,
   },
   applicants: [
-    // [Case 1] 김범월: 주강사 지원 (ID 101)
     { 
       application_id: 101, user_id: 1, name: '김범월', 
-      applied_role: 'main', // 단일 값
-      phone_number: '010-1111-1111', email: 'mon@doro.com', applied_at: '2025-03-01', portfolio_url: 'mon_portfolio.pdf',
+      applied_role: 'main', 
+      phone_number: '010-1111-1111', email: 'mon@doro.com', applied_at: '2025-03-01', 
+      portfolio_snapshot: "김범월 지원시점 포트폴리오 (main)\n\n[주요 경력]\n- 한양대학교 컴퓨터공학부 졸업\n- DORO 3년차 메인 강사", // [수정]
       assignment_status: 'pending', assigned_role: null 
     },
-    // [Case 1-2] 김범월: 보조강사 지원 (ID 102) -> 별도 레코드
     { 
       application_id: 102, user_id: 1, name: '김범월', 
       applied_role: 'assist', 
-      phone_number: '010-1111-1111', email: 'mon@doro.com', applied_at: '2025-03-01', portfolio_url: 'mon_portfolio.pdf',
+      phone_number: '010-1111-1111', email: 'mon@doro.com', applied_at: '2025-03-01', 
+      portfolio_snapshot: "김범월 지원시점 포트폴리오 (assist)\n\n[주요 경력]\n- 한양대학교 컴퓨터공학부 졸업\n- DORO 3년차 메인 강사", // [수정]
       assignment_status: 'pending', assigned_role: null 
     },
-    
     { 
       application_id: 103, user_id: 2, name: '김범화', 
       applied_role: 'assist', 
-      phone_number: '010-2222-2222', email: 'tue@doro.com', applied_at: '2025-03-02', portfolio_url: 'tue_resume.pdf',
+      phone_number: '010-2222-2222', email: 'tue@doro.com', applied_at: '2025-03-02', 
+      portfolio_snapshot: "김범화입니다. 보조강사로 지원합니다.\n- 꼼꼼함이 장점입니다.", // [수정]
       assignment_status: 'pending', assigned_role: null 
     },
     { 
       application_id: 104, user_id: 3, name: '김범수', 
       applied_role: 'main', 
-      phone_number: '010-3333-3333', email: 'wed@doro.com', applied_at: '2025-02-28', portfolio_url: 'wed_port.pdf',
+      phone_number: '010-3333-3333', email: 'wed@doro.com', applied_at: '2025-02-28', 
+      portfolio_snapshot: "김범수 포트폴리오 텍스트\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n스크롤?\n\n\n\n\n\n되네", // [수정]
       assignment_status: 'assigned', assigned_role: 'main' 
     },
     { 
       application_id: 105, user_id: 4, name: '김범목', 
       applied_role: 'assist', 
-      phone_number: '010-4444-4444', email: 'thu@doro.com', applied_at: '2025-03-03', portfolio_url: 'thu_pr.pdf',
+      phone_number: '010-4444-4444', email: 'thu@doro.com', applied_at: '2025-03-03', 
+      portfolio_snapshot: "김범목 포트폴리오 (반려됨)", // [수정]
       assignment_status: 'rejected', assigned_role: null 
     },
     { 
       application_id: 106, user_id: 5, name: '김범금', 
       applied_role: 'assist', 
-      phone_number: '010-5555-5555', email: 'fri@doro.com', applied_at: '2025-03-04', portfolio_url: 'fri_career.pdf',
+      phone_number: '010-5555-5555', email: 'fri@doro.com', applied_at: '2025-03-04', 
+      portfolio_snapshot: "김범금 포트폴리오 내용입니다.", // [수정]
       assignment_status: 'pending', assigned_role: null 
     },
-    // [Case 2] 김범토: 동시 지원 (ID 107, 108)
     { 
       application_id: 107, user_id: 6, name: '김범토', 
       applied_role: 'main', 
-      phone_number: '010-6666-6666', email: 'sat@doro.com', applied_at: '2025-03-05', portfolio_url: 'sat_career.pdf',
+      phone_number: '010-6666-6666', email: 'sat@doro.com', applied_at: '2025-03-05', 
+      portfolio_snapshot: "김범토 지원서 텍스트 스냅샷입니다. (main)", // [수정]
       assignment_status: 'pending', assigned_role: null 
     },
     { 
       application_id: 108, user_id: 6, name: '김범토', 
       applied_role: 'assist', 
-      phone_number: '010-6666-6666', email: 'sat@doro.com', applied_at: '2025-03-05', portfolio_url: 'sat_career.pdf',
+      phone_number: '010-6666-6666', email: 'sat@doro.com', applied_at: '2025-03-05', 
+      portfolio_snapshot: "김범토 지원서 텍스트 스냅샷입니다. (assist)", // [수정]
       assignment_status: 'assigned', assigned_role: 'assist' 
     },
     { 
       application_id: 109, user_id: 7, name: '김범일', 
       applied_role: 'assist', 
-      phone_number: '010-7777-7777', email: 'sun@doro.com', applied_at: '2025-03-06', portfolio_url: 'sunsun.pdf',
+      phone_number: '010-7777-7777', email: 'sun@doro.com', applied_at: '2025-03-06', 
+      portfolio_snapshot: "김범일 포트폴리오 (대기중)", // [수정]
       assignment_status: 'pending', assigned_role: null 
     },
   ]

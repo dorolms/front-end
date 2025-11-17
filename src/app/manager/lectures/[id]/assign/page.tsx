@@ -3,15 +3,18 @@
 import React, { useState, useRef, useCallback, useMemo, useEffect, use } from 'react';
 import styled from 'styled-components';
 import { useRouter } from 'next/navigation';
+// [수정] api-mock에서 Applicant 타입의 portfolio_snapshot을 사용합니다.
 import { getLectureDetail, type LectureDetail, type Applicant, type LectureRole, type DbAssignmentStatus } from './api-mock';
 
 // --- 타입 정의 (UI 전용) ---
 type UiAssignmentStatus = 'pending' | 'assigned_main' | 'assigned_assist' | 'rejected';
 
-// --- Styled Components ---
+// --- 1. Styled Components ---
+
 const PageContainer = styled.div` width: 100%; padding: 30px 40px; background-color: #ffffff; height: calc(100vh - 80px); display: flex; flex-direction: column; overflow: hidden; `;
 const Header = styled.div` display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 20px; border-bottom: 2px solid #f0f0f0; flex-shrink: 0; `;
 const PageTitle = styled.h1` font-size: 26px; font-weight: 800; color: #111; margin: 0; display: flex; align-items: center; gap: 12px; `;
+const StatusBadge = styled.span` font-size: 13px; font-weight: 700; color: #1e40af; background-color: #dbeafe; padding: 4px 10px; border-radius: 20px; `;
 const BackButton = styled.button` background: #f8f9fa; border: 1px solid #e9ecef; padding: 8px 16px; border-radius: 6px; color: #666; font-size: 14px; font-weight: 500; cursor: pointer; &:hover { background-color: #e9ecef; color: #333; } `;
 const ContentWrapper = styled.div` display: flex; gap: 40px; flex: 1; min-height: 0; `;
 const SectionMenu = styled.nav` display: flex; flex-direction: column; gap: 8px; width: 220px; flex-shrink: 0; padding-top: 10px; `;
@@ -20,9 +23,42 @@ const RightPanel = styled.div` flex: 1; display: flex; flex-direction: column; m
 const ScrollArea = styled.div` flex: 1; overflow-y: auto; padding-right: 20px; position: relative; `;
 const Section = styled.section` padding-top: 10px; margin-bottom: 60px; &:last-of-type { margin-bottom: 20px; } `;
 const SectionTitle = styled.h2` font-size: 20px; font-weight: 700; color: #111; margin-bottom: 24px; display: flex; align-items: center; &::before { content: ''; display: block; width: 4px; height: 20px; background-color: #4f46e5; margin-right: 12px; border-radius: 2px; } `;
-const DetailRow = styled.div` display: flex; padding: 16px 0; border-bottom: 1px solid #f0f0f0; align-items: flex-start; &:first-of-type { border-top: 1px solid #f0f0f0; } `;
-const DetailLabel = styled.div` width: 160px; flex-shrink: 0; font-size: 14px; font-weight: 600; color: #6b7280; padding-right: 20px; margin-top: 2px; `;
-const DetailValue = styled.div` flex: 1; font-size: 15px; color: #111; line-height: 1.6; white-space: pre-wrap; font-weight: 500; &.highlight { color: #e11d48; font-weight: 700; } `;
+
+// --- [수정] 폼 스타일 적용 (Grid 레이아웃) ---
+const DetailRow = styled.div`
+  display: grid;
+  grid-template-columns: 220px 1fr; /* 좌: 라벨 220px, 우: 컨텐츠 */
+  align-items: stretch; /* 높이를 꽉 채움 */
+  border-bottom: 1px solid #e5e7eb;
+
+  &:first-of-type { 
+    border-top: 1px solid #e5e7eb; 
+  }
+`;
+
+// [수정] 폼 스타일 적용 (배경색, 패딩)
+const DetailLabel = styled.div`
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+  background-color: #f9fafb; /* 좌측 라벨 배경 */
+  padding: 24px; /* 내부 여백 */
+  border-right: 1px solid #e5e7eb; /* 우측 구분선 */
+`;
+
+// [수정] 폼 스타일 적용 (패딩)
+const DetailValue = styled.div`
+  flex: 1;
+  font-size: 15px;
+  color: #111;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  font-weight: 500;
+  &.highlight { color: #e11d48; font-weight: 700; }
+
+  padding: 24px; /* 라벨과 동일한 내부 여백 */
+`;
+
 const AttachmentLink = styled.a` display: inline-flex; align-items: center; gap: 6px; color: #4f46e5; text-decoration: underline; cursor: pointer; &:hover { color: #3730a3; } `;
 const FilterTabs = styled.div` display: flex; gap: 8px; margin-bottom: 16px; `;
 const FilterButton = styled.button<{ $active: boolean }>` padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; border: none; cursor: pointer; background-color: ${({ $active }) => ($active ? '#111' : '#f3f4f6')}; color: ${({ $active }) => ($active ? '#fff' : '#6b7280')}; transition: all 0.2s; &:hover { background-color: ${({ $active }) => ($active ? '#111' : '#e5e7eb')}; } `;
@@ -33,16 +69,20 @@ const Tbody = styled.tbody` tr { background-color: #fff; &:hover { background-co
 const RoleBadge = styled.span<{ $role: string }>` display: inline-block; font-size: 11px; font-weight: 600; padding: 4px 8px; border-radius: 4px; margin-right: 4px; margin-bottom: 2px; background-color: ${({ $role }) => ($role === 'main' ? '#e0e7ff' : '#dcfce7')}; color: ${({ $role }) => ($role === 'main' ? '#3730a3' : '#166534')}; `;
 const ApplicantName = styled.div` font-size: 15px; font-weight: 600; color: #111; margin-bottom: 4px; `;
 const ApplicantMeta = styled.div` font-size: 13px; color: #6b7280; `;
-const PortfolioLink = styled.a` display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border: 1px solid #e5e7eb; border-radius: 6px; font-size: 13px; font-weight: 500; color: #374151; text-decoration: none; background: white; &:hover { background: #f3f4f6; color: #4f46e5; border-color: #c7d2fe; } `;
-const FixedBottomBar = styled.div` flex-shrink: 0; padding-top: 20px; margin-top: 10px; border-top: 1px solid #eee; display: flex; justify-content: flex-end; align-items: center; gap: 12px; background-color: #fff; z-index: 10; `;
-const Button = styled.button<{ $variant?: 'primary' | 'secondary' }>` padding: 14px 32px; font-size: 16px; font-weight: 600; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: none; ${({ $variant }) => $variant === 'primary' ? ` background-color: #4f46e5; color: white; &:hover { background-color: #4338ca; } ` : ` background-color: white; color: #374151; border: 1px solid #d1d5db; &:hover { background-color: #f3f4f6; } `} &:disabled { opacity: 0.5; cursor: not-allowed; } `;
-const LoadingState = styled.div` display: flex; justify-content: center; align-items: center; height: 100%; font-size: 16px; color: #666; `;
+
+// [수정] 포트폴리오 '보기' 버튼
+const PortfolioButton = styled.button`
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 12px; border: 1px solid #e5e7eb; border-radius: 6px;
+  font-size: 13px; font-weight: 500; color: #374151; background: white; cursor: pointer;
+  &:hover { background: #f3f4f6; color: #4f46e5; border-color: #c7d2fe; }
+`;
 
 const StatusSelect = styled.select<{ $status: DbAssignmentStatus; $assignedRole: LectureRole | null }>`
   padding: 8px 12px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer;
   border: 1px solid transparent; outline: none; width: 140px;
   background-color: ${({ $status, $assignedRole }) => {
-    if ($status === 'assigned' && $assignedRole === 'main') return '#e0e7ff';
+    if ($status === 'assigned' && $assignedRole === 'main') return '#e0e7ff'; 
     if ($status === 'assigned' && $assignedRole === 'assist') return '#dcfce7';
     if ($status === 'rejected') return '#fee2e2';
     return '#f3f4f6';
@@ -55,6 +95,42 @@ const StatusSelect = styled.select<{ $status: DbAssignmentStatus; $assignedRole:
   }};
   &:focus { box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.1); }
 `;
+const FixedBottomBar = styled.div` flex-shrink: 0; padding-top: 20px; margin-top: 10px; border-top: 1px solid #eee; display: flex; justify-content: flex-end; align-items: center; gap: 12px; background-color: #fff; z-index: 10; `;
+const Button = styled.button<{ $variant?: 'primary' | 'secondary' }>` padding: 14px 32px; font-size: 16px; font-weight: 600; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: none; ${({ $variant }) => $variant === 'primary' ? ` background-color: #4f46e5; color: white; &:hover { background-color: #4338ca; } ` : ` background-color: white; color: #374151; border: 1px solid #d1d5db; &:hover { background-color: #f3f4f6; } `} &:disabled { opacity: 0.5; cursor: not-allowed; } `;
+const LoadingState = styled.div` display: flex; justify-content: center; align-items: center; height: 100%; font-size: 16px; color: #666; `;
+
+// --- [신규] 팝업 모달 스타일 ---
+const ModalBackground = styled.div`
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex; justify-content: center; align-items: center;
+  z-index: 1000;
+`;
+const ModalContainer = styled.div`
+  width: 100%; max-width: 700px;
+  background-color: white; border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+  display: flex; flex-direction: column;
+`;
+const ModalHeader = styled.div`
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 20px 24px; border-bottom: 1px solid #e5e7eb;
+  h3 { font-size: 18px; font-weight: 700; color: #111; margin: 0; }
+`;
+const CloseButton = styled.button`
+  background: none; border: none; font-size: 24px; color: #9ca3af;
+  cursor: pointer; line-height: 1;
+  &:hover { color: #111; }
+`;
+const ModalBody = styled.pre` /* pre 태그로 \n 줄바꿈 유지 */
+  padding: 24px;
+  font-size: 15px; line-height: 1.7; color: #374151;
+  max-height: 60vh; overflow-y: auto;
+  white-space: pre-wrap; /* 줄바꿈 + 자동 줄바꿈 */
+  font-family: inherit;
+  margin: 0;
+`;
+
 
 type SectionKey = 'info' | 'applicants';
 
@@ -68,6 +144,10 @@ export default function LectureDetailPage({ params }: { params: Promise<{ id: st
   const [activeSection, setActiveSection] = useState<SectionKey>('info');
   const [activeFilter, setActiveFilter] = useState<'all' | 'main' | 'assist'>('all');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // [신규] 모달 상태 관리
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [viewingPortfolio, setViewingPortfolio] = useState<{ name: string; content: string | null }>({ name: '', content: '' });
 
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const sectionRefs = {
@@ -92,13 +172,13 @@ export default function LectureDetailPage({ params }: { params: Promise<{ id: st
     fetchData();
   }, [id]);
 
-  // [수정] 필터 로직: applied_role (단일값) 체크
+  // [수정] 필터 로직 (applied_role 단일값)
   const filteredList = useMemo(() => {
     if (activeFilter === 'all') return applicants;
     return applicants.filter(app => app.applied_role === activeFilter);
   }, [applicants, activeFilter]);
 
-  // [수정] 통계 계산: applied_role 체크
+  // [수정] 통계 로직 (applied_role 단일값)
   const stats = useMemo(() => ({
     total: applicants.length,
     main: applicants.filter(a => a.applied_role === 'main').length,
@@ -136,24 +216,13 @@ export default function LectureDetailPage({ params }: { params: Promise<{ id: st
   const handleStatusChange = (id: number, uiValue: UiAssignmentStatus) => {
     let newStatus: DbAssignmentStatus = 'pending';
     let newAssignedRole: LectureRole | null = null;
-
-    if (uiValue === 'assigned_main') {
-      newStatus = 'assigned';
-      newAssignedRole = 'main';
-    } else if (uiValue === 'assigned_assist') {
-      newStatus = 'assigned';
-      newAssignedRole = 'assist';
-    } else if (uiValue === 'rejected') {
-      newStatus = 'rejected';
-      newAssignedRole = null;
-    } else {
-      newStatus = 'pending';
-      newAssignedRole = null;
-    }
-
-    setApplicants(prev => prev.map(app =>
-      app.application_id === id
-        ? { ...app, assignment_status: newStatus, assigned_role: newAssignedRole }
+    if (uiValue === 'assigned_main') { newStatus = 'assigned'; newAssignedRole = 'main'; }
+    else if (uiValue === 'assigned_assist') { newStatus = 'assigned'; newAssignedRole = 'assist'; }
+    else if (uiValue === 'rejected') { newStatus = 'rejected'; }
+    
+    setApplicants(prev => prev.map(app => 
+      app.application_id === id 
+        ? { ...app, assignment_status: newStatus, assigned_role: newAssignedRole } 
         : app
     ));
   };
@@ -161,20 +230,29 @@ export default function LectureDetailPage({ params }: { params: Promise<{ id: st
   const handleSaveChanges = () => {
     if (!confirm('저장하시겠습니까?')) return;
     setIsSubmitting(true);
-
-    const payload = applicants.map(app => ({
-      application_id: app.application_id,
+    const payload = applicants.map(app => ({ 
+      application_id: app.application_id, 
       assignment_status: app.assignment_status,
       assigned_role: app.assigned_role
     }));
-
     console.log('🚀 [API Payload]', payload);
-
     setTimeout(() => {
       setIsSubmitting(false);
       alert('저장되었습니다.');
     }, 1000);
   };
+
+  // [신규] 모달 열기 핸들러
+  const openPortfolioModal = (app: Applicant) => {
+    setViewingPortfolio({
+      name: app.name,
+      content: app.portfolio_snapshot || '등록된 포트폴리오 스냅샷이 없습니다.'
+    });
+    setIsModalOpen(true);
+  };
+
+  // [신규] 모달 닫기 핸들러
+  const closePortfolioModal = () => setIsModalOpen(false);
 
   if (isLoading || !lecture) {
     return <PageContainer><LoadingState>로딩중...</LoadingState></PageContainer>;
@@ -183,7 +261,7 @@ export default function LectureDetailPage({ params }: { params: Promise<{ id: st
   return (
     <PageContainer>
       <Header>
-        <PageTitle>강의 강사 배정</PageTitle>
+        <PageTitle>강의 상세 및 배정<StatusBadge>모집중</StatusBadge></PageTitle>
         <BackButton onClick={() => router.back()}>목록으로</BackButton>
       </Header>
 
@@ -195,11 +273,13 @@ export default function LectureDetailPage({ params }: { params: Promise<{ id: st
 
         <RightPanel>
           <ScrollArea ref={scrollAreaRef} onScroll={handleScroll}>
-
+            
+            {/* 1. 강의 상세 정보 (설정 페이지 스타일 적용) */}
             <Section ref={sectionRefs.info}>
               <SectionTitle>강의 상세 정보</SectionTitle>
+              
               <DetailRow><DetailLabel>강의 제목</DetailLabel><DetailValue style={{ fontSize: '18px', fontWeight: 700 }}>{lecture.title}</DetailValue></DetailRow>
-              <DetailRow><DetailLabel>강의 유형</DetailLabel><DetailValue>{lecture.type} / {lecture.category}</DetailValue></DetailRow>
+              <DetailRow><DetailLabel>강의 유형/구분</DetailLabel><DetailValue>{lecture.type} / {lecture.category}</DetailValue></DetailRow>
               <DetailRow><DetailLabel>교육 대상</DetailLabel><DetailValue>{lecture.target_audience}</DetailValue></DetailRow>
               <DetailRow><DetailLabel>일시</DetailLabel><DetailValue>{lecture.period_start} ~ {lecture.period_end}</DetailValue></DetailRow>
               <DetailRow><DetailLabel>장소</DetailLabel><DetailValue>{lecture.location}</DetailValue></DetailRow>
@@ -208,12 +288,13 @@ export default function LectureDetailPage({ params }: { params: Promise<{ id: st
               <DetailRow><DetailLabel>마감일</DetailLabel><DetailValue className="highlight">{lecture.recruitment_deadline} 까지</DetailValue></DetailRow>
               <DetailRow><DetailLabel>강의료</DetailLabel><DetailValue>주 {lecture.fee_main.toLocaleString()}원 / 보조 {lecture.fee_assist.toLocaleString()}원</DetailValue></DetailRow>
               <DetailRow><DetailLabel>상세 내용</DetailLabel><DetailValue>{lecture.content_description}</DetailValue></DetailRow>
-              <DetailRow><DetailLabel>첨부파일</DetailLabel><DetailValue>{lecture.attachment_url ? <AttachmentLink href="#">📎 링크</AttachmentLink> : <span style={{ color: '#999' }}>없음</span>}</DetailValue></DetailRow>
+              <DetailRow><DetailLabel>첨부파일</DetailLabel><DetailValue>{lecture.attachment_url ? <AttachmentLink href="#">📎 {lecture.attachment_url}</AttachmentLink> : <span style={{color:'#999'}}>없음</span>}</DetailValue></DetailRow>
               <DetailRow><DetailLabel>특이사항</DetailLabel><DetailValue className="highlight">{lecture.special_notes}</DetailValue></DetailRow>
             </Section>
 
             <hr style={{ border: 'none', borderTop: '1px solid #eee', margin: '40px 0' }} />
 
+            {/* 2. 지원자 관리 */}
             <Section ref={sectionRefs.applicants}>
               <SectionTitle>지원자 관리</SectionTitle>
               <FilterTabs>
@@ -231,6 +312,7 @@ export default function LectureDetailPage({ params }: { params: Promise<{ id: st
                       <th style={{ width: '25%' }}>포트폴리오</th>
                       <th style={{ width: '15%' }}>지원일</th>
                       <th style={{ width: '25%' }}>상태 관리</th>
+                      {/*(미구현 : th 읽음 현황)*/}
                     </tr>
                   </Thead>
                   <Tbody>
@@ -241,17 +323,19 @@ export default function LectureDetailPage({ params }: { params: Promise<{ id: st
                           <ApplicantMeta>{app.phone_number}</ApplicantMeta>
                         </td>
                         <td>
-                          {/* [수정] 배열이 아닌 단일 역할 표시 */}
                           <RoleBadge $role={app.applied_role}>
                             {app.applied_role === 'main' ? '주강사' : '보조'}
                           </RoleBadge>
                         </td>
                         <td>
-                          <PortfolioLink href="#" onClick={(e) => e.preventDefault()}>📄 {app.portfolio_url}</PortfolioLink>
+                          {/* [수정] 텍스트 스냅샷 보기 버튼 */}
+                          <PortfolioButton onClick={() => openPortfolioModal(app)}>
+                            📄 지원서 보기
+                          </PortfolioButton>
                         </td>
                         <td><ApplicantMeta>{app.applied_at}</ApplicantMeta></td>
                         <td>
-                          <StatusSelect
+                          <StatusSelect 
                             value={getUiStatusValue(app.assignment_status, app.assigned_role)}
                             $status={app.assignment_status}
                             $assignedRole={app.assigned_role}
@@ -261,7 +345,6 @@ export default function LectureDetailPage({ params }: { params: Promise<{ id: st
                             <option value="assigned_main">주도로쌤 배정</option>
                             <option value="assigned_assist">보조도로쌤 배정</option>
                             <option value="rejected">반려</option>
-                            {/* 신청한 거에 따라 신청한 역할 배정만 표시되도록?*/}
                           </StatusSelect>
                         </td>
                       </tr>
@@ -284,6 +367,22 @@ export default function LectureDetailPage({ params }: { params: Promise<{ id: st
           </FixedBottomBar>
         </RightPanel>
       </ContentWrapper>
+
+      {/* [신규] 포트폴리오 뷰어 모달 */}
+      {isModalOpen && (
+        <ModalBackground onClick={closePortfolioModal}>
+          <ModalContainer onClick={(e) => e.stopPropagation()}>
+            <ModalHeader>
+              <h3>{viewingPortfolio.name}님의 지원서 (스냅샷)</h3>
+              <CloseButton onClick={closePortfolioModal}>&times;</CloseButton>
+            </ModalHeader>
+            <ModalBody>
+              {viewingPortfolio.content}
+            </ModalBody>
+          </ModalContainer>
+        </ModalBackground>
+      )}
+
     </PageContainer>
   );
 }
