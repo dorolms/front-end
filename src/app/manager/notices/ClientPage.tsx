@@ -1,15 +1,12 @@
 'use client';
 /**
- * ClientPage.tsx (Client Component)
- * - /manager/notices 페이지의 실제 UI와 상호작용을 담당하는 "컨테이너" 컴포넌트.
- * - 모든 상태(데이터, 검색어, 모달)와 로직(CRUD 핸들러)을 이 파일에서 통합 관리.
- * - 하위 UI 컴포넌트(Table, Pagination, Modals)를 조립하고 props를 전달.
+ * ClientPage.tsx
  */
 
 import { useState } from 'react';
-import { mockNotices } from './data/mock';
-import { useNotices } from './hooks/useNotices';
-import { Container, Header, Title, NewNoticeButton } from './styles';
+import { mockNotices } from './data/mock'; // 경로 확인 필요
+import { useNotices } from './hooks/useNotices'; // 경로 확인 필요
+import { Container, Header, Title, NewNoticeButton } from './styles'; // 경로 확인 필요
 import SearchBar from './components/SearchBar';
 import NoticeTable from './components/NoticeTable';
 import Pagination from './components/Pagination';
@@ -19,51 +16,48 @@ import SuccessModal from './components/SuccessModal';
 import type { Notice } from './types';
 
 export default function ClientPage() {
-  // 1. 데이터 상태: 공지사항 원본 목록 (현재 mock, 추후 API 연동)
   const [notices, setNotices] = useState(mockNotices);
 
-  // 2. UI 제어 상태
-  const [query, setQuery] = useState(''); // 검색어
-  const [page, setPage] = useState(1); // 현재 페이지
+  // UI 상태
+  const [query, setQuery] = useState('');
+  const [page, setPage] = useState(1);
 
-  // 3. 모달 제어 상태
-  const [selected, setSelected] = useState<Notice | null>(null); // 상세 모달 (선택된 공지)
-  const [isFormOpen, setFormOpen] = useState(false); // 폼 모달 (열림/닫힘)
-  const [editing, setEditing] = useState<Notice | null>(null); // 폼 모드 (null: 생성, Notice: 수정)
-  const [successMsg, setSuccessMsg] = useState(''); // 성공 모달 (메시지)
+  // 모달 상태
+  const [selected, setSelected] = useState<Notice | null>(null);
+  const [isFormOpen, setFormOpen] = useState(false);
+  const [editing, setEditing] = useState<Notice | null>(null); // null: 생성, Notice: 수정
+  const [successMsg, setSuccessMsg] = useState('');
 
-  // 4. 데이터 로직 (필터링/페이지네이션)
+  // 데이터 필터링 훅
   const { pageItems, totalPages } = useNotices(notices, {
     query,
     page,
     pageSize: 10,
   });
 
-  // --- 이벤트 핸들러 ---
+  // --- 핸들러 ---
 
-  /** '+ 새 공지' 버튼 클릭: '생성' 모드로 폼 모달 열기 */
   const handleOpenNewForm = () => {
     setEditing(null);
     setFormOpen(true);
   };
 
-  /** 상세 모달 내 '수정' 버튼 클릭: '수정' 모드로 폼 모달 열기 */
   const handleStartEdit = () => {
-    setEditing(selected); // 현재 선택된 공지를 수정 대상으로
-    setSelected(null); // 상세 모달 닫기
-    setFormOpen(true); // 폼 모달 열기
+    setEditing(selected);
+    setSelected(null);
+    setFormOpen(true);
   };
 
-  /** 폼 모달 '등록'/'수정' 버튼 클릭: 데이터 C/U 로직 수행 */
+  /** 등록/수정 로직 */
   const handleSubmit = (payload: NoticePayload) => {
     if (editing) {
-      // 수정 로직
+      // 수정
       setNotices(
         notices.map((n) => (n.id === editing.id ? { ...n, ...payload } : n)),
       );
       setSuccessMsg('공지가 수정되었습니다.');
     } else {
-      // 생성 로직 (mock 데이터 기준)
+      // 생성
       const newNotice: Notice = {
         id: Date.now(),
         author: '매니저',
@@ -73,7 +67,18 @@ export default function ClientPage() {
       setNotices([newNotice, ...notices]);
       setSuccessMsg('새 공지가 등록되었습니다.');
     }
-    setFormOpen(false); // 폼 모달 닫기
+    setFormOpen(false);
+  };
+
+  /** 삭제 로직 (새로 추가됨) */
+  const handleDelete = (id: number) => {
+    // 데이터에서 제거
+    setNotices(notices.filter((n) => n.id !== id));
+
+    // 모달 닫기 및 성공 메시지
+    setFormOpen(false);
+    setEditing(null); // 편집 상태 초기화
+    setSuccessMsg('공지가 삭제되었습니다.');
   };
 
   return (
@@ -81,7 +86,6 @@ export default function ClientPage() {
       <Container>
         <Header>
           <Title>공지사항</Title>
-          {/* 검색바 + 새 공지 버튼 */}
           <div style={{ display: 'flex', gap: '16px' }}>
             <SearchBar
               value={query}
@@ -94,14 +98,10 @@ export default function ClientPage() {
           </div>
         </Header>
 
-        {/* 공지 목록 테이블 */}
         <NoticeTable rows={pageItems} onClickTitle={setSelected} />
 
-        {/* 페이지네이션 */}
         <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
       </Container>
-
-      {/* --- 모달 영역 --- */}
 
       {/* 1. 상세 보기 모달 */}
       {selected && (
@@ -117,8 +117,9 @@ export default function ClientPage() {
         <NoticeFormModal
           initialData={editing}
           onSubmit={handleSubmit}
+          onDelete={handleDelete} // 여기서 삭제 함수 전달
           onClose={() => setFormOpen(false)}
-          isSubmitting={false} // API 연동 시 로딩 상태
+          isSubmitting={false}
         />
       )}
 

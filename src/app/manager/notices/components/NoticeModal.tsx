@@ -1,11 +1,7 @@
 'use client';
 /**
- * NoticeModal.tsx (매니저용 상세 보기 모달)
- *
- * - 선택된 공지 1개의 상세 내용을 보여주는 모달.
- * - (강사) 버전과 달리 '수정' 버튼이 포함됨 (onEdit 콜백).
- * - 배경 클릭(onClose) 또는 수정 버튼(onEdit) 시 상위(ClientPage)로 이벤트 전달.
- * - Pretendard 폰트 및 image_0d158a.png 디자인 적용.
+ * NoticeModal.tsx
+ * 디자인 업그레이드: 제목 강조, 메타 데이터 정리
  */
 
 import styled from 'styled-components';
@@ -16,7 +12,8 @@ import type { Notice } from '../types';
 const Bg = styled.div`
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.4);
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(2px);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -25,116 +22,135 @@ const Bg = styled.div`
 
 const Box = styled.div`
   background: #fff;
-  border: 1px solid #e0e0e0;
   width: 90%;
-  max-width: 700px;
-  padding: 32px;
-  max-height: 80vh;
-  overflow-y: auto;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  font-family: 'Pretendard', sans-serif; // 폰트 적용
+  max-width: 640px;
+  border-radius: 16px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  max-height: 85vh;
+  animation: popUp 0.3s ease-out;
+
+  @keyframes popUp {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+  }
 `;
 
-const Hdr = styled.div`
-  margin-bottom: 16px;
+const Header = styled.div`
+  padding: 40px 40px 24px;
+  border-bottom: 1px solid #f0f0f0;
 
   h3 {
-    font-size: 1.5rem;
+    font-size: 1.6rem; /* 제목을 아주 크게 */
     font-weight: 700;
-    margin: 0 0 12px 0;
-  }
-
-  div.meta {
-    font-size: 0.95rem;
-    color: #333;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    padding-bottom: 16px;
-    border-bottom: 1px solid #e0e0e0; // 헤더-본문 구분선
+    line-height: 1.4;
+    color: #111;
+    margin: 0 0 16px 0;
+    word-break: keep-all;
   }
 `;
 
-const Body = styled.div`
-  white-space: pre-line; // \n 줄바꿈 렌더링
-  line-height: 1.7;
-  font-size: 1rem;
-  color: #333;
-  min-height: 200px;
-  margin-top: 24px;
-`;
-
-const Ftr = styled.div`
-  margin-top: 32px;
+const Meta = styled.div`
   display: flex;
-  justify-content: flex-end;
-  gap: 10px;
+  gap: 12px;
+  font-size: 0.9rem;
+  color: #888;
+  align-items: center;
 
-  button {
-    padding: 10px 24px;
-    font-size: 1rem;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    font-weight: 500;
-    cursor: pointer;
-    font-family: inherit; // 폰트 상속
+  span {
+    display: flex;
+    align-items: center;
   }
 
-  .edit-btn { // '수정' 버튼
-    background: #f0f0f0;
-  }
-
-  .close-btn { // '닫기' 버튼
-    background: #e0e0e0;
+  /* 구분선(|) 추가 */
+  span:not(:last-child)::after {
+    content: '';
+    display: block;
+    width: 1px;
+    height: 10px;
+    background: #ddd;
+    margin-left: 12px;
   }
 `;
-// --- (End) Styled-Components ---
+
+const Content = styled.div`
+  padding: 32px 40px;
+  font-size: 1.05rem;
+  line-height: 1.75;
+  color: #333;
+  white-space: pre-wrap; /* 줄바꿈 유지 */
+  overflow-y: auto;
+  flex: 1; /* 남은 공간 채우기 */
+
+  /* 스크롤바 예쁘게 */
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background-color: #e0e0e0;
+    border-radius: 4px;
+  }
+`;
+
+const Footer = styled.div`
+  padding: 20px 40px;
+  border-top: 1px solid #f0f0f0;
+  display: flex;
+  justify-content: flex-end; /* 오른쪽 정렬 */
+  background-color: #fff; /* 스크롤 돼도 버튼은 보이게 */
+`;
+
+const EditButton = styled.button`
+  padding: 10px 24px;
+  background-color: #f1f3f5;
+  color: #333;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s;
+
+  &:hover {
+    background-color: #e9ecef;
+  }
+`;
 
 type Props = {
-  /** 표시할 공지사항 데이터 객체 */
   notice: Notice;
-  /** '닫기' 또는 배경 클릭 시 호출될 함수 */
   onClose: () => void;
-  /** '수정' 버튼 클릭 시 호출될 함수 */
   onEdit: () => void;
 };
 
 export default function NoticeModal({ notice, onClose, onEdit }: Props) {
-  // 날짜 포맷팅 (e.g., '2025-09-08 15:32')
   const formattedDate = new Date(notice.createdAt).toLocaleString('ko-KR', {
     year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
+    month: 'long',
+    day: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
-    hour12: false,
-  }).replace(/\. /g, '-').replace('.', '');
+  });
 
   return (
     <ModalPortal>
-      <Bg onClick={onClose} role="dialog" aria-modal="true" aria-labelledby="notice-title">
-        {/* 모달 컨텐츠 클릭 시 이벤트 전파(버블링) 방지 */}
+      <Bg onClick={onClose}>
         <Box onClick={(e) => e.stopPropagation()}>
-          <Hdr>
-            <h3 id="notice-title">{notice.title}</h3>
-            <div className="meta">
-              <span>작성자 | {notice.author}</span>
-              <span>작성 일시 | {formattedDate}</span>
-            </div>
-          </Hdr>
+          <Header>
+            <h3>{notice.title}</h3>
+            <Meta>
+              <span>{notice.author}</span>
+              <span>{formattedDate}</span>
+            </Meta>
+          </Header>
 
-          <Body>{notice.content}</Body>
+          <Content>
+            {notice.content}
+          </Content>
 
-          <Ftr>
-            {/* '수정' 버튼 클릭 시 onEdit 콜백 */}
-            <button className="edit-btn" onClick={onEdit}>
-              수정
-            </button>
-            {/* '닫기' 버튼 클릭 시 onClose 콜백 */}
-            <button className="close-btn" onClick={onClose}>
-              닫기
-            </button>
-          </Ftr>
+          <Footer>
+            <EditButton onClick={onEdit}>수정하기</EditButton>
+          </Footer>
         </Box>
       </Bg>
     </ModalPortal>

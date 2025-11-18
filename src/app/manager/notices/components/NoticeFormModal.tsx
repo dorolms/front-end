@@ -1,10 +1,7 @@
 'use client';
 /**
- * NoticeFormModal.tsx (작성/수정 폼 모달)
- * - 매니저가 공지를 '생성'하거나 '수정'할 때 사용되는 폼 모달.
- * - initialData prop 유무에 따라 '생성'/'수정' 모드가 결정됨.
- * - 폼 제출(onSubmit) 시 폼 데이터를 상위(ClientPage)로 전달.
- * - Pretendard 폰트 및 세련된 폼 디자인 적용.
+ * NoticeFormModal.tsx
+ * 디자인 업그레이드: 더 부드러운 입력창, 명확한 버튼 계층 구조
  */
 
 import { useState, useEffect } from 'react';
@@ -12,17 +9,17 @@ import styled from 'styled-components';
 import ModalPortal from './ModalPortal';
 import type { Notice } from '../types';
 
-/** 폼 제출 시 부모로 전달될 데이터 타입 */
 export type NoticePayload = {
   title: string;
   content: string;
 };
 
-// --- Styled-Components ---
+// --- Styled-Components (Design Upgrade) ---
 const Bg = styled.div`
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.4);
+  background: rgba(0, 0, 0, 0.5); /* 배경을 조금 더 진하게 */
+  backdrop-filter: blur(2px); /* 뒤쪽 배경을 살짝 흐리게 */
   display: flex;
   justify-content: center;
   align-items: center;
@@ -31,133 +28,163 @@ const Bg = styled.div`
 
 const Box = styled.div`
   background: #fff;
-  border: 1px solid #e0e0e0;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
   width: 90%;
-  max-width: 750px;
-  padding: 32px 40px;
-  max-height: 90vh;
+  max-width: 560px;
+  border-radius: 16px; /* 모서리를 더 둥글게 */
+  overflow: hidden;
   display: flex;
   flex-direction: column;
-  font-family: 'Pretendard', sans-serif;
+  animation: popUp 0.3s ease-out;
+
+  @keyframes popUp {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+  }
 `;
 
 const Form = styled.form`
   display: flex;
   flex-direction: column;
-  flex-grow: 1;
-  overflow: hidden;
+  height: 100%;
 `;
 
 const FormBody = styled.div`
-  flex-grow: 1;
-  overflow-y: auto;
-  padding-right: 10px;
+  padding: 40px 32px 32px; /* 상단 여백 확보 */
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
 `;
 
 const FormGroup = styled.div`
-  margin-bottom: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 
   label {
-    display: block;
-    font-size: 1.1rem;
-    font-weight: 600;
-    color: #333;
-    margin-bottom: 8px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #666;
+    margin-left: 4px; /* 라벨 살짝 들여쓰기 */
   }
 
+  /* 입력창 스타일 모던하게 변경 */
   input,
   textarea {
-    width: 100%;
-    padding: 10px 4px;
-    border: none;
-    border-bottom: 2px solid #ddd;
-    box-sizing: border-box;
-    transition: border-color 0.2s;
+    padding: 16px;
+    background-color: #f8f9fa; /* 연한 회색 배경 */
+    border: 1px solid transparent; /* 평소엔 테두리 없음 */
+    border-radius: 12px;
+    font-size: 1rem;
     font-family: inherit;
-    font-size: 1.1rem;
-    color: #555;
+    color: #333;
+    transition: all 0.2s;
 
-    &::placeholder { color: #aaa; }
+    &::placeholder {
+      color: #aaa;
+    }
+
     &:focus {
       outline: none;
-      border-bottom-color: #555;
+      background-color: #fff;
+      border-color: #333; /* 포커스 시 진한 테두리 */
+      box-shadow: 0 0 0 3px rgba(0,0,0,0.05); /* 부드러운 그림자 */
     }
   }
-
   textarea {
-    font-size: 1rem;
+    min-height: 240px;
+    resize: none; /* 사용자 크기 조절 막기 (깔끔하게) */
     line-height: 1.6;
-    min-height: 350px;
-    resize: vertical;
   }
 `;
 
 const Ftr = styled.div`
-  margin-top: 24px;
-  padding-top: 24px;
-  border-top: 1px solid #f0f0f0;
+  padding: 24px 32px;
+  /* background: #f9f9f9;  <- 하단 배경색 제거하고 깔끔하게 흰색으로 */
+  border-top: 1px solid #f1f1f1;
   display: flex;
-  justify-content: flex-end;
-  gap: 10px;
+  justify-content: space-between;
+  align-items: center;
 
   button {
-    padding: 10px 24px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
+    padding: 12px 28px;
     font-size: 1rem;
+    font-weight: 600;
+    border-radius: 8px;
     cursor: pointer;
-    transition: background-color 0.2s;
-    font-family: inherit;
-    font-weight: 500;
-    background: #f0f0f0;
-    color: #333;
+    transition: all 0.2s;
+  }
 
-    &:hover { background: #e0e0e0; }
+  /* 삭제 버튼: 텍스트만 있는 것보다 은은한 빨간색이 더 안전해 보임 */
+  button.delete {
+    background-color: #fff0f0;
+    color: #d32f2f;
+    border: none;
+    &:hover {
+      background-color: #ffe0e0;
+    }
+  }
+
+  /* 등록 버튼: 검정색 유지하되 쉐도우 추가 */
+  button.submit {
+    background-color: #222;
+    color: #fff;
+    border: none;
+    margin-left: auto;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+
+    &:hover:not(:disabled) {
+      background-color: #000;
+      transform: translateY(-1px);
+    }
+    &:disabled {
+      background-color: #ccc;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
   }
 `;
-// --- (End) Styled-Components ---
 
+// --- (Logic은 그대로) ---
 type Props = {
-  /** '수정' 모드일 때 폼을 채울 초기 데이터. '생성' 모드일 때는 null. */
   initialData: Notice | null;
-  /** API 호출 중인지 여부 (버튼 비활성화용) */
-  isSubmitting: boolean;
-  /** '등록'/'수정' 버튼 클릭 시 { title, content }를 전달할 콜백 함수 */
-  onSubmit: (payload: NoticePayload) => void;
-  /** '취소' 또는 배경 클릭 시 호출될 함수 */
+  onSubmit: (data: NoticePayload) => void;
   onClose: () => void;
+  onDelete?: (id: number) => void;
+  isSubmitting: boolean;
 };
 
 export default function NoticeFormModal({
   initialData,
-  isSubmitting,
   onSubmit,
   onClose,
+  onDelete,
+  isSubmitting,
 }: Props) {
-  // 1. 폼 입력을 위한 상태
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
 
-  // 2. 모드 확인
   const isEditMode = !!initialData;
 
-  // 3. Effect: '수정' 모드로 열릴 때 폼을 채움
   useEffect(() => {
-    if (isEditMode) {
+    if (initialData) {
       setTitle(initialData.title);
       setContent(initialData.content);
-    } else {
-      setTitle('');
-      setContent('');
     }
-  }, [initialData, isEditMode]);
+  }, [initialData]);
 
-  // 4. 핸들러: 폼 제출 시
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (isSubmitting || !title || !content) return;
+    if (!title || !content) return;
     onSubmit({ title, content });
+  };
+
+  const handleDeleteClick = () => {
+    if (!initialData || !onDelete) return;
+    const isConfirmed = window.confirm('정말로 이 공지를 삭제하시겠습니까?');
+    if (isConfirmed) {
+      onDelete(initialData.id);
+    }
   };
 
   return (
@@ -166,36 +193,44 @@ export default function NoticeFormModal({
         <Box onClick={(e) => e.stopPropagation()}>
           <Form onSubmit={handleSubmit}>
             <FormBody>
+              {/* 상단 헤더 느낌으로 제목 배치 */}
+              <h2 style={{ margin: '0 0 10px 0', fontSize: '1.4rem', fontWeight: 700 }}>
+                {isEditMode ? '공지 수정하기' : '새 공지 작성하기'}
+              </h2>
+
               <FormGroup>
-                <label htmlFor="notice-title">제목을 입력하세요.</label>
+                <label htmlFor="notice-title">제목</label>
                 <input
                   id="notice-title"
                   type="text"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder="제목을 입력해 주세요."
+                  placeholder="공지 제목을 입력해주세요"
+                  autoComplete="off"
                   required
                 />
               </FormGroup>
 
               <FormGroup>
-                <label htmlFor="notice-content">내용을 입력하세요.</label>
+                <label htmlFor="notice-content">내용</label>
                 <textarea
                   id="notice-content"
                   value={content}
                   onChange={(e) => setContent(e.target.value)}
-                  placeholder="공지 내용을 입력해 주세요."
+                  placeholder="공지 내용을 상세히 입력해주세요"
                   required
                 />
               </FormGroup>
             </FormBody>
 
             <Ftr>
-              <button type="button" className="cancel" onClick={onClose}>
-                취소
-              </button>
+              {isEditMode && (
+                <button type="button" className="delete" onClick={handleDeleteClick}>
+                  삭제하기
+                </button>
+              )}
               <button type="submit" className="submit" disabled={isSubmitting}>
-                {isEditMode ? '수정' : '등록'}
+                {isEditMode ? '수정 완료' : '등록하기'}
               </button>
             </Ftr>
           </Form>
