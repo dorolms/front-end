@@ -1,35 +1,87 @@
-// src/app/instructor/dashboard/data/latestNotices.ts
+/**
+ * _data/mock.ts
+ * - 실제 API 연동 전까지 사용할 임시 목 데이터.
+ * - 서버 연동 이후에는 삭제하거나 API 응답 타입과 매핑하는 형태로 변경.
+ */
+import type { Notice } from '../types';
 
-export type DashboardNotice = {
-  id: number;
-  title: string;
-  createdAt: string; // '2025-11-10' 이런 형식 (필요하면 UI에서 사용)
-};
-
-export const latestNotices: DashboardNotice[] = [
+export const latestNotices: Notice[] = [
   {
     id: 1,
-    title: "[학교로 찾아가는 생활과학교실] - 키트 배송 안내 123456789",
-    createdAt: "2025-11-10",
+    title: '[학교로 찾아가는 생활과학교실] - 키트 배송 안내',
+    author: '김지수',
+    createdAt: '2025-09-08 15:32',
+    content:
+      '안녕하세요. DORO 운영팀입니다.\n\'학교로 찾아가는 생활과학교실\' 프로그램 진행에 필요한 실습 키트 배송 관련하여 안내드립니다.\n\n- 배송 예정일: 2025년 11월 6일 (목) ~ 11월 7일 (금)\n- 배송 물품: 생활과학교실 3차시 (자율주행 자동차) 키트 25개\n- 수령 장소: OO초등학교 1층 교무실 (담당: 김지수 선생님)\n\n[중요] 수령 후 확인 사항:\n1) 주문 수량(25개) 확인\n2) 구성품 파손/누락 확인\n\n문제 발생 시 즉시 운영팀(010-1234-5678) 연락 부탁드립니다.',
   },
   {
     id: 2,
-    title: "[도로랜드] 강사 일정 안내",
-    createdAt: "2025-11-09",
+    title: '[도로랜드] 강사 일정 안내',
+    author: '안예영',
+    createdAt: '2025-09-08 15:32',
+    content: '도로랜드 11월 강사 일정을 안내드립니다. (...)',
   },
   {
     id: 3,
-    title: "[숨기초] 강의자료 업로드 안내",
-    createdAt: "2025-11-08",
+    title: '[숨기초] 강의자료 업로드 안내',
+    author: '홍길동',
+    createdAt: '2025-09-08 15:32',
+    content: '숨기초 강의자료가 업로드되었습니다. (...)',
   },
   {
     id: 4,
-    title: "[단원청소년수련관] 살라샬라어프레임입니다",
-    createdAt: "2025-11-07",
+    title: '[단원청소년수련관] 살라샬라어프레임입니다',
+    author: '김철수',
+    createdAt: '2025-09-08 15:32',
+    content: '살라샬라어프레임입니다. (...)',
   },
   {
     id: 5,
-    title: "5번째 공지사항입니다.",
-    createdAt: "2025-11-06",
+    title: '5번째 공지사항 입니다.',
+    author: '김철수',
+    createdAt: '2025-09-08 15:32',
+    content: '살라샬라어프레임입니다. (...)',
+  },
+  {
+    id: 6,
+    title: '6번째 공지사항 입니다.',
+    author: '김철수',
+    createdAt: '2025-09-08 15:32',
+    content: '살라샬라어프레임입니다. (...)',
+  },
+  {
+    id: 7,
+    title: '7번째 공지사항 입니다.',
+    author: '김철수',
+    createdAt: '2025-09-08 15:32',
+    content: '살라샬라어프레임입니다. (...)',
+  },
+  {
+    id: 8,
+    title: '8번째 공지사항 입니다.',
+    author: '김철수',
+    createdAt: '2025-09-08 15:32',
+    content: '살라샬라어프레임입니다. (...)',
+  },
+  {
+    id: 9,
+    title: '9번째 공지사항 입니다.',
+    author: '김철수',
+    createdAt: '2025-09-08 15:32',
+    content: '살라샬라어프레임입니다. (...)',
+  },
+  {
+    id: 10,
+    title: '10번째 공지사항입니다.',
+    author: '김지수',
+    createdAt: '2025-09-01 10:00',
+    content: '10번째 공지사항 내용입니다.',
+  },
+  {
+    id: 11,
+    title: '11번째 공지사항입니다.',
+    author: '김지수',
+    createdAt: '2025-09-01 10:00',
+    content: '10번째 공지사항 내용입니다.',
   },
 ];

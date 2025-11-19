@@ -1,27 +1,54 @@
-/**
- * 대시보드에서 쓰는 타입들
- * - Status: 이벤트 확정 상태 (대시보드엔 CONFIRMED만 노출)
- * - Category: 강의 분류(색상 지정)
- */
-
-export type Status = 'CONFIRMED' | 'PENDING_CONFIRM' | 'REQUESTED';
+// src/app/instructor/dashboard/types.ts
 
 export type Category =
-  | 'GENERAL'     // #FFE286
-  | 'COMPETITION' // #83CBEB
-  | 'BOOTH'       // #F6C6AC
-  | 'CAMP'        // #B4E5A2
-  | 'DOROLAND'    // #8EACF6
-  | 'ETC';        // #BFBFBF
+  | 'GENERAL'
+  | 'COMPETITION'
+  | 'CAMP'
+  | 'DOROLAND'
+  | 'BOOTH'
+  | 'ETC';
 
-export type EventItem = {
+// 매니저 쪽과 동일한 강의 상태 (시스템 전체 공통)
+export type LectureStatus =
+  | 'RECRUITING'
+  | 'ALLOCATING'
+  | 'CONFIRMED'
+  | 'COMPLETED';
+
+// 강사가 한 강의에서 어떤 상태인지 (강사 관점)
+export type InstructorEventStatus =
+  | 'APPLIED'        // 신청됨
+  | 'PENDING'        // 확정대기
+  | 'CONFIRMED';     // 배정됨(확정)
+
+// 강사 정보
+export type InstructorProfile = {
+  name: string;
+  phone: string;
+  role: 'MAIN' | 'ASSISTANT';
+};
+
+// 기본 강의 정보
+export type BaseEvent = {
   id: string;
-  title: string;          // 캘린더 표시용
-  start: string;          // ISO (예: '2025-09-10T09:00:00')
-  end: string;            // ISO
-  status: Status;         // 확정/대기/신청
-  category: Category;     // 색상 분류
-  location?: string;      // 상세 카드에 표시할 장소
-  manager?: string;       // 담당자 표시
-  content?: string;       // 컨텐츠/주제
+  title: string;
+  start: string;   // ISO string
+  end: string;     // ISO string
+  category: Category;
+  status: LectureStatus;
+  location?: string;
+  content?: string;
+  instructors: InstructorProfile[];
+};
+
+// 강사 대시보드용 이벤트 타입
+export type InstructorEventItem = BaseEvent & {
+  instructorStatus: InstructorEventStatus;
+};
+
+// 공지 타입 (매니저와 동일 형태)
+export type DashboardNotice = {
+  id: number;
+  title: string;
+  createdAt: string;
 };

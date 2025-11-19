@@ -1,15 +1,11 @@
-/**
- * /instructor/dashboard/page.tsx
- * - 서버 컴포넌트: metadata 가능
- * - 실제 UI/상태는 클라 컴포넌트(ClientPage)로 분리
- */
-
-export const metadata = {
-  title: '대시보드 | DORO LMS',
-  description: '강사용 대시보드 (주간 일정 + 다음 강의)',
-};
+// src/app/instructor/dashboard/page.tsx
 
 import ClientPage from './ClientPage';
+
+export const metadata = {
+  title: '강사 대시보드 | DORO LMS',
+  description: '내 강의 일정 및 신청 현황 확인',
+};
 
 export default function Page() {
   return <ClientPage />;
