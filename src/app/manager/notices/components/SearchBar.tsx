@@ -1,55 +1,83 @@
+// src/app/manager/notices/components/SearchBar.tsx
 'use client';
-/**
- * SearchBar.tsx
- * - 공지 제목 검색을 위한 <input>과 '검색' <button> UI.
- * - Enter 키 또는 '검색' 버튼 클릭 시 onSubmit 콜백 호출.
- */
 
 import styled from 'styled-components';
 
-// (styled-components 코드는 instructor와 동일)
-const Wrap = styled.div`
-  display: flex;
-  gap: 8px;
+// --- Icons ---
+const SearchIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+);
 
-  input {
-    padding: 8px 12px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    font-size: 0.9rem;
+const Container = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 4px 6px 4px 12px;
+  transition: all 0.2s;
+  width: 300px; /* 고정 너비 혹은 100% */
+
+  &:focus-within {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
   }
-  button {
-    padding: 8px 16px;
-    background-color: #333;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    font-weight: 500;
-    cursor: pointer;
+
+  svg {
+    color: #94a3b8;
+  }
+`;
+
+const Input = styled.input`
+  border: none;
+  outline: none;
+  font-size: 0.9rem;
+  width: 100%;
+  color: #334155;
+  padding: 6px 0;
+  background: transparent;
+
+  &::placeholder {
+    color: #cbd5e1;
+  }
+`;
+
+const Button = styled.button`
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 14px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+  white-space: nowrap;
+
+  &:hover {
+    background: #2563eb;
   }
 `;
 
 type Props = {
-  /** input에 표시될 현재 검색어 값 (제어 컴포넌트) */
   value: string;
-  /** input 값 변경 시 호출될 콜백 함수 */
   onChange: (v: string) => void;
-  /** '검색' 버튼 클릭 또는 Enter 시 호출될 콜백 함수 */
   onSubmit: () => void;
 };
 
 export default function SearchBar({ value, onChange, onSubmit }: Props) {
   return (
-    <Wrap>
-      <input
+    <Container>
+      <SearchIcon />
+      <Input
         type="text"
         placeholder="제목으로 검색"
         value={value}
         onChange={(e) => onChange(e.target.value)}
         onKeyDown={(e) => e.key === 'Enter' && onSubmit()}
-        aria-label="공지사항 제목 검색"
       />
-      <button onClick={onSubmit}>검색</button>
-    </Wrap>
+      <Button onClick={onSubmit}>검색</Button>
+    </Container>
   );
 }

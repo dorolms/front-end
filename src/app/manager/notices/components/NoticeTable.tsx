@@ -1,73 +1,109 @@
+// src/app/manager/notices/components/NoticeTable.tsx
 'use client';
-/**
- * NoticeTable.tsx
- * - 공지 목록을 표(table) 형태로 렌더링.
- * - 제목 셀 클릭 시 onClickTitle 콜백으로 선택된 공지 객체를 상위로 전달.
- */
 
 import styled from 'styled-components';
 import type { Notice } from '../types';
 
-// (styled-components 코드는 instructor와 동일)
+const TableContainer = styled.div`
+  width: 100%;
+  background: #ffffff;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  overflow: hidden; /* 둥근 모서리 적용을 위해 */
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
+`;
+
 const Table = styled.table`
   width: 100%;
   border-collapse: collapse;
-  border-top: 2px solid #333;
 
-  th,
-  td {
-    padding: 12px 16px;
-    border-bottom: 1px solid #eee;
-    text-align: left;
-    font-size: 0.95rem;
-  }
   th {
-    background-color: #f9f9f9;
+    background: #f8fafc;
+    color: #64748b;
+    font-weight: 700;
+    font-size: 0.85rem;
+    text-align: left;
+    padding: 16px 24px;
+    border-bottom: 1px solid #e2e8f0;
+  }
+
+  td {
+    padding: 18px 24px;
+    border-bottom: 1px solid #f1f5f9;
+    color: #334155;
+    font-size: 0.95rem;
+    vertical-align: middle;
+  }
+
+  tr:last-child td {
+    border-bottom: none;
+  }
+
+  tbody tr {
+    transition: background 0.2s;
+    &:hover {
+      background: #f8fafc;
+    }
+  }
+
+  /* 제목 컬럼 스타일 */
+  .col-title {
     font-weight: 600;
-  }
-  td.title {
+    color: #1e293b;
     cursor: pointer;
-    &:hover { text-decoration: underline; }
+    &:hover {
+      color: #3b82f6;
+      text-decoration: underline;
+      text-underline-offset: 4px;
+    }
   }
-  td.author { width: 15%; text-align: center; }
-  td.date { width: 20%; text-align: center; color: #777; }
+
+  .col-author { width: 15%; color: #64748b; }
+  .col-date { width: 18%; color: #94a3b8; font-size: 0.85rem; }
+`;
+
+const EmptyRow = styled.tr`
+  td {
+    text-align: center;
+    padding: 60px 0;
+    color: #94a3b8;
+  }
 `;
 
 type Props = {
-  /** 현재 페이지에 표시할 공지 목록 */
   rows: Notice[];
-  /** 제목 클릭 시 호출될 콜백 함수 (상세 모달 열기용) */
   onClickTitle: (notice: Notice) => void;
 };
 
 export default function NoticeTable({ rows, onClickTitle }: Props) {
   return (
-    <Table>
-      <thead>
-        <tr>
-          <th>제목</th>
-          <th>작성자</th>
-          <th>작성일시</th>
-        </tr>
-      </thead>
-      <tbody>
-        {rows.length === 0 && (
+    <TableContainer>
+      <Table>
+        <thead>
           <tr>
-            <td colSpan={3} style={{ textAlign: 'center', color: '#888' }}>
-              검색 결과가 없습니다.
-            </td>
+            <th>제목</th>
+            <th className="col-author">작성자</th>
+            <th className="col-date">작성일시</th>
           </tr>
-        )}
-        {rows.map((row) => (
-          <tr key={row.id}>
-            <td className="title" onClick={() => onClickTitle(row)}>
-              {row.title}
-            </td>
-            <td className="author">{row.author}</td>
-            <td className="date">{row.createdAt}</td>
-          </tr>
-        ))}
-      </tbody>
-    </Table>
+        </thead>
+        <tbody>
+          {rows.length === 0 ? (
+            <EmptyRow>
+              <td colSpan={3}>검색 결과가 없습니다.</td>
+            </EmptyRow>
+          ) : (
+            rows.map((row) => (
+              <tr key={row.id}>
+                <td className="col-title" onClick={() => onClickTitle(row)}>
+                  {row.title}
+                </td>
+                <td className="col-author">{row.author}</td>
+                <td className="col-date">{row.createdAt}</td>
+              </tr>
+            ))
+          )}
+        </tbody>
+      </Table>
+    </TableContainer>
   );
 }

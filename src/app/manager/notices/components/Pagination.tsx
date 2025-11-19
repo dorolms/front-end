@@ -1,79 +1,71 @@
+// src/app/manager/notices/components/Pagination.tsx
 'use client';
-/**
- * Pagination.tsx
- * - 페이지 번호를 리스트하고, 페이지 이동(onPageChange)을 처리하는 컴포넌트.
- * - 첫/이전/다음/끝 버튼 로직 포함.
- */
 
 import styled from 'styled-components';
 
-// (styled-components 코드는 instructor와 동일)
 const Wrap = styled.div`
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 8px;
-  margin-top: 32px;
+  gap: 6px;
+  margin-top: 24px;
+`;
 
-  button {
-    padding: 6px 12px;
-    border: 1px solid #ddd;
-    background: #fff;
-    cursor: pointer;
-    border-radius: 4px;
+const PageButton = styled.button<{ $active?: boolean }>`
+  min-width: 32px;
+  height: 32px;
+  padding: 0 6px;
+  border-radius: 8px;
+  border: 1px solid ${(props) => (props.$active ? '#3b82f6' : '#e2e8f0')};
+  background: ${(props) => (props.$active ? '#3b82f6' : '#ffffff')};
+  color: ${(props) => (props.$active ? '#ffffff' : '#64748b')};
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &:hover:not(:disabled) {
+    background: ${(props) => (props.$active ? '#2563eb' : '#f1f5f9')};
+    color: ${(props) => (props.$active ? '#ffffff' : '#1e293b')};
   }
-  button.active {
-    background: #333;
-    color: #fff;
-    border-color: #333;
-  }
-  button:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: default;
+    background: #f8fafc;
   }
 `;
 
 type Props = {
-  /** 현재 페이지 번호 */
   page: number;
-  /** 총 페이지 수 */
   totalPages: number;
-  /** 페이지 변경 시 호출될 콜백 함수 */
   onPageChange: (p: number) => void;
 };
 
 export default function Pagination({ page, totalPages, onPageChange }: Props) {
-  // 페이지 이동 (1 ~ totalPages 범위 보정)
   const go = (p: number) => onPageChange(Math.min(Math.max(p, 1), totalPages));
-
-  // 표시할 페이지 번호 배열 (예: [1, 2, 3, 4, 5])
-  const pages = Array.from({ length: totalPages }, (_, i) => i + 1).slice(0, 5); // (간단한 5개)
+  const pages = Array.from({ length: totalPages }, (_, i) => i + 1).slice(0, 5); // 예시 로직
 
   return (
     <Wrap>
-      <button onClick={() => go(1)} disabled={page === 1} aria-label="첫 페이지">
-        &laquo;
-      </button>
-      <button onClick={() => go(page - 1)} disabled={page === 1} aria-label="이전 페이지">
-        &lsaquo;
-      </button>
+      <PageButton onClick={() => go(1)} disabled={page === 1}>&laquo;</PageButton>
+      <PageButton onClick={() => go(page - 1)} disabled={page === 1}>&lsaquo;</PageButton>
 
       {pages.map((p) => (
-        <button
+        <PageButton
           key={p}
-          className={p === page ? 'active' : ''}
+          $active={p === page}
           onClick={() => go(p)}
         >
           {p}
-        </button>
+        </PageButton>
       ))}
 
-      <button onClick={() => go(page + 1)} disabled={page === totalPages} aria-label="다음 페이지">
-        &rsaquo;
-      </button>
-      <button onClick={() => go(totalPages)} disabled={page === totalPages} aria-label="마지막 페이지">
-        &raquo;
-      </button>
+      <PageButton onClick={() => go(page + 1)} disabled={page === totalPages}>&rsaquo;</PageButton>
+      <PageButton onClick={() => go(totalPages)} disabled={page === totalPages}>&raquo;</PageButton>
     </Wrap>
   );
 }
