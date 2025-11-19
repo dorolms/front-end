@@ -1,0 +1,5 @@
+/* src/styles/globals.css (또는 이에 준하는 전역 CSS 파일) */
+
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css');
+
+/* ... (기존 CSS) */
