@@ -1,22 +1,23 @@
-// src/components/calendar/CalendarDayCell.tsx
 "use client";
 
 import styled from "styled-components";
-import { StatusBadge, LectureStatus } from "./StatusBadge";
+import { StatusBadge } from "./StatusBadge";
+import type { CalendarEvent } from "./calendarTypes";
 
-export interface LectureEvent {
-  id: number | string;
-  date: string;
-  timeLabel: string;
-  title: string;
-  status: LectureStatus;
-  type: string;
-}
+type StatusStyle = {
+  bg: string;
+  text: string;
+  border?: string;
+  label?: string;
+};
 
-type Props = {
+type Props<S extends string, M = unknown> = {
   date: Date | null;
-  events?: LectureEvent[];
-  onEventClick?: (event: LectureEvent) => void;
+  events?: CalendarEvent<S, M>[];
+  onEventClick?: (event: CalendarEvent<S, M>) => void;
+
+  /** 페이지가 주입하는 “상태 스타일 규칙” */
+  getStatusStyle: (status: S) => StatusStyle;
 };
 
 const Cell = styled.div`
@@ -39,7 +40,7 @@ const EventsWrapper = styled.div`
   gap: 4px;
 `;
 
-// 강의 유형별 색상 매핑
+// 강의 유형별 색상 매핑 (공용)
 const TYPE_COLORS: Record<string, string> = {
   general: "#FFE799",
   totoland: "#A5B7FF",
@@ -49,15 +50,18 @@ const TYPE_COLORS: Record<string, string> = {
   camp: "#C8E8B8",
 };
 
-export function CalendarDayCell({ date, events = [], onEventClick }: Props) {
+export function CalendarDayCell<S extends string, M = unknown>({
+  date,
+  events = [],
+  onEventClick,
+  getStatusStyle,
+}: Props<S, M>) {
   if (!date) return <Cell />;
 
   return (
     <Cell
       onClick={() => {
-        if (events.length > 0) {
-          onEventClick?.(events[0]);
-        }
+        if (events.length > 0) onEventClick?.(events[0]);
       }}
       style={{ cursor: events.length > 0 ? "pointer" : "default" }}
     >
@@ -68,6 +72,7 @@ export function CalendarDayCell({ date, events = [], onEventClick }: Props) {
           <StatusBadge
             key={ev.id}
             status={ev.status}
+            getStatusStyle={getStatusStyle}
             typeColor={TYPE_COLORS[ev.type] ?? "#DDD"}
           >
             {ev.timeLabel}

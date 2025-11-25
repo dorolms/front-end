@@ -15,34 +15,34 @@ import {
   Button,
 } from "./LectureDetailModal.styles";
 
-import type { LectureEvent } from "@/components/calendar/CalendarDayCell";
+import type { CalendarEvent } from "@/components/calendar/calendarTypes"; // ✅ 여기로 변경
 
+// 필요하면 컨텍스트 확장 가능
 export type LectureContext = "APPLY_CALENDAR" | "MY_CALENDAR";
 
-type Props = {
+type Props<S extends string = string, M = unknown> = {
   open: boolean;
-  lecture: LectureEvent | null; // ✅ 페이지에서 넘기는 타입 그대로
+  lecture: CalendarEvent<S, M> | null; // ✅ 공용 CalendarEvent로 받기
   context: LectureContext;
   onClose: () => void;
-  // id가 string | number 일 수 있으니 이렇게 통일
   onApply?: (id: string | number) => void;
   onCancelApply?: (id: string | number) => void;
   onConfirm?: (id: string | number) => void;
 };
 
 // ===== 버튼 렌더링 =====
-type ActionButtonsProps = Pick<
-  Props,
+type ActionButtonsProps<S extends string, M> = Pick<
+  Props<S, M>,
   "lecture" | "context" | "onApply" | "onCancelApply" | "onConfirm"
 >;
 
-const ActionButtons: React.FC<ActionButtonsProps> = ({
+const ActionButtons = <S extends string, M>({
   lecture,
   context,
   onApply,
   onCancelApply,
   onConfirm,
-}) => {
+}: ActionButtonsProps<S, M>) => {
   if (!lecture) return null;
 
   // 👉 강의 신청 캘린더에서 사용할 때
@@ -87,7 +87,7 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
 };
 
 // ===== 메인 모달 =====
-const LectureDetailModal: React.FC<Props> = (props) => {
+const LectureDetailModal = <S extends string, M>(props: Props<S, M>) => {
   const { open, lecture, onClose, context } = props;
 
   if (!open || !lecture) return null;
@@ -119,9 +119,6 @@ const LectureDetailModal: React.FC<Props> = (props) => {
             <Label>유형</Label>
             <Value>{lecture.type}</Value>
           </Row>
-
-          {/* place, startTime, endTime 같은 필드는
-              나중에 LectureEvent 타입에 추가되면 여기서 같이 보여주면 됨 */}
         </Body>
 
         <Footer>

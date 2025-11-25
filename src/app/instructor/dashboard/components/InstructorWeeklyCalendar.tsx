@@ -1,13 +1,17 @@
 // src/app/instructor/dashboard/components/InstructorWeeklyCalendar.tsx
-'use client';
+"use client";
 
-import { useMemo } from 'react';
-import styled, { keyframes } from 'styled-components';
-import FullCalendar from '@fullcalendar/react';
-import dayGridPlugin from '@fullcalendar/daygrid';
-import interactionPlugin from '@fullcalendar/interaction';
-import type { InstructorEventItem } from '../types';
-import { INSTRUCTOR_THEME, INSTRUCTOR_BORDER, STATUS_COLOR } from '../constants';
+import { useMemo } from "react";
+import styled, { keyframes } from "styled-components";
+import FullCalendar from "@fullcalendar/react";
+import dayGridPlugin from "@fullcalendar/daygrid";
+import interactionPlugin from "@fullcalendar/interaction";
+import type { InstructorEventItem } from "../types";
+import {
+  INSTRUCTOR_THEME,
+  INSTRUCTOR_BORDER,
+  STATUS_COLOR,
+} from "../constants";
 
 // --- Keyframes (팝업 애니메이션) ---
 const popoverFadeIn = keyframes`
@@ -30,7 +34,8 @@ const WidgetContainer = styled.div`
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+  font-family: "Pretendard", -apple-system, BlinkMacSystemFont, system-ui,
+    Roboto, sans-serif;
 `;
 
 const CalendarWrapper = styled.div`
@@ -55,7 +60,7 @@ const CalendarWrapper = styled.div`
     font-weight: 600 !important;
     border-radius: 8px !important;
     padding: 8px 14px !important;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.05) !important;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
     transition: all 0.2s;
 
     &:hover {
@@ -63,8 +68,12 @@ const CalendarWrapper = styled.div`
       color: #3b82f6 !important;
       border-color: #3b82f6 !important;
     }
-    &:focus { box-shadow: none !important; }
-    &:active { transform: translateY(1px); }
+    &:focus {
+      box-shadow: none !important;
+    }
+    &:active {
+      transform: translateY(1px);
+    }
   }
   .fc-button-active {
     background: #eff6ff !important;
@@ -73,7 +82,8 @@ const CalendarWrapper = styled.div`
   }
 
   /* 2. 그리드 및 헤더 */
-  .fc-theme-standard td, .fc-theme-standard th {
+  .fc-theme-standard td,
+  .fc-theme-standard th {
     border-color: #f1f5f9 !important;
   }
   .fc-col-header-cell {
@@ -140,7 +150,7 @@ const CalendarWrapper = styled.div`
   }
 
   .fc-popover-title {
-    font-family: 'Pretendard';
+    font-family: "Pretendard";
     font-size: 1.1rem !important;
     font-weight: 800 !important;
     color: #1e293b !important;
@@ -169,8 +179,13 @@ const CalendarWrapper = styled.div`
   .fc-popover-body {
     padding: 12px 16px 16px 16px !important;
     background: #ffffff !important;
-    &::-webkit-scrollbar { width: 4px; }
-    &::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    &::-webkit-scrollbar {
+      width: 4px;
+    }
+    &::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
   }
 
   .fc-popover-body .fc-daygrid-event {
@@ -189,7 +204,7 @@ const HeaderContainer = styled.div`
 
 const WeekdayText = styled.span<{ $isToday: boolean }>`
   font-size: 0.75rem;
-  color: ${(props) => (props.$isToday ? '#3b82f6' : '#94a3b8')};
+  color: ${(props) => (props.$isToday ? "#3b82f6" : "#94a3b8")};
   font-weight: 700;
   text-transform: uppercase;
 `;
@@ -202,16 +217,17 @@ const DateCircle = styled.div<{ $isToday: boolean }>`
   align-items: center;
   justify-content: center;
   font-size: 1.1rem;
-  font-weight: ${(props) => (props.$isToday ? '800' : '600')};
+  font-weight: ${(props) => (props.$isToday ? "800" : "600")};
 
-  color: ${(props) => (props.$isToday ? '#ffffff' : '#334155')};
-  background-color: ${(props) => (props.$isToday ? '#3b82f6' : 'transparent')};
-  box-shadow: ${(props) => (props.$isToday ? '0 4px 10px rgba(59, 130, 246, 0.4)' : 'none')};
+  color: ${(props) => (props.$isToday ? "#ffffff" : "#334155")};
+  background-color: ${(props) => (props.$isToday ? "#3b82f6" : "transparent")};
+  box-shadow: ${(props) =>
+    props.$isToday ? "0 4px 10px rgba(59, 130, 246, 0.4)" : "none"};
 `;
 
 // 이벤트 카드 - [기능 유지] 상태(Variant)에 따른 스타일링 유지하되 디자인 고도화
 const EventCard = styled.div<{
-  $variant: 'solid' | 'applied' | 'pending';
+  $variant: "solid" | "applied" | "pending";
   $bg: string;
   $borderColor: string;
 }>`
@@ -227,13 +243,13 @@ const EventCard = styled.div<{
   overflow: hidden;
 
   ${(p) =>
-    p.$variant === 'solid'
+    p.$variant === "solid"
       ? `
     background-color: ${p.$bg};
     border-left: 4px solid ${p.$borderColor};
     box-shadow: 0 2px 5px rgba(0,0,0,0.03);
   `
-      : p.$variant === 'applied'
+      : p.$variant === "applied"
       ? `
     background-color: #ffffff;
     border: 1px solid ${p.$borderColor};
@@ -294,7 +310,10 @@ type Props = {
   onEventClick?: (event: InstructorEventItem) => void;
 };
 
-export default function InstructorWeeklyCalendar({ events, onEventClick }: Props) {
+export default function InstructorWeeklyCalendar({
+  events,
+  onEventClick,
+}: Props) {
   const fcEvents = useMemo(
     () =>
       events.map((e) => ({
@@ -306,7 +325,7 @@ export default function InstructorWeeklyCalendar({ events, onEventClick }: Props
         runTime: e.start,
         extendedProps: e,
       })),
-    [events],
+    [events]
   );
 
   return (
@@ -316,14 +335,20 @@ export default function InstructorWeeklyCalendar({ events, onEventClick }: Props
           plugins={[dayGridPlugin, interactionPlugin]}
           initialView="dayGridWeek"
           locale="ko"
-          headerToolbar={{ left: 'title', center: '', right: 'prev,next today' }}
+          headerToolbar={{
+            left: "title",
+            center: "",
+            right: "prev,next today",
+          }}
           height="100%"
           events={fcEvents}
           // [디자인 적용] 헤더 디자인 (요일+날짜)
           dayHeaderContent={(args) => {
             const date = args.date;
             const dayNumber = date.getDate();
-            const weekday = date.toLocaleDateString('ko-KR', { weekday: 'short' });
+            const weekday = date.toLocaleDateString("ko-KR", {
+              weekday: "short",
+            });
 
             return (
               <HeaderContainer>
@@ -336,31 +361,37 @@ export default function InstructorWeeklyCalendar({ events, onEventClick }: Props
           moreLinkClick="popover"
           moreLinkContent={(args) => `+${args.num}`}
           eventOrder="runTime"
-          eventClick={(info) => onEventClick?.(info.event.extendedProps as InstructorEventItem)}
+          eventClick={(info) =>
+            onEventClick?.(info.event.extendedProps as InstructorEventItem)
+          }
           eventContent={(arg) => {
             const item = arg.event.extendedProps as InstructorEventItem;
             // @ts-ignore
             const bg = INSTRUCTOR_THEME[item.category] || INSTRUCTOR_THEME.ETC;
             // @ts-ignore
-            const borderColor = INSTRUCTOR_BORDER[item.category] || INSTRUCTOR_BORDER.ETC;
+            const borderColor =
+              INSTRUCTOR_BORDER[item.category] || INSTRUCTOR_BORDER.ETC;
 
             const start = new Date(item.start);
-            const timeStr = `${start.getHours().toString().padStart(2, '0')}:${start
+            const timeStr = `${start
+              .getHours()
+              .toString()
+              .padStart(2, "0")}:${start
               .getMinutes()
               .toString()
-              .padStart(2, '0')}`;
+              .padStart(2, "0")}`;
 
-            let variant: 'solid' | 'applied' | 'pending' = 'solid';
-            let statusLabel = '배정됨';
-            let statusColor = STATUS_COLOR.CONFIRMED;
+            let variant: "solid" | "applied" | "pending" = "solid";
+            let statusLabel = "배정됨";
+            let statusColor: string = STATUS_COLOR.CONFIRMED;
 
-            if (item.instructorStatus === 'APPLIED') {
-              variant = 'applied';
-              statusLabel = '신청됨';
+            if (item.instructorStatus === "APPLIED") {
+              variant = "applied";
+              statusLabel = "신청됨";
               statusColor = STATUS_COLOR.APPLIED;
-            } else if (item.instructorStatus === 'PENDING') {
-              variant = 'pending';
-              statusLabel = '확정대기';
+            } else if (item.instructorStatus === "PENDING") {
+              variant = "pending";
+              statusLabel = "확정대기";
               statusColor = STATUS_COLOR.PENDING;
             }
 

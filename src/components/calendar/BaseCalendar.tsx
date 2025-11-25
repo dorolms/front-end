@@ -1,31 +1,40 @@
-// src/components/calendar/BaseCalendar.tsx
 "use client";
 
+import React, { useMemo } from "react";
 import styled from "styled-components";
-import { CalendarDayCell, LectureEvent } from "./CalendarDayCell";
+import { CalendarDayCell } from "./CalendarDayCell";
+import type { CalendarEvent } from "./calendarTypes";
 
-type Props = {
-  year: number;
-  month: number; // 0~11
-  events: LectureEvent[];
-  headerTitle?: string;
-  onPrevMonth: () => void;
-  onNextMonth: () => void;
-  onToday: () => void;
-  onEventClick?: (event: LectureEvent) => void;
+type StatusStyle = {
+  bg: string;
+  text: string;
+  border?: string;
+  label?: string;
 };
 
-const Shell = styled.div`
-  border-radius: 12px;
-  background: #ffffff;
-  padding: 16px 20px 20px;
-  box-shadow: 0 0 0 1px #e5e7ec;
+type Props<S extends string, M = unknown> = {
+  year: number;
+  month: number; // 0~11
+  events: CalendarEvent<S, M>[];
+
+  headerTitle?: string;
+  onPrevMonth?: () => void;
+  onNextMonth?: () => void;
+  onToday?: () => void;
+
+  onEventClick?: (event: CalendarEvent<S, M>) => void;
+  getStatusStyle: (status: S) => StatusStyle;
+};
+
+const Wrapper = styled.section`
+  width: 100%;
+  padding: 12px 16px 20px;
 `;
 
 const Header = styled.div`
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between;
   margin-bottom: 12px;
 `;
 
@@ -34,46 +43,38 @@ const Title = styled.h2`
   font-weight: 700;
 `;
 
-const Controls = styled.div`
+const HeaderBtns = styled.div`
   display: flex;
-  gap: 8px;
+  gap: 6px;
 `;
 
-const NavButton = styled.button`
-  min-width: 32px;
-  height: 28px;
-  border-radius: 6px;
+const Btn = styled.button`
+  padding: 6px 10px;
   border: 1px solid #e3e5ea;
-  background: #f7f8fb;
-  font-size: 14px;
+  border-radius: 8px;
+  background: #fff;
+  font-size: 12px;
   cursor: pointer;
-
-  &:hover {
-    background: #eef0f6;
-  }
-`;
-
-const TodayButton = styled(NavButton)`
-  padding: 0 12px;
-  min-width: auto;
 `;
 
 const Grid = styled.div`
   display: grid;
   grid-template-columns: repeat(7, 1fr);
+  gap: 0;
 `;
 
-const Weekday = styled.div`
+const WeekLabel = styled.div`
   padding: 8px 6px;
   font-size: 12px;
   font-weight: 600;
-  border-bottom: 1px solid #e3e5ea;
-  color: #7b7f8c;
+  color: #6b7280;
+  background: #f9fafb;
+  border: 1px solid #e3e5ea;
 `;
 
-const WEEKDAYS = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"];
+const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
 
-export function BaseCalendar({
+export function BaseCalendar<S extends string, M = unknown>({
   year,
   month,
   events,
@@ -82,54 +83,78 @@ export function BaseCalendar({
   onNextMonth,
   onToday,
   onEventClick,
-}: Props) {
-  const first = new Date(year, month, 1);
-  const lastDate = new Date(year, month + 1, 0).getDate();
+  getStatusStyle,
+}: Props<S, M>) {
+  const firstDay = new Date(year, month, 1);
+  const lastDay = new Date(year, month + 1, 0);
 
-  const firstDay = first.getDay(); // 일요일 기준
-  const startIndex = (firstDay + 6) % 7;
+  const startWeekday = firstDay.getDay();
+  const totalDays = lastDay.getDate();
 
-  const cells: (Date | null)[] = [];
-  for (let i = 0; i < startIndex; i++) cells.push(null);
-  for (let d = 1; d <= lastDate; d++) cells.push(new Date(year, month, d));
+  const cells = useMemo(() => {
+    const result: (Date | null)[] = [];
 
-  const keyOf = (d: Date) => d.toISOString().slice(0, 10);
+    // 앞쪽 빈칸
+    for (let i = 0; i < startWeekday; i++) result.push(null);
 
-  const grouped: Record<string, LectureEvent[]> = {};
-  events.forEach((ev) => {
-    if (!grouped[ev.date]) grouped[ev.date] = [];
-    grouped[ev.date].push(ev);
-  });
+    // 날짜 채우기
+    for (let d = 1; d <= totalDays; d++) {
+      result.push(new Date(year, month, d));
+    }
 
-  const displayTitle =
-    headerTitle ??
-    `${first.toLocaleString("en-US", { month: "long" })}, ${year}`;
+    // 뒤쪽 빈칸 (6줄 고정 아니어도 되면 제거 가능)
+    while (result.length % 7 !== 0) result.push(null);
+
+    return result;
+  }, [year, month, startWeekday, totalDays]);
+
+  const eventsByDate = useMemo(() => {
+    const map = new Map<string, CalendarEvent<S, M>[]>();
+    for (const ev of events) {
+      if (!map.has(ev.date)) map.set(ev.date, []);
+      map.get(ev.date)!.push(ev);
+    }
+    return map;
+  }, [events]);
+
+  const title = headerTitle ?? `${year}년 ${month + 1}월`;
 
   return (
-    <Shell>
+    <Wrapper>
       <Header>
-        <Title>{displayTitle}</Title>
-        <Controls>
-          <NavButton onClick={onPrevMonth}>{"<"}</NavButton>
-          <NavButton onClick={onNextMonth}>{">"}</NavButton>
-          <TodayButton onClick={onToday}>Today</TodayButton>
-        </Controls>
+        <Title>{title}</Title>
+        <HeaderBtns>
+          {onPrevMonth && <Btn onClick={onPrevMonth}>이전</Btn>}
+          {onToday && <Btn onClick={onToday}>오늘</Btn>}
+          {onNextMonth && <Btn onClick={onNextMonth}>다음</Btn>}
+        </HeaderBtns>
       </Header>
 
       <Grid>
         {WEEKDAYS.map((w) => (
-          <Weekday key={w}>{w}</Weekday>
+          <WeekLabel key={w}>{w}</WeekLabel>
         ))}
 
-        {cells.map((date, idx) => (
-          <CalendarDayCell
-            key={idx}
-            date={date}
-            events={date ? grouped[keyOf(date)] ?? [] : []}
-            onEventClick={onEventClick}
-          />
-        ))}
+        {cells.map((dateObj, idx) => {
+          const key = dateObj
+            ? dateObj.toISOString().slice(0, 10)
+            : `empty-${idx}`;
+
+          const dateStr = dateObj ? dateObj.toISOString().slice(0, 10) : null;
+
+          const dayEvents = dateStr ? eventsByDate.get(dateStr) ?? [] : [];
+
+          return (
+            <CalendarDayCell<S, M>
+              key={key}
+              date={dateObj}
+              events={dayEvents}
+              onEventClick={onEventClick}
+              getStatusStyle={getStatusStyle}
+            />
+          );
+        })}
       </Grid>
-    </Shell>
+    </Wrapper>
   );
 }

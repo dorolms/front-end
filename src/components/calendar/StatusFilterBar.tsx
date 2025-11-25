@@ -1,86 +1,71 @@
+// src/components/calendar/StatusFilterBar.tsx
 "use client";
 
 import styled from "styled-components";
 
-// 타입 파일 따로 안 쓰고 바로 안에서 정의
-export type LectureStatus = "CONFIRMED" | "PENDING" | "APPLIED";
+export type LectureStatus =
+  | "CONFIRMED" // 확정됨
+  | "PENDING" // 확정대기
+  | "APPLIED"; // 신청됨
 
-type Props = {
+interface StatusFilterBarProps {
   selected: LectureStatus[];
-  onChange: (next: LectureStatus[]) => void;
-};
+  onChange: (value: LectureStatus[]) => void;
+}
 
-const Wrapper = styled.div`
-  display: flex;
-  gap: 10px;
-  margin-bottom: 16px;
-`;
+const STATUS_OPTIONS: { key: LectureStatus; label: string }[] = [
+  { key: "CONFIRMED", label: "확정됨" },
+  { key: "PENDING", label: "확정대기" },
+  { key: "APPLIED", label: "신청됨" },
+];
 
-const FilterButton = styled.button<{
-  active: boolean;
-  status: LectureStatus;
-}>`
-  padding: 6px 14px;
-  border-radius: 8px;
-  font-size: 14px;
-  cursor: pointer;
-  border-width: 1.5px;
-  border-style: solid;
-
-  ${({ status, active }) =>
-    status === "CONFIRMED" &&
-    `
-    border-color: #5f3ff8;
-    background: ${active ? "#e8ddff" : "#f8f5ff"};
-    color: #2b1779;
-  `}
-
-  ${({ status, active }) =>
-    status === "PENDING" &&
-    `
-    border-color: #5f3ff8;
-    border-style: dashed;
-    background: ${active ? "#eef1ff" : "#ffffff"};
-    color: #2b1779;
-  `}
-
-  ${({ status, active }) =>
-    status === "APPLIED" &&
-    `
-    border-color: #f4b000;
-    background: ${active ? "#fff4d6" : "#fffdf4"};
-    color: #7a5200;
-  `}
-`;
-
-const LABELS = {
-  CONFIRMED: "확정됨",
-  PENDING: "확정 대기",
-  APPLIED: "신청됨",
-};
-
-export function StatusFilterBar({ selected, onChange }: Props) {
+export function StatusFilterBar({ selected, onChange }: StatusFilterBarProps) {
   const toggle = (status: LectureStatus) => {
-    const exists = selected.includes(status);
-    const next = exists
-      ? selected.filter((s) => s !== status)
-      : [...selected, status];
-
-    onChange(next);
+    if (selected.includes(status)) {
+      onChange(selected.filter((s) => s !== status));
+    } else {
+      onChange([...selected, status]);
+    }
   };
 
   return (
     <Wrapper>
-      {(Object.keys(LABELS) as LectureStatus[]).map((s) => (
-        <FilterButton
-          key={s}
-          status={s}
-          active={selected.includes(s)}
-          onClick={() => toggle(s)}
-        >
-          {LABELS[s]}
-        </FilterButton>
-      ))}
+      {STATUS_OPTIONS.map((item) => {
+        const active = selected.includes(item.key);
+        return (
+          <StatusButton
+            key={item.key}
+            $active={active}
+            onClick={() => toggle(item.key)}
+          >
+            {item.label}
+          </StatusButton>
+        );
+      })}
     </Wrapper>
   );
 }
+
+/* ------------------------ 스타일 ------------------------ */
+
+const Wrapper = styled.div`
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+`;
+
+const StatusButton = styled.button<{ $active: boolean }>`
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+  border: 1px solid ${({ $active }) => ($active ? "#2563EB" : "#D1D5DB")};
+  background: ${({ $active }) => ($active ? "#EFF6FF" : "#FFFFFF")};
+  color: ${({ $active }) => ($active ? "#1D4ED8" : "#374151")};
+
+  &:hover {
+    background: ${({ $active }) => ($active ? "#DBEAFE" : "#F3F4F6")};
+  }
+`;
+
+export default StatusFilterBar;

@@ -1,60 +1,74 @@
-// src/components/calendar/StatusBadge.tsx
 "use client";
 
-import styled from "styled-components";
+import styled, { css } from "styled-components";
 
-export type LectureStatus = "CONFIRMED" | "PENDING" | "APPLIED";
-
-type Props = {
-  status: LectureStatus;
-  typeColor: string; // 강의 유형에 따른 색상
-  children: React.ReactNode;
+type StatusStyle = {
+  bg: string;
+  text: string;
+  border?: string;
+  label?: string; // 필요하면 뱃지 앞에 라벨 찍을 때 사용
 };
 
-const Wrapper = styled.div<{ status: LectureStatus }>`
-  display: flex;
-  align-items: center;
-  gap: 8px;
+type Props<S extends string> = {
+  status: S;
+  typeColor: string;
+  getStatusStyle: (status: S) => StatusStyle;
+  children: React.ReactNode;
+  className?: string;
+};
 
-  padding: 8px 10px;
+const Badge = styled.div<{
+  $bg: string;
+  $text: string;
+  $border?: string;
+  $typeColor: string;
+}>`
+  padding: 6px 8px;
   border-radius: 8px;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: 11px;
+  line-height: 1.25;
+  white-space: pre-wrap;
+  cursor: pointer;
 
-  ${({ status }) =>
-    status === "CONFIRMED" &&
-    `
-    border: 2px solid #3f3ffd;
-    background: #e7e3ff;
+  ${({ $bg, $text, $border }) => css`
+    background: ${$bg};
+    color: ${$text};
+    border: 1px solid ${$border ?? "transparent"};
   `}
 
-  ${({ status }) =>
-    status === "PENDING" &&
-    `
-    border: 2px dashed #3f3ffd;
-    background: #ffffff;
-  `}
-
-  ${({ status }) =>
-    status === "APPLIED" &&
-    `
-    border: 2px solid #f5c751;
-    background: #fff9e5;
-  `}
+  /* 타입 컬러(강의 유형) 왼쪽 바 */
+  position: relative;
+  &:before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    border-radius: 8px 0 0 8px;
+    background: ${({ $typeColor }) => $typeColor};
+  }
 `;
 
-const TypeColorBar = styled.div<{ color: string }>`
-  width: 16px;
-  height: 36px;
-  border-radius: 4px;
-  background: ${({ color }) => color};
-`;
+export function StatusBadge<S extends string>({
+  status,
+  typeColor,
+  getStatusStyle,
+  children,
+  className,
+}: Props<S>) {
+  const style = getStatusStyle(status);
 
-export function StatusBadge({ status, typeColor, children }: Props) {
   return (
-    <Wrapper status={status}>
-      <TypeColorBar color={typeColor} />
-      <div>{children}</div>
-    </Wrapper>
+    <Badge
+      className={className}
+      $bg={style.bg}
+      $text={style.text}
+      $border={style.border}
+      $typeColor={typeColor}
+      aria-label={style.label ?? status}
+    >
+      {children}
+    </Badge>
   );
 }
