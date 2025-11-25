@@ -2,12 +2,12 @@
 "use client";
 
 import styled from "styled-components";
-import type { InstructorEventItem } from "../types";
+import type { InstructorEventItem } from "../../types";
 import {
   INSTRUCTOR_THEME,
   INSTRUCTOR_BORDER,
   STATUS_COLOR,
-} from "../constants";
+} from "../../constants";
 
 // ───────────────── 이벤트 카드 스타일 (기존 코드 그대로) ─────────────────
 const EventCard = styled.div<{

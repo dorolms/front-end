@@ -1,6 +1,6 @@
 "use client";
 
-import type { EventStatus } from "../types";
+import type { EventStatus } from "../../types";
 
 const STATUS_LIST: { value: EventStatus; label: string }[] = [
   { value: "APPLIED", label: "신청됨" },

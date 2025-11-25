@@ -4,7 +4,7 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import styled, { keyframes } from "styled-components";
-import type { InstructorEventItem } from "../types";
+import type { InstructorEventItem } from "../../types";
 
 // --- Icons ---
 const CloseIcon = () => (

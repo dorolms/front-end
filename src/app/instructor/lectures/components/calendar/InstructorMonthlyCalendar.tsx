@@ -6,7 +6,7 @@ import styled, { keyframes } from "styled-components";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import interactionPlugin from "@fullcalendar/interaction";
-import type { InstructorEventItem } from "../types";
+import type { InstructorEventItem } from "../../types";
 
 import InstructorEventCard from "./InstructorEventCard";
 
