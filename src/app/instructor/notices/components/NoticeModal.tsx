@@ -1,9 +1,31 @@
-// src/app/instructor/notices/components/NoticeModal.tsx
 'use client';
 
 import styled, { keyframes } from 'styled-components';
 import ModalPortal from './ModalPortal';
 import type { Notice } from '../types';
+
+/* --- Markdown 링크 파싱 로직 --- */
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function parseContent(text: string): string {
+  let parsed = escapeHtml(text);
+  parsed = parsed.replace(
+    /\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/g,
+    '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>'
+  );
+  parsed = parsed.replace(
+    /(?<!href="|">)(https?:\/\/[^\s\<]+)/g,
+    (url) => `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`
+  );
+  return parsed;
+}
 
 // --- Icons ---
 const UserIcon = () => <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>;
@@ -38,7 +60,7 @@ const Header = styled.div`
   h3 {
     font-size: 1.5rem; font-weight: 800; color: #1e293b;
     margin: 0 0 16px 0; line-height: 1.3;
-    padding-right: 20px; /* 닫기 버튼 공간 확보 */
+    padding-right: 20px;
   }
 `;
 
@@ -53,9 +75,17 @@ const CloseBtn = styled.button`
 `;
 
 const MetaRow = styled.div`
-  display: flex; gap: 16px; font-size: 0.85rem; color: #64748b;
+  display: flex; gap: 12px; font-size: 0.85rem; color: #64748b; align-items: center;
 
-  div { display: flex; align-items: center; gap: 6px; }
+  div {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #f1f5f9; /* 회색 배경 */
+    padding: 4px 10px;   /* 여백 */
+    border-radius: 20px; /* 둥근 모서리 */
+    font-weight: 500;
+  }
   svg { color: #94a3b8; }
 `;
 
@@ -66,6 +96,18 @@ const Content = styled.div`
 
   &::-webkit-scrollbar { width: 6px; }
   &::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+
+  a {
+    color: #2563eb;
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.2s;
+
+    &:hover {
+      text-decoration: underline;
+      color: #1d4ed8;
+    }
+  }
 `;
 
 const Footer = styled.div`
@@ -102,7 +144,7 @@ export default function NoticeModal({ notice, onClose }: Props) {
               <div><ClockIcon /> {notice.createdAt}</div>
             </MetaRow>
           </Header>
-          <Content>{notice.content}</Content>
+          <Content dangerouslySetInnerHTML={{ __html: parseContent(notice.content) }} />
           <Footer>
             <ConfirmBtn onClick={onClose}>닫기</ConfirmBtn>
           </Footer>
