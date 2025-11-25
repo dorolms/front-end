@@ -1,9 +1,36 @@
-// src/app/manager/dashboard/components/DashboardNoticeModal.tsx
 'use client';
-//대시보드에서 공지 클릭하면 팝업으로 공지 확인 가능(instructor/notices/components/NoticeModal)이랑 같은 코드
+
 import styled, { keyframes } from 'styled-components';
 import ModalPortal from '../../notices/components/ModalPortal';
 import type { Notice } from '../../notices/types';
+
+/* --- Markdown 링크 파싱 함수 --- */
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function parseContent(text: string): string {
+  let parsed = escapeHtml(text);
+
+  // 1. Markdown 링크 변환
+  parsed = parsed.replace(
+    /\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/g,
+    '<a href="$2" target="_blank" rel="noopener noreferrer" class="link-highlight">$1</a>'
+  );
+
+  // 2. 일반 URL 변환
+  parsed = parsed.replace(
+    /(?<!href="|">)(https?:\/\/[^\s\<]+)/g,
+    (url) => `<a href="${url}" target="_blank" rel="noopener noreferrer" class="link-url">${url}</a>`
+  );
+
+  return parsed;
+}
 
 // --- Icons ---
 const UserIcon = () => (
@@ -74,7 +101,7 @@ const Header = styled.div`
     color: #1e293b;
     margin: 0 0 16px 0;
     line-height: 1.3;
-    padding-right: 20px; /* 닫기 버튼 공간 확보 */
+    padding-right: 20px;
   }
 `;
 
@@ -102,14 +129,19 @@ const CloseBtn = styled.button`
 
 const MetaRow = styled.div`
   display: flex;
-  gap: 16px;
+  gap: 12px;
   font-size: 0.85rem;
   color: #64748b;
+  align-items: center;
 
   div {
-    display: flex;
+    display: inline-flex;
     align-items: center;
     gap: 6px;
+    background: #f1f5f9; /* 회색 배경 */
+    padding: 4px 10px;   /* 내부 여백 */
+    border-radius: 20px; /* 둥근 모서리 */
+    font-weight: 500;
   }
 
   svg {
@@ -133,6 +165,24 @@ const Content = styled.div`
   &::-webkit-scrollbar-thumb {
     background: #cbd5e1;
     border-radius: 4px;
+  }
+
+  a {
+    color: #2563eb;
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+    font-weight: 500;
+    transition: border-color 0.2s;
+
+    &:hover {
+      border-bottom-color: #2563eb;
+    }
+
+    &.link-url {
+       color: #64748b;
+       font-size: 0.9em;
+       text-decoration: underline;
+    }
   }
 `;
 
@@ -184,7 +234,9 @@ export default function DashboardNoticeModal({ notice, onClose }: Props) {
               </div>
             </MetaRow>
           </Header>
-          <Content>{notice.content}</Content>
+          <Content
+            dangerouslySetInnerHTML={{ __html: parseContent(notice.content) }}
+          />
           <Footer>
             <ConfirmBtn onClick={onClose}>닫기</ConfirmBtn>
           </Footer>
