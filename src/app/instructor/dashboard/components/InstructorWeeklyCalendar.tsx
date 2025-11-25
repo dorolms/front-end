@@ -7,9 +7,7 @@ import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import type { InstructorEventItem } from '../types';
-
-// 이벤트 카드 전용 컴포넌트 (원래 이 파일에 있던 카드 UI를 분리한 것)
-import InstructorEventCard from './InstructorEventCard';
+import { INSTRUCTOR_THEME, INSTRUCTOR_BORDER, STATUS_COLOR } from '../constants';
 
 // --- Keyframes (팝업 애니메이션) ---
 const popoverFadeIn = keyframes`
@@ -19,7 +17,7 @@ const popoverFadeIn = keyframes`
 
 // --- Styled Components ---
 
-// 캘린더 전체 위젯 컨테이너
+// [디자인 적용] 배경 투명, 테두리 제거 (부모 컨테이너와 자연스럽게 연결)
 const WidgetContainer = styled.div`
   width: 100%;
   height: 100%;
@@ -35,7 +33,6 @@ const WidgetContainer = styled.div`
   font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
 `;
 
-// FullCalendar를 감싸는 래퍼 + FullCalendar 스타일 오버라이드
 const CalendarWrapper = styled.div`
   flex: 1;
 
@@ -92,7 +89,7 @@ const CalendarWrapper = styled.div`
     background: transparent !important;
   }
 
-  /* 3. 이벤트 카드가 들어가는 영역 기본 스타일 */
+  /* 3. 이벤트 카드 기본 스타일 */
   .fc-daygrid-event {
     margin: 3px 6px !important;
     background: transparent !important;
@@ -107,7 +104,7 @@ const CalendarWrapper = styled.div`
     }
   }
 
-  /* 4. 더보기 링크 스타일 */
+  /* 4. 더보기 링크 */
   .fc-daygrid-more-link {
     color: #64748b !important;
     font-size: 0.75rem;
@@ -120,7 +117,9 @@ const CalendarWrapper = styled.div`
     margin-top: 4px;
   }
 
-  /* 팝업(Popover) 스타일 */
+  /* =========================================
+     [디자인 적용] 팝업(Popover) 스타일 업그레이드
+     ========================================= */
   .fc-popover {
     border: none !important;
     border-radius: 16px !important;
@@ -179,7 +178,7 @@ const CalendarWrapper = styled.div`
   }
 `;
 
-// 요일/날짜 헤더(상단)의 레이아웃
+// 헤더 (요일 + 날짜) - 매니저와 동일한 디자인
 const HeaderContainer = styled.div`
   display: flex;
   flex-direction: column;
@@ -188,7 +187,6 @@ const HeaderContainer = styled.div`
   padding: 4px 0;
 `;
 
-// "일, 월, 화..." 텍스트
 const WeekdayText = styled.span<{ $isToday: boolean }>`
   font-size: 0.75rem;
   color: ${(props) => (props.$isToday ? '#3b82f6' : '#94a3b8')};
@@ -196,7 +194,6 @@ const WeekdayText = styled.span<{ $isToday: boolean }>`
   text-transform: uppercase;
 `;
 
-// 날짜 동그라미 (오늘은 파란 배경 + 그림자)
 const DateCircle = styled.div<{ $isToday: boolean }>`
   width: 32px;
   height: 32px;
@@ -212,19 +209,92 @@ const DateCircle = styled.div<{ $isToday: boolean }>`
   box-shadow: ${(props) => (props.$isToday ? '0 4px 10px rgba(59, 130, 246, 0.4)' : 'none')};
 `;
 
-// 컴포넌트 외부에서 사용하는 props 타입
+// 이벤트 카드 - [기능 유지] 상태(Variant)에 따른 스타일링 유지하되 디자인 고도화
+const EventCard = styled.div<{
+  $variant: 'solid' | 'applied' | 'pending';
+  $bg: string;
+  $borderColor: string;
+}>`
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 6px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+  position: relative;
+  overflow: hidden;
+
+  ${(p) =>
+    p.$variant === 'solid'
+      ? `
+    background-color: ${p.$bg};
+    border-left: 4px solid ${p.$borderColor};
+    box-shadow: 0 2px 5px rgba(0,0,0,0.03);
+  `
+      : p.$variant === 'applied'
+      ? `
+    background-color: #ffffff;
+    border: 1px solid ${p.$borderColor};
+    border-left: 4px solid ${p.$borderColor}; /* 신청 상태도 왼쪽 라인 강조 */
+  `
+      : `
+    background-color: #fafafa;
+    border: 1px dashed ${p.$borderColor};
+    border-left: 4px solid ${p.$borderColor};
+  `}
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.06);
+  }
+`;
+
+const TimeRow = styled.div`
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #64748b;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+`;
+
+const TitleRow = styled.div`
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #1e293b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.2;
+`;
+
+const LocationRow = styled.div`
+  font-size: 0.75rem;
+  color: #64748b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+`;
+
+const StatusBadge = styled.span<{ $color: string }>`
+  font-size: 0.65rem;
+  font-weight: 800;
+  color: ${(p) => p.$color};
+  background: #fff;
+  padding: 1px 5px;
+  border-radius: 4px;
+  border: 1px solid ${(p) => p.$color};
+  line-height: 1.2;
+`;
+
 type Props = {
   events: InstructorEventItem[];
   onEventClick?: (event: InstructorEventItem) => void;
 };
 
-/**
- * 강사용 대시보드 주간 캘린더 컴포넌트
- * - FullCalendar dayGridWeek 기반
- * - 개별 이벤트 카드는 InstructorEventCard 컴포넌트에서 렌더링
- */
 export default function InstructorWeeklyCalendar({ events, onEventClick }: Props) {
-  // 전달받은 events를 FullCalendar용 이벤트 포맷으로 변환
   const fcEvents = useMemo(
     () =>
       events.map((e) => ({
@@ -233,8 +303,8 @@ export default function InstructorWeeklyCalendar({ events, onEventClick }: Props
         start: e.start,
         end: e.end,
         allDay: true,
-        runTime: e.start, // 정렬 기준으로 사용할 필드
-        extendedProps: e, // 카드/모달에서 쓸 원본 데이터
+        runTime: e.start,
+        extendedProps: e,
       })),
     [events],
   );
@@ -249,7 +319,7 @@ export default function InstructorWeeklyCalendar({ events, onEventClick }: Props
           headerToolbar={{ left: 'title', center: '', right: 'prev,next today' }}
           height="100%"
           events={fcEvents}
-          /* 상단 요일/날짜 헤더 렌더링 */
+          // [디자인 적용] 헤더 디자인 (요일+날짜)
           dayHeaderContent={(args) => {
             const date = args.date;
             const dayNumber = date.getDate();
@@ -266,12 +336,45 @@ export default function InstructorWeeklyCalendar({ events, onEventClick }: Props
           moreLinkClick="popover"
           moreLinkContent={(args) => `+${args.num}`}
           eventOrder="runTime"
-          /* 카드 클릭 시 상위에서 넘겨준 핸들러 호출 */
           eventClick={(info) => onEventClick?.(info.event.extendedProps as InstructorEventItem)}
-          /* 실제 카드 UI는 분리된 InstructorEventCard에서 담당 */
-          eventContent={(arg) => (
-            <InstructorEventCard item={arg.event.extendedProps as InstructorEventItem} />
-          )}
+          eventContent={(arg) => {
+            const item = arg.event.extendedProps as InstructorEventItem;
+            // @ts-ignore
+            const bg = INSTRUCTOR_THEME[item.category] || INSTRUCTOR_THEME.ETC;
+            // @ts-ignore
+            const borderColor = INSTRUCTOR_BORDER[item.category] || INSTRUCTOR_BORDER.ETC;
+
+            const start = new Date(item.start);
+            const timeStr = `${start.getHours().toString().padStart(2, '0')}:${start
+              .getMinutes()
+              .toString()
+              .padStart(2, '0')}`;
+
+            let variant: 'solid' | 'applied' | 'pending' = 'solid';
+            let statusLabel = '배정됨';
+            let statusColor = STATUS_COLOR.CONFIRMED;
+
+            if (item.instructorStatus === 'APPLIED') {
+              variant = 'applied';
+              statusLabel = '신청됨';
+              statusColor = STATUS_COLOR.APPLIED;
+            } else if (item.instructorStatus === 'PENDING') {
+              variant = 'pending';
+              statusLabel = '확정대기';
+              statusColor = STATUS_COLOR.PENDING;
+            }
+
+            return (
+              <EventCard $variant={variant} $bg={bg} $borderColor={borderColor}>
+                <TimeRow>
+                  <span>{timeStr}</span>
+                  <StatusBadge $color={statusColor}>{statusLabel}</StatusBadge>
+                </TimeRow>
+                <TitleRow>{item.title}</TitleRow>
+                {item.location && <LocationRow>{item.location}</LocationRow>}
+              </EventCard>
+            );
+          }}
         />
       </CalendarWrapper>
     </WidgetContainer>

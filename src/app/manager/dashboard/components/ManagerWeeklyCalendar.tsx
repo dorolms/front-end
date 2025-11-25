@@ -7,7 +7,7 @@ import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import type { ManagerEventItem } from '../types';
-import ManagerCalendarEventCard from './ManagerCalendarEventCard';
+import { MANAGER_THEME, MANAGER_BORDER } from '../constants';
 
 // --- Keyframes (팝업 애니메이션) ---
 const popoverFadeIn = keyframes`
@@ -17,11 +17,12 @@ const popoverFadeIn = keyframes`
 
 // --- Styled Components ---
 
-// 캘린더 위젯 전체 컨테이너 (부모 카드 위에 바로 올라가므로 배경/테두리 제거)
+// [수정 1] 배경, 테두리, 그림자를 제거하여 부모 박스에 자연스럽게 녹아들도록 변경
 const WidgetContainer = styled.div`
   width: 100%;
   height: 100%;
 
+  /* 배경 투명, 테두리/그림자 제거 */
   background: transparent;
   box-shadow: none;
   border: none;
@@ -31,14 +32,14 @@ const WidgetContainer = styled.div`
   display: flex;
   flex-direction: column;
 
+  /* 폰트 설정 */
   font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
 `;
 
-// FullCalendar 전용 래퍼: 툴바/그리드/팝업 스타일 커스터마이징
 const CalendarWrapper = styled.div`
   flex: 1;
 
-  /* 헤더 툴바 */
+  /* 1. 캘린더 툴바 커스텀 */
   .fc-header-toolbar {
     margin-bottom: 20px !important;
     padding: 0 4px;
@@ -74,9 +75,8 @@ const CalendarWrapper = styled.div`
     border-color: #bfdbfe !important;
   }
 
-  /* 그리드 및 요일 헤더 */
-  .fc-theme-standard td,
-  .fc-theme-standard th {
+  /* 2. 그리드 및 헤더 */
+  .fc-theme-standard td, .fc-theme-standard th {
     border-color: #f1f5f9 !important;
   }
   .fc-col-header-cell {
@@ -92,7 +92,7 @@ const CalendarWrapper = styled.div`
     background: transparent !important;
   }
 
-  /* 일별 셀 안 이벤트(React 컴포넌트) 래퍼 */
+  /* 3. 이벤트 카드 기본 스타일 */
   .fc-daygrid-event {
     margin: 3px 6px !important;
     background: transparent !important;
@@ -107,7 +107,7 @@ const CalendarWrapper = styled.div`
     }
   }
 
-  /* 더보기 링크 (+2 등) */
+  /* 4. 더보기 링크 (+2 등) */
   .fc-daygrid-more-link {
     color: #64748b !important;
     font-size: 0.75rem;
@@ -120,17 +120,22 @@ const CalendarWrapper = styled.div`
     margin-top: 4px;
   }
 
-  /* 팝오버(더보기 눌렀을 때) 스타일 */
+  /* =========================================
+     [수정 2] 팝업(Popover) 디자인 업그레이드
+     ========================================= */
   .fc-popover {
     border: none !important;
     border-radius: 16px !important;
+    /* 깊이감 있는 그림자 */
     box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12) !important;
     background: #ffffff !important;
     z-index: 1000 !important;
     overflow: hidden;
+    /* 등장 애니메이션 적용 */
     animation: ${popoverFadeIn} 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   }
 
+  /* 팝업 헤더 */
   .fc-popover-header {
     background: #ffffff !important;
     padding: 16px 16px 8px 16px !important;
@@ -140,6 +145,7 @@ const CalendarWrapper = styled.div`
     border-bottom: none !important;
   }
 
+  /* 팝업 날짜 제목 */
   .fc-popover-title {
     font-family: 'Pretendard';
     font-size: 1.1rem !important;
@@ -148,6 +154,7 @@ const CalendarWrapper = styled.div`
     letter-spacing: -0.5px;
   }
 
+  /* 닫기 버튼 (X) */
   .fc-popover-close {
     opacity: 0.6;
     background: #f1f5f9 !important;
@@ -164,26 +171,25 @@ const CalendarWrapper = styled.div`
   .fc-popover-close:hover {
     opacity: 1;
     background: #e2e8f0 !important;
-    color: #ef4444;
+    color: #ef4444; /* 포인트 레드 */
   }
 
+  /* 팝업 바디 */
   .fc-popover-body {
     padding: 12px 16px 16px 16px !important;
     background: #ffffff !important;
 
     &::-webkit-scrollbar { width: 4px; }
-    &::-webkit-scrollbar-thumb {
-      background: #cbd5e1;
-      border-radius: 4px;
-    }
+    &::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
   }
 
+  /* 팝업 내부 이벤트 카드 간격 */
   .fc-popover-body .fc-daygrid-event {
     margin-bottom: 8px !important;
   }
 `;
 
-// 요일/날짜 헤더
+// 헤더 내부 컨테이너 (요일 + 날짜)
 const HeaderContainer = styled.div`
   display: flex;
   flex-direction: column;
@@ -211,8 +217,42 @@ const DateCircle = styled.div<{ $isToday: boolean }>`
 
   color: ${(props) => (props.$isToday ? '#ffffff' : '#334155')};
   background-color: ${(props) => (props.$isToday ? '#3b82f6' : 'transparent')};
-  box-shadow: ${(props) =>
-    props.$isToday ? '0 4px 10px rgba(59, 130, 246, 0.4)' : 'none'};
+  box-shadow: ${(props) => (props.$isToday ? '0 4px 10px rgba(59, 130, 246, 0.4)' : 'none')};
+`;
+
+// 이벤트 카드 디자인
+const EventCard = styled.div<{ $bg: string; $border: string }>`
+  width: 100%;
+  padding: 8px 10px;
+  background-color: ${(props) => props.$bg};
+  border-left: 4px solid ${(props) => props.$border};
+  border-radius: 6px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.03);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  position: relative;
+  overflow: hidden;
+`;
+
+const TimeRow = styled.div`
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: rgba(0,0,0,0.5);
+  margin-bottom: 2px;
+`;
+const TitleRow = styled.div`
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #1e293b;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  line-height: 1.2;
+`;
+const LocationRow = styled.div`
+  font-size: 0.75rem;
+  color: #64748b;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 `;
 
 type Props = {
@@ -220,31 +260,22 @@ type Props = {
   onEventClick?: (event: ManagerEventItem) => void;
 };
 
-/**
- * 매니저 대시보드 주간 캘린더
- * - CONFIRMED 상태의 일정만 노출
- * - 개별 일정 카드는 ManagerCalendarEventCard 컴포넌트로 분리되어 재사용 가능
- */
 export default function ManagerWeeklyCalendar({ events, onEventClick }: Props) {
-  // 확정된 일정만 캘린더에 표시
-  const validEvents = useMemo(
-    () => events.filter((e) => e.status === 'CONFIRMED'),
-    [events],
-  );
+  const validEvents = useMemo(() =>
+    events.filter(e => e.status === 'CONFIRMED'),
+  [events]);
 
-  // FullCalendar 입력용 이벤트 객체로 변환
-  const fcEvents = useMemo(
-    () =>
-      validEvents.map((e) => ({
-        id: e.id,
-        title: e.title,
-        start: e.start,
-        end: e.end,
-        allDay: true,
-        runTime: e.start,
-        extendedProps: e,
-      })),
-    [validEvents],
+  const fcEvents = useMemo(() =>
+    validEvents.map((e) => ({
+      id: e.id,
+      title: e.title,
+      start: e.start,
+      end: e.end,
+      allDay: true,
+      runTime: e.start,
+      extendedProps: e,
+    })),
+    [validEvents]
   );
 
   return (
@@ -254,10 +285,10 @@ export default function ManagerWeeklyCalendar({ events, onEventClick }: Props) {
           plugins={[dayGridPlugin, interactionPlugin]}
           initialView="dayGridWeek"
           locale="ko"
+          // 만약 부모 페이지에서 헤더를 이미 제어 중이라면 headerToolbar={false}로 변경하세요.
           headerToolbar={{ left: 'title', center: '', right: 'prev,next today' }}
           height="100%"
           events={fcEvents}
-          // 요일/날짜 헤더 렌더링
           dayHeaderContent={(args) => {
             const date = args.date;
             const dayNumber = date.getDate();
@@ -265,7 +296,9 @@ export default function ManagerWeeklyCalendar({ events, onEventClick }: Props) {
             return (
               <HeaderContainer>
                 <WeekdayText $isToday={args.isToday}>{weekday}</WeekdayText>
-                <DateCircle $isToday={args.isToday}>{dayNumber}</DateCircle>
+                <DateCircle $isToday={args.isToday}>
+                  {dayNumber}
+                </DateCircle>
               </HeaderContainer>
             );
           }}
@@ -273,13 +306,23 @@ export default function ManagerWeeklyCalendar({ events, onEventClick }: Props) {
           moreLinkClick="popover"
           moreLinkContent={(args) => `+${args.num}`}
           eventOrder="runTime"
-          eventClick={(info) =>
-            onEventClick?.(info.event.extendedProps as ManagerEventItem)
-          }
-          // 개별 셀 안 일정 렌더링: 분리한 카드 컴포넌트 사용
+          eventClick={(info) => onEventClick?.(info.event.extendedProps as ManagerEventItem)}
           eventContent={(arg) => {
             const item = arg.event.extendedProps as ManagerEventItem;
-            return <ManagerCalendarEventCard event={item} />;
+            // @ts-ignore
+            const bg = MANAGER_THEME[item.category] || '#f1f5f9';
+            // @ts-ignore
+            const border = MANAGER_BORDER[item.category] || '#cbd5e1';
+            const start = new Date(item.start);
+            const timeStr = `${start.getHours().toString().padStart(2, '0')}:${start.getMinutes().toString().padStart(2, '0')}`;
+
+            return (
+              <EventCard $bg={bg} $border={border}>
+                <TimeRow>{timeStr}</TimeRow>
+                <TitleRow>{item.title}</TitleRow>
+                {item.location && <LocationRow>{item.location}</LocationRow>}
+              </EventCard>
+            );
           }}
         />
       </CalendarWrapper>
