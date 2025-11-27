@@ -4,6 +4,7 @@ import Image from "next/image";
 import styled from "styled-components";
 import Header from "@/components/common/Header";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 const Shell = styled.div`
   height: 100%;
@@ -105,6 +106,64 @@ const Right = styled.section`
 export default function LoginPage() {
   const router = useRouter();
 
+  const [role, setRole] = useState<"instructor" | "manager">("instructor");
+  const [id, setId] = useState("");
+  const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleLogin = async () => {
+  if (!id || !password) {
+    alert("아이디와 비밀번호를 입력해주세요.");
+    return;
+  }
+
+  setIsLoading(true);
+  try {
+    // /api 까지 포함해서 기본 URL로
+    const baseUrl =
+      process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api";
+
+    const response = await fetch(`${baseUrl}/accounts/auth/login`, {
+      method: "POST",
+      mode: "cors",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        username: id,
+        password,
+        role,
+      }),
+    });
+
+    const data = await response.json().catch(() => null);
+
+    if (!response.ok) {
+      const message =
+        data?.detail ||
+        data?.message ||
+        "로그인에 실패했습니다. 입력 정보를 다시 확인해주세요.";
+      throw new Error(message);
+    }
+
+    if (typeof window !== "undefined") {
+      if (data?.access) localStorage.setItem("accessToken", data.access);
+      if (data?.refresh) localStorage.setItem("refreshToken", data.refresh);
+      if (data?.role) localStorage.setItem("userRole", data.role);
+      if (data?.name) localStorage.setItem("userName", data.name);
+    }
+
+    const userRole = data?.role || role;
+    if (userRole === "manager") router.push("/manager/dashboard");
+    else router.push("/instructor/dashboard");
+  } catch (error: any) {
+    console.error(error);
+    alert(error?.message || "로그인 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
+  } finally {
+    setIsLoading(false);
+  }
+};
+
   return (
     <>
       <Header isAuth={false} />
@@ -112,13 +171,30 @@ export default function LoginPage() {
         <Left>
           <Logo>DORO</Logo>
           <Title>LOGIN</Title>
-          <Select>
-            <option>강사</option>
-            <option>매니저</option>
+          <Select
+            value={role}
+            onChange={(e) =>
+              setRole(e.target.value === "manager" ? "manager" : "instructor")
+            }
+          >
+            <option value="instructor">강사</option>
+            <option value="manager">매니저</option>
           </Select>
-          <Input type="text" placeholder="ID" />
-          <Input type="password" placeholder="PW" />
-          <Button>Login</Button>
+          <Input
+            type="text"
+            placeholder="ID"
+            value={id}
+            onChange={(e) => setId(e.target.value)}
+          />
+          <Input
+            type="password"
+            placeholder="PW"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+          <Button onClick={handleLogin} disabled={isLoading}>
+            {isLoading ? "로그인 중..." : "Login"}
+          </Button>
           <Button onClick={() => router.push("/auth/signup")}>회원가입</Button>
         </Left>
 
