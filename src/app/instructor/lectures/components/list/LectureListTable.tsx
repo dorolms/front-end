@@ -1,250 +1,131 @@
-"use client";
-
+// src/app/instructor/lectures/components/list/LectureListTable.tsx
 import styled from "styled-components";
 
-// 👉 강의 목록 한 줄 타입 (필요하면 나중에 types.ts로 분리해도 됨)
 export type LectureListRow = {
-  id: number | string;
+  id: number;
   no: number;
-  type: string; // 일반 / 부스 / 도로랜드 / 대회 ...
-  division: string; // 구분 (TMD, 광명시, 단원청소년수련관 등)
-  title: string; // 강의명
-  applicationPeriod: string; // 신청기간 문자열 (예: ~2025/11/09)
-  applicationLabel: string; // 신청하기 / 신청 취소 / 신청 완료 / 마감 등
-  statusLabel: string; // 모집 중 / 배정 중 / 배정 완료 등
+  type: string;
+  division: string;
+  title: string;
+  applicationPeriod: string;
+  applicationLabel: string;
+  statusLabel: string;
 };
 
-const TableContainer = styled.div`
-  width: 100%;
-  background: #ffffff;
-  border-radius: 12px;
-  border: 1px solid #e2e8f0;
+type Props = {
+  rows: LectureListRow[];
+  onRowClick?: (row: LectureListRow) => void;
+};
+
+export default function LectureListTable({ rows, onRowClick }: Props) {
+  return (
+    <TableWrapper>
+      <Table>
+        <thead>
+          <tr>
+            <Th style={{ width: "60px" }}>번호</Th>
+            <Th style={{ width: "100px" }}>타입</Th>
+            <Th style={{ width: "120px" }}>강의 구분</Th>
+            <Th>강의명</Th>
+            <Th style={{ width: "140px" }}>신청기간</Th>
+            <Th style={{ width: "100px" }}>신청여부</Th>
+            <Th style={{ width: "100px" }}>상태</Th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.length === 0 ? (
+            <tr>
+              <Td colSpan={7} style={{ textAlign: "center", padding: "40px" }}>
+                조회된 강의가 없습니다.
+              </Td>
+            </tr>
+          ) : (
+            rows.map((row) => (
+              <TableRow 
+                key={row.id} 
+                onClick={() => onRowClick?.(row)}
+              >
+                <Td>{row.no}</Td>
+                <Td>{row.type}</Td>
+                <Td>{row.division}</Td>
+                <Td style={{ textAlign: "left", fontWeight: 500 }}>
+                  {row.title}
+                </Td>
+                <Td>{row.applicationPeriod}</Td>
+                <Td>{row.applicationLabel}</Td>
+                <Td>
+                  <StatusBadge status={row.statusLabel}>
+                    {row.statusLabel}
+                  </StatusBadge>
+                </Td>
+              </TableRow>
+            ))
+          )}
+        </tbody>
+      </Table>
+    </TableWrapper>
+  );
+}
+
+const TableWrapper = styled.div`
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
   overflow: hidden;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
+  margin-bottom: 16px;
 `;
 
 const Table = styled.table`
   width: 100%;
   border-collapse: collapse;
-  table-layout: fixed;
-
-  th {
-    background: #f8fafc;
-    color: #64748b;
-    font-weight: 700;
-    font-size: 0.85rem;
-    text-align: center;
-    padding: 14px 16px;
-    border-bottom: 1px solid #e2e8f0;
-  }
-
-  td {
-    padding: 14px 16px;
-    border-bottom: 1px solid #f1f5f9;
-    color: #334155;
-    font-size: 0.9rem;
-    vertical-align: middle;
-    text-align: center;
-  }
-
-  tr:last-child td {
-    border-bottom: none;
-  }
-
-  tbody tr {
-    transition: background 0.15s;
-    &:hover {
-      background: #f8fafc;
-    }
-  }
-
-  .col-no {
-    width: 60px;
-  }
-  .col-type {
-    width: 90px;
-  }
-  .col-division {
-    width: 140px;
-  }
-  .col-title {
-    text-align: left;
-  }
-  .col-period {
-    width: 160px;
-  }
-  .col-apply {
-    width: 110px;
-  }
-  .col-status {
-    width: 110px;
-  }
 `;
 
-const EmptyRow = styled.tr`
-  td {
-    text-align: center;
-    padding: 60px 0;
-    color: #94a3b8;
-  }
-`;
-
-// 유형 뱃지
-const TypeBadge = styled.span<{ variant: string }>`
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 64px;
-  height: 32px;
-  padding: 0 12px;
-  border-radius: 6px;
-  font-size: 0.85rem;
+const Th = styled.th`
+  background-color: #f9fafb;
+  padding: 12px 16px;
+  text-align: center;
   font-weight: 600;
-
-  ${({ variant }) => {
-    switch (variant) {
-      case "일반":
-        return `
-          background: #fef3c7;
-          color: #92400e;
-        `;
-      case "부스":
-        return `
-          background: #fee2e2;
-          color: #b91c1c;
-        `;
-      case "도로랜드":
-        return `
-          background: #dbeafe;
-          color: #1d4ed8;
-        `;
-      case "대회":
-        return `
-          background: #e0f2fe;
-          color: #0369a1;
-        `;
-      default:
-        return `
-          background: #e5e7eb;
-          color: #374151;
-        `;
-    }
-  }}
+  font-size: 14px;
+  color: #374151;
+  border-bottom: 1px solid #e5e7eb;
 `;
 
-// 상태 텍스트 (모집 중 / 배정 중 / 배정 완료 ...)
-const StatusText = styled.span<{ status: string }>`
-  font-weight: 700;
-
-  ${({ status }) => {
-    if (status.includes("모집")) {
-      // 모집 중
-      return `
-        color: #16a34a;
-      `;
-    }
-    if (status.includes("배정 중")) {
-      return `
-        color: #ea580c;
-      `;
-    }
-    if (status.includes("배정 완료") || status.includes("완료")) {
-      return `
-        color: #0f172a;
-      `;
-    }
-    if (status.includes("마감")) {
-      return `
-        color: #9ca3af;
-      `;
-    }
-    return `
-      color: #0f172a;
-    `;
-  }}
-`;
-
-// 신청 버튼 느낌의 텍스트
-const ApplyText = styled.button`
-  border: none;
-  background: transparent;
-  padding: 4px 8px;
-  border-radius: 6px;
-  font-size: 0.85rem;
-  font-weight: 600;
+const TableRow = styled.tr`
   cursor: pointer;
+  transition: background-color 0.15s;
 
   &:hover {
-    text-decoration: underline;
-    text-underline-offset: 3px;
+    background-color: #f9fafb;
+  }
+
+  &:not(:last-child) {
+    border-bottom: 1px solid #f3f4f6;
   }
 `;
 
-type Props = {
-  rows: LectureListRow[];
-  onClickTitle?: (row: LectureListRow) => void; // 강의명 클릭 → 상세 모달/페이지
-  onClickApply?: (row: LectureListRow) => void; // 신청 컬럼 클릭 액션
-};
+const Td = styled.td`
+  padding: 14px 16px;
+  text-align: center;
+  font-size: 14px;
+  color: #111827;
+`;
 
-export default function LectureListTable({
-  rows,
-  onClickTitle,
-  onClickApply,
-}: Props) {
-  return (
-    <TableContainer>
-      <Table>
-        <thead>
-          <tr>
-            <th className="col-no">No</th>
-            <th className="col-type">유형</th>
-            <th className="col-division">구분</th>
-            <th className="col-title">강의명</th>
-            <th className="col-period">신청기간</th>
-            <th className="col-apply">신청</th>
-            <th className="col-status">상태</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.length === 0 ? (
-            <EmptyRow>
-              <td colSpan={7}>검색 결과가 없습니다.</td>
-            </EmptyRow>
-          ) : (
-            rows.map((row) => (
-              <tr key={row.id}>
-                <td className="col-no">{row.no}</td>
-                <td className="col-type">
-                  <TypeBadge variant={row.type}>{row.type}</TypeBadge>
-                </td>
-                <td className="col-division">{row.division}</td>
-                <td
-                  className="col-title"
-                  onClick={() => onClickTitle?.(row)}
-                  style={{ cursor: onClickTitle ? "pointer" : "default" }}
-                >
-                  {row.title}
-                </td>
-                <td className="col-period">{row.applicationPeriod}</td>
-                <td className="col-apply">
-                  {row.applicationLabel ? (
-                    <ApplyText onClick={() => onClickApply?.(row)}>
-                      {row.applicationLabel}
-                    </ApplyText>
-                  ) : (
-                    "-"
-                  )}
-                </td>
-                <td className="col-status">
-                  <StatusText status={row.statusLabel}>
-                    {row.statusLabel}
-                  </StatusText>
-                </td>
-              </tr>
-            ))
-          )}
-        </tbody>
-      </Table>
-    </TableContainer>
-  );
-}
+const StatusBadge = styled.span<{ status: string }>`
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 500;
+  background-color: ${(props) => {
+    if (props.status === "모집 중") return "#DBEAFE";
+    if (props.status === "배정 중") return "#FEF3C7";
+    if (props.status === "배정 완료") return "#D1FAE5";
+    return "#E5E7EB";
+  }};
+  color: ${(props) => {
+    if (props.status === "모집 중") return "#1E40AF";
+    if (props.status === "배정 중") return "#92400E";
+    if (props.status === "배정 완료") return "#065F46";
+    return "#374151";
+  }};
+`;
