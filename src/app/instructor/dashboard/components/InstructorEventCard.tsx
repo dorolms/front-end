@@ -105,7 +105,7 @@ export default function InstructorEventCard({ item }: InstructorEventCardProps) 
 
   let variant: 'solid' | 'applied' | 'pending' = 'solid';
   let statusLabel = '배정됨';
-  let statusColor = STATUS_COLOR.CONFIRMED;
+  let statusColor : string= STATUS_COLOR.CONFIRMED;
 
   if (item.instructorStatus === 'APPLIED') {
     variant = 'applied';

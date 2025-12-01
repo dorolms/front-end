@@ -1,15 +1,15 @@
 // src/app/instructor/dashboard/components/InstructorWeeklyCalendar.tsx
-'use client';
+"use client";
 
-import { useMemo } from 'react';
-import styled, { keyframes } from 'styled-components';
-import FullCalendar from '@fullcalendar/react';
-import dayGridPlugin from '@fullcalendar/daygrid';
-import interactionPlugin from '@fullcalendar/interaction';
-import type { InstructorEventItem } from '../types';
+import { useMemo } from "react";
+import styled, { keyframes } from "styled-components";
+import FullCalendar from "@fullcalendar/react";
+import dayGridPlugin from "@fullcalendar/daygrid";
+import interactionPlugin from "@fullcalendar/interaction";
+import type { InstructorEventItem } from "../types";
 
 // 이벤트 카드 전용 컴포넌트 (원래 이 파일에 있던 카드 UI를 분리한 것)
-import InstructorEventCard from './InstructorEventCard';
+import InstructorEventCard from "./InstructorEventCard";
 
 // --- Keyframes (팝업 애니메이션) ---
 const popoverFadeIn = keyframes`
@@ -32,7 +32,8 @@ const WidgetContainer = styled.div`
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+  font-family: "Pretendard", -apple-system, BlinkMacSystemFont, system-ui,
+    Roboto, sans-serif;
 `;
 
 // FullCalendar를 감싸는 래퍼 + FullCalendar 스타일 오버라이드
@@ -58,7 +59,7 @@ const CalendarWrapper = styled.div`
     font-weight: 600 !important;
     border-radius: 8px !important;
     padding: 8px 14px !important;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.05) !important;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
     transition: all 0.2s;
 
     &:hover {
@@ -66,8 +67,12 @@ const CalendarWrapper = styled.div`
       color: #3b82f6 !important;
       border-color: #3b82f6 !important;
     }
-    &:focus { box-shadow: none !important; }
-    &:active { transform: translateY(1px); }
+    &:focus {
+      box-shadow: none !important;
+    }
+    &:active {
+      transform: translateY(1px);
+    }
   }
   .fc-button-active {
     background: #eff6ff !important;
@@ -76,7 +81,8 @@ const CalendarWrapper = styled.div`
   }
 
   /* 2. 그리드 및 헤더 */
-  .fc-theme-standard td, .fc-theme-standard th {
+  .fc-theme-standard td,
+  .fc-theme-standard th {
     border-color: #f1f5f9 !important;
   }
   .fc-col-header-cell {
@@ -141,7 +147,7 @@ const CalendarWrapper = styled.div`
   }
 
   .fc-popover-title {
-    font-family: 'Pretendard';
+    font-family: "Pretendard";
     font-size: 1.1rem !important;
     font-weight: 800 !important;
     color: #1e293b !important;
@@ -170,8 +176,13 @@ const CalendarWrapper = styled.div`
   .fc-popover-body {
     padding: 12px 16px 16px 16px !important;
     background: #ffffff !important;
-    &::-webkit-scrollbar { width: 4px; }
-    &::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    &::-webkit-scrollbar {
+      width: 4px;
+    }
+    &::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
   }
 
   .fc-popover-body .fc-daygrid-event {
@@ -191,7 +202,7 @@ const HeaderContainer = styled.div`
 // "일, 월, 화..." 텍스트
 const WeekdayText = styled.span<{ $isToday: boolean }>`
   font-size: 0.75rem;
-  color: ${(props) => (props.$isToday ? '#3b82f6' : '#94a3b8')};
+  color: ${(props) => (props.$isToday ? "#3b82f6" : "#94a3b8")};
   font-weight: 700;
   text-transform: uppercase;
 `;
@@ -205,11 +216,12 @@ const DateCircle = styled.div<{ $isToday: boolean }>`
   align-items: center;
   justify-content: center;
   font-size: 1.1rem;
-  font-weight: ${(props) => (props.$isToday ? '800' : '600')};
+  font-weight: ${(props) => (props.$isToday ? "800" : "600")};
 
-  color: ${(props) => (props.$isToday ? '#ffffff' : '#334155')};
-  background-color: ${(props) => (props.$isToday ? '#3b82f6' : 'transparent')};
-  box-shadow: ${(props) => (props.$isToday ? '0 4px 10px rgba(59, 130, 246, 0.4)' : 'none')};
+  color: ${(props) => (props.$isToday ? "#ffffff" : "#334155")};
+  background-color: ${(props) => (props.$isToday ? "#3b82f6" : "transparent")};
+  box-shadow: ${(props) =>
+    props.$isToday ? "0 4px 10px rgba(59, 130, 246, 0.4)" : "none"};
 `;
 
 // 컴포넌트 외부에서 사용하는 props 타입
@@ -223,7 +235,10 @@ type Props = {
  * - FullCalendar dayGridWeek 기반
  * - 개별 이벤트 카드는 InstructorEventCard 컴포넌트에서 렌더링
  */
-export default function InstructorWeeklyCalendar({ events, onEventClick }: Props) {
+export default function InstructorWeeklyCalendar({
+  events,
+  onEventClick,
+}: Props) {
   // 전달받은 events를 FullCalendar용 이벤트 포맷으로 변환
   const fcEvents = useMemo(
     () =>
@@ -236,7 +251,7 @@ export default function InstructorWeeklyCalendar({ events, onEventClick }: Props
         runTime: e.start, // 정렬 기준으로 사용할 필드
         extendedProps: e, // 카드/모달에서 쓸 원본 데이터
       })),
-    [events],
+    [events]
   );
 
   return (
@@ -246,14 +261,20 @@ export default function InstructorWeeklyCalendar({ events, onEventClick }: Props
           plugins={[dayGridPlugin, interactionPlugin]}
           initialView="dayGridWeek"
           locale="ko"
-          headerToolbar={{ left: 'title', center: '', right: 'prev,next today' }}
+          headerToolbar={{
+            left: "title",
+            center: "",
+            right: "prev,next today",
+          }}
           height="100%"
           events={fcEvents}
           /* 상단 요일/날짜 헤더 렌더링 */
           dayHeaderContent={(args) => {
             const date = args.date;
             const dayNumber = date.getDate();
-            const weekday = date.toLocaleDateString('ko-KR', { weekday: 'short' });
+            const weekday = date.toLocaleDateString("ko-KR", {
+              weekday: "short",
+            });
 
             return (
               <HeaderContainer>
@@ -267,10 +288,14 @@ export default function InstructorWeeklyCalendar({ events, onEventClick }: Props
           moreLinkContent={(args) => `+${args.num}`}
           eventOrder="runTime"
           /* 카드 클릭 시 상위에서 넘겨준 핸들러 호출 */
-          eventClick={(info) => onEventClick?.(info.event.extendedProps as InstructorEventItem)}
+          eventClick={(info) =>
+            onEventClick?.(info.event.extendedProps as InstructorEventItem)
+          }
           /* 실제 카드 UI는 분리된 InstructorEventCard에서 담당 */
           eventContent={(arg) => (
-            <InstructorEventCard item={arg.event.extendedProps as InstructorEventItem} />
+            <InstructorEventCard
+              item={arg.event.extendedProps as InstructorEventItem}
+            />
           )}
         />
       </CalendarWrapper>

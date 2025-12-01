@@ -1,3 +1,6 @@
+// src/app/instructor/calendar/page.tsx
+import ClientPage from "./ClientPage";
+
 export default function InstructorCalendarPage() {
-  return <h1>📅 This is Instructor Calendar Page</h1>;
+  return <ClientPage />;
 }
