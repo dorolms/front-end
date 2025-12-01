@@ -1,5 +1,6 @@
 // src/app/page.tsx
 "use client";
+
 import Image from "next/image";
 import styled from "styled-components";
 import Header from "@/components/common/Header";
@@ -71,6 +72,11 @@ const Button = styled.button`
   &:last-of-type:hover {
     color: #fff;
   }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
 `;
 
 const Center = styled.section`
@@ -107,62 +113,89 @@ export default function LoginPage() {
   const router = useRouter();
 
   const [role, setRole] = useState<"instructor" | "manager">("instructor");
-  const [id, setId] = useState("");
+  const [userId, setUserId] = useState(""); // username = 로그인용 ID
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const handleLogin = async () => {
-  if (!id || !password) {
-    alert("아이디와 비밀번호를 입력해주세요.");
-    return;
-  }
-
-  setIsLoading(true);
-  try {
-    // /api 까지 포함해서 기본 URL로
-    const baseUrl =
-      process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api";
-
-    const response = await fetch(`${baseUrl}/accounts/auth/login`, {
-      method: "POST",
-      mode: "cors",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        username: id,
-        password,
-        role,
-      }),
-    });
-
-    const data = await response.json().catch(() => null);
-
-    if (!response.ok) {
-      const message =
-        data?.detail ||
-        data?.message ||
-        "로그인에 실패했습니다. 입력 정보를 다시 확인해주세요.";
-      throw new Error(message);
+    if (!userId || !password) {
+      setErrorMessage("로그인 ID와 비밀번호를 입력해주세요.");
+      return;
     }
 
-    if (typeof window !== "undefined") {
-      if (data?.access) localStorage.setItem("accessToken", data.access);
-      if (data?.refresh) localStorage.setItem("refreshToken", data.refresh);
-      if (data?.role) localStorage.setItem("userRole", data.role);
-      if (data?.name) localStorage.setItem("userName", data.name);
-    }
+    setErrorMessage(null);
+    setIsLoading(true);
 
-    const userRole = data?.role || role;
-    if (userRole === "manager") router.push("/manager/dashboard");
-    else router.push("/instructor/dashboard");
-  } catch (error: any) {
-    console.error(error);
-    alert(error?.message || "로그인 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
-  } finally {
-    setIsLoading(false);
-  }
-};
+    try {
+      const baseUrl =
+        process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api";
+
+      const response = await fetch(`${baseUrl}/accounts/auth/login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          username: userId, // 로그인용 user_id
+          password,
+          role, // instructor / manager
+        }),
+      });
+
+      const data = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        let message =
+          (data && (data.detail as string)) ||
+          "로그인에 실패했습니다. 입력 정보를 다시 확인해주세요.";
+
+        if (data && typeof data === "object" && !data.detail) {
+          const firstKey = Object.keys(data)[0];
+          const firstValue = (data as any)[firstKey];
+
+          if (Array.isArray(firstValue) && typeof firstValue[0] === "string") {
+            message = firstValue[0];
+          } else if (typeof firstValue === "string") {
+            message = firstValue;
+          }
+        }
+
+        throw new Error(message);
+      }
+
+      if (typeof window !== "undefined") {
+        if (data?.access) {
+          window.localStorage.setItem("accessToken", data.access);
+        }
+        if (data?.refresh) {
+          window.localStorage.setItem("refreshToken", data.refresh);
+        }
+        if (data?.role) {
+          window.localStorage.setItem("userRole", data.role);
+        }
+        if (data?.name) {
+          window.localStorage.setItem("userName", data.name);
+        }
+      }
+
+      const userRole = data?.role || role;
+
+      if (userRole === "manager") {
+        router.push("/manager/dashboard");
+      } else {
+        router.push("/instructor/dashboard");
+      }
+    } catch (error: any) {
+      console.error(error);
+      setErrorMessage(
+        error?.message ||
+          "로그인 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요."
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <>
@@ -183,8 +216,8 @@ export default function LoginPage() {
           <Input
             type="text"
             placeholder="ID"
-            value={id}
-            onChange={(e) => setId(e.target.value)}
+            value={userId}
+            onChange={(e) => setUserId(e.target.value)}
           />
           <Input
             type="password"
@@ -192,6 +225,18 @@ export default function LoginPage() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />
+          {errorMessage && (
+            <p
+              style={{
+                color: "#ff6b6b",
+                fontSize: 12,
+                marginTop: 4,
+                marginBottom: 0,
+              }}
+            >
+              {errorMessage}
+            </p>
+          )}
           <Button onClick={handleLogin} disabled={isLoading}>
             {isLoading ? "로그인 중..." : "Login"}
           </Button>
