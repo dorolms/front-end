@@ -1,35 +1,17 @@
 // src/app/instructor/lectures/types.ts
+
 export type LectureType = 'general' | 'doroland' | 'booth' | 'etc' | 'competition' | 'camp';
+
 export type LectureApiStatus = 'RECRUITING' | 'COMPETITION' | 'ALLOCATING' | 'COMPLETED';
+
 // 캘린더에서 사용하는 상태 (모집중/완료만)
 export type CalendarStatus = 'RECRUITING' | 'COMPLETED';
-
-// 강사의 배정 상태
-export type AssignmentStatus = 'PENDING' | 'ASSIGNED' | 'REJECTED';
-
-// 나의 강의 캘린더 필터
-export type MyCalendarFilter = 'all' | 'ASSIGNED' | 'PENDING';
 
 export interface Schedule {
   id: number;
   date: string;
   start_time: string;
   end_time: string;
-}
-
-// 나의 강의 캘린더용 스케줄 (API 응답)
-export interface MySchedule {
-  id: number;
-  date: string;
-  start_time: string;
-  end_time: string;
-  lecture_id: number;
-  lecture_title: string;
-  lecture_location: string;
-  lecture_status: LectureApiStatus;
-  confirmed_instructors: string[];
-  // 나중에 백엔드에서 추가될 수 있는 필드
-  lecture_type?: LectureType;
 }
 
 export interface Lecture {
@@ -54,17 +36,6 @@ export interface CalendarEvent {
   extendedProps: {
     lecture: Lecture;
     schedule: Schedule;
-  };
-}
-
-// 나의 강의 캘린더 이벤트
-export interface MyCalendarEvent {
-  id: string;
-  title: string;
-  start: string;
-  end: string;
-  extendedProps: {
-    schedule: MySchedule;
   };
 }
 
