@@ -1,3 +1,6 @@
-export default function InstructorLecturePage() {
-  return <h1>➕ This is Instructor Lecture Page</h1>;
+// src/app/instructor/calendar/page.tsx
+import ClientPage from "./ClientPage";
+
+export default function InstructorCalendarPage() {
+  return <ClientPage />;
 }
