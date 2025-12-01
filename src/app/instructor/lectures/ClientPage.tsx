@@ -7,7 +7,7 @@ import LectureListView from "./components/list/LectureListView";
 import LectureCalendarView from "./components/calendar/LectureCalendarView";
 import type { Lecture } from "./types";
 
-const API_BASE_URL = "http://localhost:8000";
+const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
 
 export default function ClientPage() {
   const [tab, setTab] = useState<LectureTab>("list");
@@ -21,7 +21,7 @@ export default function ClientPage() {
         setLoading(true);
         setError(null);
 
-        const res = await fetch(`${API_BASE_URL}/api/lectures/lectures/`, {
+        const res = await fetch(`${baseUrl}/api/lectures/lectures/`, {
           method: "GET",
           credentials: "include",
         });
