@@ -21,19 +21,29 @@ const ClientPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // 🔎 나의 강의 캘린더 필터 (전체 / ASSIGNED / PENDING)
   const [currentFilter, setCurrentFilter] = useState<MyCalendarFilter>("all");
 
-  // 🧷 모달용 선택 상태
   const [selectedLecture, setSelectedLecture] = useState<Lecture | null>(null);
   const [selectedSchedule, setSelectedSchedule] = useState<Schedule | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // 📡 /api/lectures/calender/?mode=my 호출
+  // 📡 /api/lectures/lectures/?mode=my 호출
   useEffect(() => {
     const fetchMyCalendar = async () => {
       if (!API_BASE_URL) {
         setError("API 서버 주소(.env)가 설정되어 있지 않습니다.");
+        setLoading(false);
+        return;
+      }
+
+      // 🔑 localStorage 에서 accessToken 읽기
+      const accessToken =
+        typeof window !== "undefined"
+          ? localStorage.getItem("accessToken")
+          : null;
+
+      if (!accessToken) {
+        setError("로그인이 필요합니다. 다시 로그인 해주세요.");
         setLoading(false);
         return;
       }
@@ -45,12 +55,19 @@ const ClientPage: React.FC = () => {
         const res = await fetch(
           `${API_BASE_URL}/api/lectures/lectures/?mode=my`,
           {
-            credentials: "include", // 세션/쿠키 쓰는 경우 대비
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${accessToken}`, // ✅ 핵심
+              "Content-Type": "application/json",
+            },
+            credentials: "include", // 쿠키 같이 쓰는 경우 대비(없어도 큰 상관 X)
           }
         );
 
         if (!res.ok) {
-          throw new Error("나의 강의 캘린더를 불러오는데 실패했습니다.");
+          throw new Error(
+            `나의 강의 캘린더를 불러오는데 실패했습니다. (status: ${res.status})`
+          );
         }
 
         const data: Lecture[] = await res.json();
@@ -83,7 +100,7 @@ const ClientPage: React.FC = () => {
     () =>
       filteredLectures.flatMap((lecture) =>
         lecture.schedules.map((schedule) => ({
-          id: String(schedule.id), // CalendarEvent.id 는 string 타입
+          id: String(schedule.id),
           title: lecture.title,
           start: `${schedule.date}T${schedule.start_time}`,
           extendedProps: {
@@ -95,7 +112,6 @@ const ClientPage: React.FC = () => {
     [filteredLectures]
   );
 
-  // 📌 이벤트 클릭 시 모달 열기
   const handleEventClick = (lecture: Lecture, schedule: Schedule) => {
     setSelectedLecture(lecture);
     setSelectedSchedule(schedule);
@@ -124,19 +140,16 @@ const ClientPage: React.FC = () => {
 
   return (
     <PageContainer>
-      {/* 상단 필터 바 */}
       <InstructorStatusFilterBar
         currentFilter={currentFilter}
         onFilterChange={setCurrentFilter}
       />
 
-      {/* 월간 캘린더 */}
       <InstructorMonthlyCalendar
         events={calendarEvents}
         onEventClick={handleEventClick}
       />
 
-      {/* 강의 상세 모달 */}
       <InstructorEventDetailModal
         lecture={selectedLecture}
         schedule={selectedSchedule}
