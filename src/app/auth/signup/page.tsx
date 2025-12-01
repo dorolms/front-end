@@ -233,7 +233,7 @@ export default function SignupPage() {
         payload.phone_num = phoneNum;
       }
 
-      const response = await fetch(`${baseUrl}/accounts/auth/register`, {
+      const response = await fetch(`${baseUrl}/api/accounts/auth/register`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
