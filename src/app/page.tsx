@@ -5,7 +5,7 @@ import Image from "next/image";
 import styled from "styled-components";
 import Header from "@/components/common/Header";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 const Shell = styled.div`
   height: 100%;
@@ -109,6 +109,18 @@ const Right = styled.section`
   padding: 24px;
 `;
 
+type UpcomingLecture = {
+  id: number;
+  date: string; // "YYYY-MM-DD"
+  start_time: string; // "HH:MM:SS"
+  end_time: string; // "HH:MM:SS"
+  lecture_id: number;
+  lecture_title: string;
+  lecture_location: string;
+  lecture_status: string;
+  confirmed_instructors: string[];
+};
+
 export default function LoginPage() {
   const router = useRouter();
 
@@ -117,6 +129,10 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const [upcomingLectures, setUpcomingLectures] = useState<UpcomingLecture[]>([]);
+  const [isUpcomingLoading, setIsUpcomingLoading] = useState(false);
+  const [upcomingError, setUpcomingError] = useState<string | null>(null);
 
   const handleLogin = async () => {
     if (!userId || !password) {
@@ -197,6 +213,55 @@ export default function LoginPage() {
     }
   };
 
+  // 공개용 예정 강의 조회
+  useEffect(() => {
+    const fetchUpcomingLectures = async () => {
+      setIsUpcomingLoading(true);
+      setUpcomingError(null);
+
+      try {
+        const baseUrl =
+          process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api";
+
+        const response = await fetch(
+          `${baseUrl}/lectures/schedules/public-upcoming/`
+        );
+
+        if (!response.ok) {
+          throw new Error("예정 강의를 불러오지 못했습니다.");
+        }
+
+        const data: UpcomingLecture[] = await response.json();
+
+        // 최대 5개만 사용
+        setUpcomingLectures((data || []).slice(0, 5));
+      } catch (err: any) {
+        console.error(err);
+        setUpcomingError(
+          err?.message || "예정 강의 정보를 불러오는 중 오류가 발생했습니다."
+        );
+      } finally {
+        setIsUpcomingLoading(false);
+      }
+    };
+
+    fetchUpcomingLectures();
+  }, []);
+
+  const formatDate = (dateStr: string) => {
+    // "YYYY-MM-DD" → "MM/DD"
+    if (!dateStr) return "";
+    const [year, month, day] = dateStr.split("-");
+    return `${month}/${day}`;
+  };
+
+  const formatTimeRange = (start: string, end: string) => {
+    // "HH:MM:SS" → "HH:MM"
+    const s = start?.slice(0, 5) || "";
+    const e = end?.slice(0, 5) || "";
+    return `${s}~${e}`;
+  };
+
   return (
     <>
       <Header isAuth={false} />
@@ -258,10 +323,27 @@ export default function LoginPage() {
 
         <Right>
           <h3>예정 강의</h3>
-          <ul>
-            <li>[11:00~13:00] 데이터베이스 - 홍철용 교수</li>
-            <li>[13:00~15:00] 알고리즘 - 김지수 교수</li>
-          </ul>
+          {isUpcomingLoading ? (
+            <p>예정 강의를 불러오는 중입니다...</p>
+          ) : upcomingError ? (
+            <p style={{ fontSize: 13, color: "#999" }}>{upcomingError}</p>
+          ) : upcomingLectures.length === 0 ? (
+            <p style={{ fontSize: 13, color: "#999" }}>
+              현재 예정된 강의가 없습니다.
+            </p>
+          ) : (
+            <ul style={{ paddingLeft: 16, marginTop: 8 }}>
+              {upcomingLectures.map((item) => (
+                <li key={item.id} style={{ marginBottom: 4, fontSize: 13 }}>
+                  <div>
+                    [{formatDate(item.date)}]{" "}
+                    {formatTimeRange(item.start_time, item.end_time)}
+                  </div>
+                  <div>{item.lecture_title}</div>
+                </li>
+              ))}
+            </ul>
+          )}
         </Right>
       </Shell>
     </>
