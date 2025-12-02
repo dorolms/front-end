@@ -1,9 +1,10 @@
 'use client';
 
 import axios from 'axios';
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
+import { isTokenValid, getUserRole } from './jwt';
 import { createLecture } from './api';
 
 // [수정] 스타일 파일에서 import
@@ -12,16 +13,44 @@ import {
   ScrollArea, FormLayout, FormRow, FormLabel, InputArea,
   Input, TextArea, Select, Row, InputWrapper,
   // FileLabel,
-  // SearchResultList, SearchResultItem,
   FixedBottomBar, Button,
   AddScheduleButton, ScheduleRow, DeleteButton
 } from './styles';
 
 // --- Main Component ---
 
+
 export default function InstructorLectureNewPage() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isAuthChecked, setIsAuthChecked] = useState(false);
+
+  useEffect(() => {
+    const token = localStorage.getItem('accessToken');
+
+    // 1. 토큰 유효성 검사 (존재 여부 + 만료 여부)
+    if (!isTokenValid(token)) {
+      alert('세션이 만료되었습니다. 다시 로그인해주세요.');
+      localStorage.removeItem('accessToken'); // 잘못된 토큰 삭제
+      localStorage.removeItem('refreshToken'); // 잘못된 토큰 삭제
+      localStorage.removeItem('userRole'); // 잘못된 토큰 삭제
+      localStorage.removeItem('userName'); // 잘못된 토큰 삭제
+      router.replace('/');
+      return;
+    }
+
+    // 2. 권한(Role) 검사 (필요한 경우)
+    const role = getUserRole(token!); // 위에서 valid 체크 했으므로 ! 사용 가능
+    if (role !== 'manager') {
+      alert('접근 권한이 없습니다.');
+      router.replace('/instructor/dashboard');
+      return;
+    }
+    
+    // 통과! -> 데이터 로딩 시작...
+    setIsAuthChecked(true);
+
+  }, [router]);
 
   // [유지] 원본의 폼 상태
   const [formData, setFormData] = useState({
@@ -40,6 +69,7 @@ export default function InstructorLectureNewPage() {
       { date: '', start_time: '', end_time: '' } // 기본 1개 행
     ],
   });
+
 
   // [신규] 스케줄 개별 변경 핸들러
   const handleScheduleChange = (index: number, field: string, value: string) => {
@@ -77,23 +107,6 @@ export default function InstructorLectureNewPage() {
   //   }
   // };
 
-  // // [유지] 원본의 매니저 검색 로직
-  // const MOCK_MANAGERS = [
-  //   { id: 1, name: '김범수', email: 'bumsoo@doro.com', phone: '010-1234-5678' },
-  //   { id: 2, name: '이매니저', email: 'lee@doro.com', phone: '010-1111-2222' },
-  //   { id: 3, name: '박관리', email: 'park@doro.com', phone: '010-3333-4444' },
-  // ];
-  // const [managerSearch, setManagerSearch] = useState('');
-  // const [showManagerList, setShowManagerList] = useState(false);
-  // const [selectedManager, setSelectedManager] = useState<{ id: number, name: string, phone: string } | null>(null);
-
-  // const selectManager = (manager: { id: number, name: string, email: string, phone: string }) => {
-  //   setSelectedManager(manager);
-  //   setManagerSearch(manager.name);
-  //   setShowManagerList(false);
-  //   setFormData(prev => ({ ...prev, manager_id: manager.id }));
-  // };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isSubmitting) return;
@@ -109,6 +122,7 @@ export default function InstructorLectureNewPage() {
         category: formData.category,
         status: 'RECRUITING',
         end_date: formData.end_date,
+        capacity: formData.capacity,
         
         recruitment_main: parseInt(formData.recruitment_main) || 0,
         recruitment_assist: parseInt(formData.recruitment_assist) || 0,
@@ -116,7 +130,6 @@ export default function InstructorLectureNewPage() {
         schedules: formData.schedules,
 
         location: formData.location,
-        // manager_id: formData.manager_id,
         target: formData.target,
         content: formData.content,
         note: formData.note,
@@ -142,6 +155,10 @@ export default function InstructorLectureNewPage() {
       setIsSubmitting(false);
     }
   };
+
+  if (!isAuthChecked) {
+    return null;
+  }
 
   return (
     <PageContainer>
@@ -246,28 +263,6 @@ export default function InstructorLectureNewPage() {
             </InputArea>
           </FormRow>
                 
-
-          {/* <FormRow>
-            <FormLabel>교육 기간 <span className="required">*</span></FormLabel>
-            <InputArea>
-              <Row>
-                <Input type="date" name="startDate" value={formData.startDate} onChange={handleChange} required />
-                <span>~</span>
-                <Input type="date" name="endDate" value={formData.endDate} onChange={handleChange} required />
-              </Row>
-            </InputArea>
-          </FormRow>
-          <FormRow>
-            <FormLabel>강의 시간 <span className="required">*</span></FormLabel>
-            <InputArea>
-              <Row>
-                <Input type="time" name="startTime" value={formData.startTime} onChange={handleChange} required />
-                <span>~</span>
-                <Input type="time" name="endTime" value={formData.endTime} onChange={handleChange} required />
-              </Row>
-            </InputArea>
-          </FormRow> */}
-
           {/* Row 6: 강의 장소 */}
           <FormRow>
             <FormLabel>강의 장소 <span className="required">*</span></FormLabel>
@@ -278,62 +273,6 @@ export default function InstructorLectureNewPage() {
             </InputArea>
           </FormRow>
 
-          {/* Row 7: 담당자 정보 (검색 + 연락처) - [수정됨] */}
-          {/* <FormRow>
-            <FormLabel>
-              담당자 정보 <span className="required">*</span>
-              <p>강의를 담당하는 매니저를 선택합니다.</p>
-            </FormLabel>
-            <InputArea>
-              <Row>
-                
-                <div>
-                  <InputWrapper style={{ position: 'relative' }}>
-                    <Input
-                      type="text"
-                      placeholder="매니저 검색..."
-                      value={managerSearch}
-                      onFocus={() => setShowManagerList(true)}
-                      onBlur={() => setTimeout(() => setShowManagerList(false), 200)}
-                      onChange={(e) => {
-                        setManagerSearch(e.target.value);
-                        setShowManagerList(true);
-                        setSelectedManager(null);
-                      }}
-                      style={selectedManager ? { borderColor: '#3478F6', backgroundColor: '#EFF6FF' } : {}}
-                    />
-                    {showManagerList && (
-                      <SearchResultList>
-                        {(() => {
-                          const filtered = managerSearch === ''
-                            ? MOCK_MANAGERS.slice(0, 5)
-                            : MOCK_MANAGERS.filter(m => m.name.includes(managerSearch) || m.email.includes(managerSearch));
-                          
-                          if (filtered.length === 0) return <li style={{ padding: '12px', color: '#999', textAlign: 'center' }}>검색 결과 없음</li>;
-                          
-                          return filtered.map((manager) => (
-                            <SearchResultItem key={manager.id} onMouseDown={(e) => { e.preventDefault(); selectManager(manager); }}>
-                              {manager.name} <span className="email">({manager.email})</span>
-                            </SearchResultItem>
-                          ));
-                        })()}
-                      </SearchResultList>
-                    )}
-                  </InputWrapper>
-                </div>
-                
-                <div>
-                  <Input
-                    readOnly
-                    disabled
-                    value={selectedManager ? selectedManager.phone : ''}
-                    placeholder="담당자 연락처 (자동 입력)"
-                    style={{ backgroundColor: '#f3f4f6', color: '#666' }}
-                  />
-                </div>
-              </Row>
-            </InputArea>
-          </FormRow> */}
 
           {/* Row 8: 콘텐츠 */}
           <FormRow>
@@ -358,6 +297,21 @@ export default function InstructorLectureNewPage() {
               </FileLabel>
             </InputArea>
           </FormRow> */}
+
+          <FormRow>
+            <FormLabel>첨부파일 URL </FormLabel>
+            <InputArea>
+              <Row>
+                <InputWrapper>
+                  <Input type="text" name="attachment_url" placeholder="선택) 파일 URL을 복사하여 붙여넣으세요 - 예: https://example.com/detail.pdf" value={formData.attachment_url} onChange={handleChange} />
+                </InputWrapper>
+                {/* <InputWrapper>
+                  <Input type="number" name="fee_assist" placeholder="보조 도로쌤 급여 (원)" min="0" value={formData.fee_assist} onChange={handleChange} data-has-unit="true" />
+                  <span className="unit">원</span>
+                </InputWrapper> */}
+              </Row>
+            </InputArea>
+          </FormRow>
 
           <FormRow>
             <FormLabel>필요 주도로쌤 수 <span className="required">*</span></FormLabel>

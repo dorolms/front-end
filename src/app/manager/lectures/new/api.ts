@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // 환경 변수에서 API 주소를 가져오거나, 없으면 로컬 주소 사용
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
 
 const getAuthHeaders = () => {
   // 1. 로컬 스토리지에서 토큰 꺼내기
@@ -23,6 +23,7 @@ export interface CreateLecturePayload {
   title: string;
   type: string;
   category: string;
+  capacity: string;
   status: string;
   end_date: string;
   
@@ -32,7 +33,6 @@ export interface CreateLecturePayload {
   schedules: Schedule[];
 
   location: string;
-//   manager_id: number;
   target: string;
   content: string;
   note: string;
