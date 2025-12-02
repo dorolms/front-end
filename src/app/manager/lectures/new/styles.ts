@@ -151,23 +151,6 @@ export const FileLabel = styled.label`
   .icon { font-size: 20px; }
 `;
 
-export const SearchResultList = styled.ul`
-  position: absolute; top: calc(100% + 6px); left: 0; right: 0;
-  background: white; border: 1px solid #e5e7eb; border-radius: 8px;
-  max-height: 220px; overflow-y: auto; z-index: 50;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-  list-style: none; padding: 4px 0; margin: 0;
-`;
-
-// [색상 변경] Hover: #EFF6FF, #3478F6
-export const SearchResultItem = styled.li`
-  padding: 12px 16px; cursor: pointer; font-size: 14px;
-  color: #374151; transition: all 0.1s; border-bottom: 1px solid #f3f4f6;
-  &:last-child { border-bottom: none; }
-  &:hover { background-color: #EFF6FF; color: #3478F6; }
-  .email { color: #9ca3af; font-size: 13px; margin-left: 6px; font-weight: 400; }
-`;
-
 // 하단 고정 버튼바
 export const FixedBottomBar = styled.div`
   flex-shrink: 0;
