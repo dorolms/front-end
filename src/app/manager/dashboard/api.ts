@@ -1,0 +1,348 @@
+import type { Notice } from '../../manager/notices/types';
+import type { ManagerEventItem, Category, LectureStatus, RecruitmentItem } from './types';
+
+const BASE_URL = 'http://127.0.0.1:8000'; // 사용자님 설정 유지
+
+/* --------------------------------------------------------------------------
+   [타입 정의]
+   -------------------------------------------------------------------------- */
+type BackendLectureList = {
+  id: number;
+  title: string;
+  type: string;
+  category: string;
+  status: string;
+  // 목록에 있는 지원자 수 정보
+  applicant_count_main?: number;
+  applicant_count_assist?: number;
+  schedules: { id: number; date: string; start_time: string; end_time: string }[];
+};
+
+type BackendLectureDetail = BackendLectureList & {
+  manager_name: string;
+  manager_phone: string;
+  location: string;
+  content: string;
+  confirmed_instructors: string[];
+  recruitment_main: number;
+  recruitment_assist: number;
+  applicant_count_main: number;
+  applicant_count_assist: number;
+
+  // 상세 정보 내 지원 현황 (배정 확인용)
+  applications?: {
+    id: number;
+    assignment_status: string; // 'assigned', 'pending' ...
+    is_notification_read: boolean;
+  }[];
+};
+
+/* --------------------------------------------------------------------------
+   [유틸 함수]
+   -------------------------------------------------------------------------- */
+const mapCategory = (type: string): Category => {
+  const t = type?.toUpperCase();
+  if (['GENERAL', 'COMPETITION', 'CAMP', 'DOROLAND', 'BOOTH'].includes(t)) {
+    return t as Category;
+  }
+  return 'GENERAL';
+};
+
+const mapStatus = (status: string): LectureStatus => {
+  const s = status?.toUpperCase();
+  if (['RECRUITING', 'ALLOCATING', 'CONFIRMED', 'COMPLETED'].includes(s)) {
+    return s as LectureStatus;
+  }
+  return 'RECRUITING';
+};
+
+const combineDateTime = (date: string, time: string) => {
+  if (!date) return '';
+  let safeTime = time || '00:00:00';
+  if (safeTime.length === 5) safeTime = `${safeTime}:00`;
+  return `${date}T${safeTime}`;
+};
+
+const getHeaders = (): HeadersInit => {
+  const headers: HeadersInit = { 'Content-Type': 'application/json' };
+  if (typeof window !== 'undefined') {
+    const token = localStorage.getItem('accessToken');
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+  }
+  return headers;
+};
+
+const unwrapResponse = (json: any) => {
+  if (!json) return null;
+  let target = json.result;
+  if (target && target.result) return target.result;
+  return target || json;
+};
+
+/* ─────────────────────────────────────────────────────────────
+   [API 1] 캘린더용 내 강의 목록 조회
+   ───────────────────────────────────────────────────────────── */
+export async function fetchMyManagedLectures(): Promise<ManagerEventItem[]> {
+  const listUrl = `${BASE_URL}/api/lectures/lectures/`;
+
+  let myName = '';
+  if (typeof window !== 'undefined') {
+    myName = localStorage.getItem('userName') || '';
+  }
+  if (!myName) return [];
+
+  try {
+    const res = await fetch(listUrl, { cache: 'no-store', headers: getHeaders() });
+    if (!res.ok) return [];
+
+    const json = await res.json();
+    let list: BackendLectureList[] = unwrapResponse(json) || [];
+    if (!Array.isArray(list)) list = [];
+
+    // 상세 조회 및 필터링
+    const myLectures = await Promise.all(
+      list.map(async (lecture) => {
+        try {
+          const detailRes = await fetch(`${BASE_URL}/api/lectures/lectures/${lecture.id}/`, {
+            cache: 'no-store',
+            headers: getHeaders(),
+          });
+
+          if (!detailRes.ok) return null;
+
+          const detailJson = await detailRes.json();
+          const detail: BackendLectureDetail = unwrapResponse(detailJson);
+
+          // ★ 내 이름 필터링
+          if (detail.manager_name?.trim() === myName.trim()) {
+            return detail;
+          }
+          return null;
+        } catch {
+          return null;
+        }
+      })
+    );
+
+    const filteredLectures = myLectures.filter((item): item is BackendLectureDetail => item !== null);
+
+    const events = filteredLectures.flatMap((lecture) => {
+      const instructors = (lecture.confirmed_instructors || []).map((str) => {
+        const match = str.match(/^(.*)\((.*)\)$/);
+        if (match) {
+          return {
+            name: match[1],
+            phone: '',
+            role: match[2].toUpperCase().includes('MAIN') ? 'MAIN' : 'ASSISTANT',
+          };
+        }
+        return { name: str, phone: '', role: 'ASSISTANT' };
+      });
+
+      return lecture.schedules.map((schedule) => ({
+        id: `${lecture.id}-${schedule.id}`,
+        title: lecture.title,
+        start: combineDateTime(schedule.date, schedule.start_time),
+        end: combineDateTime(schedule.date, schedule.end_time),
+        category: mapCategory(lecture.type),
+        status: 'CONFIRMED', // 캘린더 표시용
+        location: lecture.location || '장소 미정',
+        content: lecture.content || '',
+        instructors: instructors as any,
+      }));
+    });
+
+    return events;
+
+  } catch (error) {
+    console.error(error);
+    return [];
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────
+   [API 2] 모집 현황 조회 (우측 하단 위젯)
+   - 모집중(RECRUITING) 3개
+   - 배정중(ALLOCATING) 3개
+   ───────────────────────────────────────────────────────────── */
+export async function fetchRecruitmentStatus(): Promise<RecruitmentItem[]> {
+  const listUrl = `${BASE_URL}/api/lectures/lectures/`;
+
+  let myName = '';
+  if (typeof window !== 'undefined') {
+    myName = localStorage.getItem('userName') || '';
+  }
+  if (!myName) return [];
+
+  try {
+    const res = await fetch(listUrl, { cache: 'no-store', headers: getHeaders() });
+    if (!res.ok) return [];
+
+    const json = await res.json();
+    let list: BackendLectureList[] = unwrapResponse(json) || [];
+    if (!Array.isArray(list)) list = [];
+
+    // 1. 내 강의 필터링 + 데이터 병합 (목록의 지원자 수를 상세에 덮어쓰기)
+    const myLectures = await Promise.all(
+      list.map(async (listLecture) => {
+        try {
+          const detailRes = await fetch(`${BASE_URL}/api/lectures/lectures/${listLecture.id}/`, {
+            cache: 'no-store',
+            headers: getHeaders(),
+          });
+          if (detailRes.ok) {
+            const detailJson = await detailRes.json();
+            const detail = unwrapResponse(detailJson);
+
+            // 내 담당 강의인지 확인
+            if (detail.manager_name?.trim() === myName.trim()) {
+              // ★ 목록의 applicant_count 정보를 상세 객체에 병합
+              return {
+                ...detail,
+                applicant_count_main: listLecture.applicant_count_main ?? detail.applicant_count_main ?? 0,
+                applicant_count_assist: listLecture.applicant_count_assist ?? detail.applicant_count_assist ?? 0,
+              } as BackendLectureDetail;
+            }
+          }
+          return null;
+        } catch { return null; }
+      })
+    );
+
+    const validLectures = myLectures.filter((item): item is BackendLectureDetail => item !== null);
+
+    // 2. 전체 아이템 1차 가공 (상태별 데이터 생성)
+    const allProcessedItems = validLectures
+      .map((lecture) => {
+        const status = lecture.status?.toUpperCase();
+        if (!['RECRUITING', 'ALLOCATING'].includes(status)) return null;
+
+        // 날짜
+        let dateStr = '-';
+        let sortTime = 0;
+        if (lecture.schedules && lecture.schedules.length > 0) {
+          const d = new Date(lecture.schedules[0].date);
+          sortTime = d.getTime();
+          const mm = d.getMonth() + 1;
+          const dd = d.getDate();
+          const week = ['일', '월', '화', '수', '목', '금', '토'][d.getDay()];
+          dateStr = `${mm}.${dd}(${week})`;
+        }
+
+        // 정원
+        const targetCount = (lecture.recruitment_main || 0) + (lecture.recruitment_assist || 0);
+        let currentCount = 0;
+        let displayStatus: 'RECRUITING' | 'ALLOCATING' = 'RECRUITING';
+
+        if (status === 'RECRUITING') {
+          // [모집 중] 지원자 수 합계 (위에서 병합된 값 사용)
+          displayStatus = 'RECRUITING';
+          currentCount = (lecture.applicant_count_main || 0) + (lecture.applicant_count_assist || 0);
+
+        } else if (status === 'ALLOCATING') {
+          // [배정 중] 배정된 사람 중 '읽음' 수
+          displayStatus = 'ALLOCATING';
+          if (lecture.applications && Array.isArray(lecture.applications)) {
+            const confirmedAndRead = lecture.applications.filter(app =>
+              app.assignment_status === 'assigned' && app.is_notification_read === true
+            );
+            currentCount = confirmedAndRead.length;
+          }
+
+          // 완료된 건(모두 읽음) 제외
+          if (currentCount >= targetCount && targetCount > 0) {
+            return null;
+          }
+        }
+
+        return {
+          id: lecture.id,
+          title: lecture.title,
+          date: dateStr,
+          status: displayStatus,
+          currentCount: currentCount,
+          targetCount: targetCount,
+          _sortTime: sortTime, // 정렬용 임시 필드
+        };
+      })
+      .filter((item): item is (RecruitmentItem & { _sortTime: number }) => item !== null);
+
+    // 3. ★ 3개씩 분리 로직 ★
+    // 날짜순 정렬
+    allProcessedItems.sort((a, b) => a._sortTime - b._sortTime);
+
+    // 모집 중인 것 3개
+    const recruitingItems = allProcessedItems
+      .filter(item => item.status === 'RECRUITING')
+      .slice(0, 3);
+
+    // 배정 중인 것 3개
+    const allocatingItems = allProcessedItems
+      .filter(item => item.status === 'ALLOCATING')
+      .slice(0, 3);
+
+    // 두 리스트 합쳐서 반환 (총 최대 6개)
+    // sortTime 필드는 제거
+    const finalItems = [...recruitingItems, ...allocatingItems].map(({ _sortTime, ...rest }) => rest);
+
+    return finalItems;
+
+  } catch (error) {
+    console.error(error);
+    return [];
+  }
+}
+
+// [API 3] 공지사항 조회
+export async function fetchLatestNotices(): Promise<Notice[]> {
+  const url = `${BASE_URL}/api/announcements/`;
+  try {
+    const res = await fetch(url, { cache: 'no-store', headers: getHeaders() });
+    if (!res.ok) return [];
+    const json = await res.json();
+    let realData = unwrapResponse(json);
+    const formatDate = (d: string) => d?.replace('T', ' ').substring(0, 16) || '-';
+    if (Array.isArray(realData)) {
+      return realData.map((data: any) => ({
+        id: data.id || data.announcementId || 0,
+        title: data.title,
+        content: data.content,
+        author: data.author_name || data.authorName || '관리자',
+        createdAt: formatDate(data.created_at || data.createdAt),
+      }));
+    }
+    return [];
+  } catch { return []; }
+}
+
+export async function fetchLectureDetail(id: string) {
+  const realId = id.split('-')[0];
+  const url = `${BASE_URL}/api/lectures/lectures/${realId}/`;
+  try {
+    const res = await fetch(url, { cache: 'no-store', headers: getHeaders() });
+    if (!res.ok) return null;
+    const json = await res.json();
+    const data = unwrapResponse(json);
+
+    const instructors: any[] = [];
+    if (data.manager_name) {
+      instructors.push({ name: data.manager_name, phone: data.manager_phone || '', role: 'MANAGER' });
+    }
+    if (Array.isArray(data.confirmed_instructors)) {
+      data.confirmed_instructors.forEach((str: string) => {
+        const match = str.match(/^(.*)\((.*)\)$/);
+        if (match) {
+          instructors.push({ name: match[1], phone: '', role: match[2].toUpperCase().includes('MAIN') ? 'MAIN' : 'ASSISTANT' });
+        } else {
+          instructors.push({ name: str, phone: '', role: 'ASSISTANT' });
+        }
+      });
+    }
+    return {
+      title: data.title,
+      content: data.content,
+      location: data.location,
+      instructors: instructors,
+    };
+  } catch { return null; }
+}

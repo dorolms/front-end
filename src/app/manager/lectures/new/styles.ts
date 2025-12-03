@@ -151,31 +151,6 @@ export const FileLabel = styled.label`
   .icon { font-size: 20px; }
 `;
 
-export const SearchButton = styled.button`
-  position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
-  padding: 8px 12px; font-size: 13px; font-weight: 600; color: #374151;
-  background-color: #f3f4f6; border: 1px solid #e5e7eb; border-radius: 6px;
-  cursor: pointer; transition: all 0.2s;
-  &:hover { background-color: #e5e7eb; }
-`;
-
-export const SearchResultList = styled.ul`
-  position: absolute; top: calc(100% + 6px); left: 0; right: 0;
-  background: white; border: 1px solid #e5e7eb; border-radius: 8px;
-  max-height: 220px; overflow-y: auto; z-index: 50;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-  list-style: none; padding: 4px 0; margin: 0;
-`;
-
-// [색상 변경] Hover: #EFF6FF, #3478F6
-export const SearchResultItem = styled.li`
-  padding: 12px 16px; cursor: pointer; font-size: 14px;
-  color: #374151; transition: all 0.1s; border-bottom: 1px solid #f3f4f6;
-  &:last-child { border-bottom: none; }
-  &:hover { background-color: #EFF6FF; color: #3478F6; }
-  .email { color: #9ca3af; font-size: 13px; margin-left: 6px; font-weight: 400; }
-`;
-
 // 하단 고정 버튼바
 export const FixedBottomBar = styled.div`
   flex-shrink: 0;
@@ -196,3 +171,64 @@ export const Button = styled.button<{ $variant?: 'primary' | 'secondary' }>`
   `}
   &:disabled { opacity: 0.6; cursor: not-allowed; }
 `;
+
+// ... (기존 코드 유지)
+
+// [신규] 스케줄 입력 행 (날짜 - 시작 - 종료 - 삭제버튼)
+export const ScheduleRow = styled.div`
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 12px;
+  
+  /* 모바일 등 좁은 화면 대응 */
+  @media (max-width: 768px) {
+    flex-wrap: wrap;
+  }
+`;
+
+// [신규] 스케줄 추가 버튼 (Dashed Border)
+export const AddScheduleButton = styled.button`
+  width: 100%;
+  padding: 12px;
+  border: 1px dashed #d1d5db;
+  border-radius: 8px;
+  background-color: #f9fafb;
+  color: #6b7280;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+
+  &:hover {
+    background-color: #EFF6FF;
+    border-color: #3478F6;
+    color: #3478F6;
+  }
+`;
+
+// [신규] 삭제 버튼 (X 아이콘 등)
+export const DeleteButton = styled.button`
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  color: #ef4444; /* Red */
+  cursor: pointer;
+  flex-shrink: 0;
+  
+  &:hover {
+    background-color: #fef2f2;
+    border-color: #fca5a5;
+  }
+`;
+
+// ... (나머지 기존 코드 유지)

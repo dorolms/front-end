@@ -1,12 +1,10 @@
 'use client';
-/**
- * ClientPage.tsx
- */
 
-import { useState } from 'react';
-import { mockNotices } from './data/mock'; // 경로 확인 필요
-import { useNotices } from './hooks/useNotices'; // 경로 확인 필요
-import { Container, Header, Title, NewNoticeButton } from './styles'; // 경로 확인 필요
+import { useState, useEffect } from 'react';
+// import { mockNotices } from './data/mock';
+import * as API from './api'; // API 함수 불러오기
+import { useNotices } from './hooks/useNotices';
+import { Container, Header, Title, NewNoticeButton } from './styles';
 import SearchBar from './components/SearchBar';
 import NoticeTable from './components/NoticeTable';
 import Pagination from './components/Pagination';
@@ -16,7 +14,9 @@ import SuccessModal from './components/SuccessModal';
 import type { Notice } from './types';
 
 export default function ClientPage() {
-  const [notices, setNotices] = useState(mockNotices);
+  // 초기값을 빈 배열로 시작
+  const [notices, setNotices] = useState<Notice[]>([]);
+  const [isLoading, setIsLoading] = useState(false); // 로딩 상태 추가
 
   // UI 상태
   const [query, setQuery] = useState('');
@@ -25,15 +25,33 @@ export default function ClientPage() {
   // 모달 상태
   const [selected, setSelected] = useState<Notice | null>(null);
   const [isFormOpen, setFormOpen] = useState(false);
-  const [editing, setEditing] = useState<Notice | null>(null); // null: 생성, Notice: 수정
+  const [editing, setEditing] = useState<Notice | null>(null);
   const [successMsg, setSuccessMsg] = useState('');
 
-  // 데이터 필터링 훅
+  // 데이터 필터링 훅 (프론트에서 검색/페이징 처리)
   const { pageItems, totalPages } = useNotices(notices, {
     query,
     page,
     pageSize: 10,
   });
+
+  // [추가] 페이지가 뜰 때 실제 데이터 불러오기
+  useEffect(() => {
+    loadNotices();
+  }, []);
+
+  const loadNotices = async () => {
+    try {
+      setIsLoading(true);
+      const data = await API.fetchNotices();
+      setNotices(data);
+    } catch (err) {
+      console.error(err);
+      alert('공지사항 목록을 불러오지 못했습니다.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // --- 핸들러 ---
 
@@ -48,37 +66,44 @@ export default function ClientPage() {
     setFormOpen(true);
   };
 
-  /** 등록/수정 로직 */
-  const handleSubmit = (payload: NoticePayload) => {
-    if (editing) {
-      // 수정
-      setNotices(
-        notices.map((n) => (n.id === editing.id ? { ...n, ...payload } : n)),
-      );
-      setSuccessMsg('공지가 수정되었습니다.');
-    } else {
-      // 생성
-      const newNotice: Notice = {
-        id: Date.now(),
-        author: '매니저',
-        createdAt: new Date().toISOString().slice(0, 16).replace('T', ' '),
-        ...payload,
-      };
-      setNotices([newNotice, ...notices]);
-      setSuccessMsg('새 공지가 등록되었습니다.');
+  /** 등록/수정 로직 (서버 연동) */
+  const handleSubmit = async (payload: NoticePayload) => {
+    try {
+      if (editing) {
+        // 수정 (PATCH)
+        await API.updateNotice(editing.id, payload);
+        setSuccessMsg('공지가 수정되었습니다.');
+      } else {
+        // 생성 (POST)
+        await API.createNotice(payload);
+        setSuccessMsg('새 공지가 등록되었습니다.');
+      }
+      // 성공 후 목록 다시 불러오기 (가장 확실한 방법)
+      await loadNotices();
+      setFormOpen(false);
+    } catch (error) {
+      console.error(error);
+      alert('저장 중 오류가 발생했습니다.');
     }
-    setFormOpen(false);
   };
 
-  /** 삭제 로직 (새로 추가됨) */
-  const handleDelete = (id: number) => {
-    // 데이터에서 제거
-    setNotices(notices.filter((n) => n.id !== id));
+  /** 삭제 로직 (서버 연동) */
+  const handleDelete = async (id: number) => {
 
-    // 모달 닫기 및 성공 메시지
-    setFormOpen(false);
-    setEditing(null); // 편집 상태 초기화
-    setSuccessMsg('공지가 삭제되었습니다.');
+    try {
+      // 삭제 (DELETE)
+      await API.deleteNotice(id);
+
+      // UI 반영 (API 다시 부르거나, 필터로 제거)
+      setNotices((prev) => prev.filter((n) => n.id !== id));
+
+      setFormOpen(false);
+      setEditing(null);
+      setSuccessMsg('공지가 삭제되었습니다.');
+    } catch (error) {
+      console.error(error);
+      alert('삭제 실패');
+    }
   };
 
   return (
@@ -98,12 +123,19 @@ export default function ClientPage() {
           </div>
         </Header>
 
-        <NoticeTable rows={pageItems} onClickTitle={setSelected} />
+        {/* 로딩 중 표시 */}
+        {isLoading ? (
+          <div style={{ padding: 40, textAlign: 'center', color: '#666' }}>
+            데이터를 불러오는 중입니다...
+          </div>
+        ) : (
+          <NoticeTable rows={pageItems} onClickTitle={setSelected} />
+        )}
 
         <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
       </Container>
 
-      {/* 1. 상세 보기 모달 */}
+      {/* 상세 모달 */}
       {selected && (
         <NoticeModal
           notice={selected}
@@ -112,18 +144,18 @@ export default function ClientPage() {
         />
       )}
 
-      {/* 2. 작성/수정 폼 모달 */}
+      {/* 작성/수정 폼 모달 */}
       {isFormOpen && (
         <NoticeFormModal
           initialData={editing}
           onSubmit={handleSubmit}
-          onDelete={handleDelete} // 여기서 삭제 함수 전달
+          onDelete={handleDelete}
           onClose={() => setFormOpen(false)}
           isSubmitting={false}
         />
       )}
 
-      {/* 3. 성공 알림 모달 */}
+      {/* 성공 알림 모달 */}
       {successMsg && (
         <SuccessModal message={successMsg} onClose={() => setSuccessMsg('')} />
       )}

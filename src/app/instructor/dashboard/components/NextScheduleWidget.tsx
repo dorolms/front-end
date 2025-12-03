@@ -239,10 +239,12 @@ export default function NextLectureWidget({ events }: Props) {
   const end = main.end;
 
   const oneDayMs = 1000 * 60 * 60 * 24;
-  const diffDays = Math.ceil(
-    (start.setHours(0, 0, 0, 0) - now.setHours(0, 0, 0, 0)) / oneDayMs,
-  );
+  const ddayTarget = new Date(start);
+  ddayTarget.setHours(0, 0, 0, 0);
+  const ddayNow = new Date(now);
+  ddayNow.setHours(0, 0, 0, 0);
 
+  const diffDays = Math.ceil((ddayTarget.getTime() - ddayNow.getTime()) / oneDayMs);
   const isToday = diffDays === 0;
   const ddayText = diffDays > 0 ? `D-${diffDays}` : isToday ? 'D-DAY' : `D+${-diffDays}`;
   const badgeType = isToday ? 'today' : 'future';
