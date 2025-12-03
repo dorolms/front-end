@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import styled from "styled-components";
 import Header from "@/components/common/Header";
 import { useRouter } from "next/navigation";
@@ -12,8 +13,38 @@ export default function ManagerLayout({
 }) {
   const router = useRouter();
 
+  const [userName, setUserName] = useState<string>("");
+  const [userRole, setUserRole] = useState<"instructor" | "manager" | undefined>(
+    undefined
+  );
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const storedName = window.localStorage.getItem("userName");
+    const storedRole = window.localStorage.getItem("userRole") as
+      | "instructor"
+      | "manager"
+      | null;
+
+    if (storedName) {
+      setUserName(storedName);
+    }
+    if (storedRole === "instructor" || storedRole === "manager") {
+      setUserRole(storedRole);
+    } else {
+      // 매니저 영역이니까 기본값을 manager로
+      setUserRole("manager");
+    }
+  }, []);
+
   const handleLogout = () => {
-    // TODO: 실제 로그아웃 로직 추가
+    if (typeof window !== "undefined") {
+      window.localStorage.removeItem("accessToken");
+      window.localStorage.removeItem("refreshToken");
+      window.localStorage.removeItem("userName");
+      window.localStorage.removeItem("userRole");
+    }
     router.replace("/"); // 로그인 페이지로 이동
   };
 
@@ -21,9 +52,9 @@ export default function ManagerLayout({
     <Shell>
       {/* 상단 헤더 */}
       <Header
-        isAuth={true}
-        userName="김지수"
-        userRole="manager"
+        isAuth={!!userName}
+        userName={userName}
+        userRole={userRole}
         onLogout={handleLogout}
       />
 
