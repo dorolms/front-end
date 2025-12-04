@@ -1,7 +1,7 @@
 // src/app/instructor/dashboard/styles.ts
-"use client";
+'use client';
 
-import styled from "styled-components";
+import styled from 'styled-components';
 
 export const Wrap = styled.div`
   width: 100%;
@@ -31,7 +31,7 @@ export const Grid = styled.div`
 // 상단 캘린더 영역
 export const CalendarBox = styled.div`
   width: 100%;
-  height: 800px; /* 캘린더 높이 */
+  height: 100%; /* 캘린더 높이 */
   border-radius: 8px;
   background: #ffffff;
   border: 1px solid #e5e5e5;

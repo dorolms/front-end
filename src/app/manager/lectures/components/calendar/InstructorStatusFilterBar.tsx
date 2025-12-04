@@ -1,32 +1,37 @@
+// InstructorStatusFilterBar.tsx
 import React from 'react';
 import styled from 'styled-components';
 
+export type InstructorFilter = 'ALL' | 'RECRUITING' | 'COMPLETED';
+
 interface InstructorStatusFilterBarProps {
-  showRecruiting: boolean;
-  showCompleted: boolean;
-  onToggleRecruiting: () => void;
-  onToggleCompleted: () => void;
+  activeFilter: InstructorFilter;
+  onChangeFilter: (filter: InstructorFilter) => void;
 }
 
 const InstructorStatusFilterBar: React.FC<InstructorStatusFilterBarProps> = ({
-  showRecruiting,
-  showCompleted,
-  onToggleRecruiting,
-  onToggleCompleted
+  activeFilter,
+  onChangeFilter,
 }) => {
   return (
     <FilterContainer>
       <FilterLabel>필터:</FilterLabel>
       <FilterButtonGroup>
-        <FilterButton 
-          active={showRecruiting}
-          onClick={onToggleRecruiting}
+        <FilterButton
+          active={activeFilter === 'ALL'}
+          onClick={() => onChangeFilter('ALL')}
+        >
+          전체
+        </FilterButton>
+        <FilterButton
+          active={activeFilter === 'RECRUITING'}
+          onClick={() => onChangeFilter('RECRUITING')}
         >
           모집 중
         </FilterButton>
-        <FilterButton 
-          active={showCompleted}
-          onClick={onToggleCompleted}
+        <FilterButton
+          active={activeFilter === 'COMPLETED'}
+          onClick={() => onChangeFilter('COMPLETED')}
         >
           모집 완료
         </FilterButton>
@@ -56,9 +61,9 @@ const FilterButtonGroup = styled.div`
 const FilterButton = styled.button<{ active: boolean }>`
   padding: 8px 16px;
   border-radius: 8px;
-  border: 2px solid ${props => props.active ? '#3B82F6' : '#E5E7EB'};
-  background-color: ${props => props.active ? '#EFF6FF' : 'white'};
-  color: ${props => props.active ? '#3B82F6' : '#6B7280'};
+  border: 2px solid ${(props) => (props.active ? '#3B82F6' : '#E5E7EB')};
+  background-color: ${(props) => (props.active ? '#EFF6FF' : 'white')};
+  color: ${(props) => (props.active ? '#3B82F6' : '#6B7280')};
   font-weight: 500;
   font-size: 14px;
   cursor: pointer;

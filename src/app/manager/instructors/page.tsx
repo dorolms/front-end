@@ -117,10 +117,10 @@ export default function InstructorLookupPage() {
   }, [router, isAuthChecked]);
 
   const filtered = instructors.filter(inst => 
-    inst.name.includes(searchTerm) || 
-    // inst.email.includes(searchTerm) || 
-    inst.major.includes(searchTerm)
+    inst.name.includes(searchTerm) ||
+    String(inst.major).includes(searchTerm)
   );
+
 
   const handleSelect = async (inst: InstructorBasic) =>  {
     setSearchTerm(inst.name);

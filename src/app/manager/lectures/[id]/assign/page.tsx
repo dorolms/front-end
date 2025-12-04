@@ -3,7 +3,7 @@
 import React, { useState, useRef, useCallback, useMemo, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 // import { getLectureDetail, type LectureDetail, type Applicant, type LectureRole, type DbAssignmentStatus } from './api-mock';
-import { getLectureDetail, patchApplications, type LectureDetail, type Application, type LectureRole, type AssignmentStatus, type patchData } from './api';
+import { getLectureDetail, patchApplications, type LectureDetail, type Application, type LectureRole, type AssignmentStatus, type UserInfo, type patchData } from './api';
 
 import { isTokenValid, getUserRole } from './jwt';
 
@@ -19,6 +19,17 @@ import {
 // --- 타입 정의 (UI 전용) ---
 type UiAssignmentStatus = 'pending' | 'assigned_main' | 'assigned_assist' | 'rejected';
 type SectionKey = 'info' | 'applications';
+
+interface MergedApplication {
+  main_app: Application | null;
+  assist_app: Application | null;
+  status: UiAssignmentStatus;
+  applied_role: LectureRole[]
+  
+  user: UserInfo;
+  created_at: string;
+  is_notification_read: boolean;
+};
 
 export default function LectureDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
@@ -69,6 +80,7 @@ export default function LectureDetailPage({ params }: { params: Promise<{ id: st
 
   useEffect(() => {
     const fetchData = async () => {
+      if (!isAuthChecked) return;
       try {
         setIsLoading(true);
         const data = await getLectureDetail(parseInt(id));
@@ -83,18 +95,53 @@ export default function LectureDetailPage({ params }: { params: Promise<{ id: st
       }
     };
     fetchData();
-  }, [id]);
+  }, [id, isAuthChecked]);
+
+  const mergedList = useMemo(() => {
+    const map = new Map<number, MergedApplication>();
+
+    applications.forEach(app => {
+      const uid = app.user.id;
+      
+      if (!map.has(uid)) {
+        map.set(uid, {
+          main_app: null,
+          assist_app: null,
+          user: app.user,
+          created_at: app.created_at,
+          status: 'pending',
+          applied_role: [],
+          is_notification_read: false
+        });
+      }
+
+      const merged = map.get(uid)!;
+      merged.applied_role.push(app.applied_role);
+
+      if (app.applied_role === 'main') merged.main_app = app;
+      else if (app.applied_role === 'assist') merged.assist_app = app;
+
+      if (app.assignment_status === 'assigned') {
+        merged.status = app.applied_role === 'main' ? 'assigned_main' : 'assigned_assist';
+      } 
+      else if (app.assignment_status === 'rejected' && merged.status === 'pending') {
+        merged.status = 'rejected';
+      }
+    });
+    
+    return Array.from(map.values());
+  }, [applications]);
 
   const filteredList = useMemo(() => {
-    if (activeFilter === 'all') return applications;
-    return applications.filter(app => app.applied_role === activeFilter);
-  }, [applications, activeFilter]);
+    if (activeFilter === 'all') return mergedList;
+    return mergedList.filter(app => app.applied_role.includes(activeFilter));
+  }, [mergedList, activeFilter]);
 
   const stats = useMemo(() => ({
-    total: applications.length,
-    main: applications.filter(a => a.applied_role === 'main').length,
-    assist: applications.filter(a => a.applied_role === 'assist').length
-  }), [applications]);
+    total: mergedList.length,
+    main: mergedList.filter(a => a.applied_role.includes('main')).length,
+    assist: mergedList.filter(a => a.applied_role.includes('assist')).length
+  }), [mergedList]);
 
   const handleScroll = useCallback(() => {
     const container = scrollAreaRef.current;
@@ -117,29 +164,41 @@ export default function LectureDetailPage({ params }: { params: Promise<{ id: st
     }
   };
 
-  const getUiStatusValue = (status: AssignmentStatus, role: LectureRole | null): UiAssignmentStatus => {
-    if (status === 'assigned') {
-      return role === 'main' ? 'assigned_main' : 'assigned_assist';
-    }
-    return status === 'rejected' ? 'rejected' : 'pending';
-  };
+  // const getUiStatusValue = (status: AssignmentStatus, role: LectureRole | null): UiAssignmentStatus => {
+  //   if (status === 'assigned') {
+  //     return role === 'main' ? 'assigned_main' : 'assigned_assist';
+  //   }
+  //   return status === 'rejected' ? 'rejected' : 'pending';
+  // };
 
-  const handleStatusChange = (id: number, uiValue: UiAssignmentStatus) => {
-    let newStatus: AssignmentStatus = 'pending';
+  const handleStatusChange = (mrg: MergedApplication, uiValue: UiAssignmentStatus) => {
+    let mainStatus: AssignmentStatus = 'pending';
+    let assistStatus: AssignmentStatus = 'pending';
 
     if (uiValue === 'assigned_main') {
-      newStatus = 'assigned';
+      mainStatus = 'assigned';
+      assistStatus = 'rejected';
     } else if (uiValue === 'assigned_assist') {
-      newStatus = 'assigned';
+      mainStatus = 'rejected';
+      assistStatus = 'assigned';
     } else if (uiValue === 'rejected') {
-      newStatus = 'rejected';
+      mainStatus = assistStatus = 'rejected';
     }
 
-    setApplications((prev: Application[]) => prev.map((app: Application) => 
-      app.id === id 
-        ? { ...app, assignment_status: newStatus } 
-        : app
-    ));
+    if (mrg.main_app) {
+      setApplications((prev: Application[]) => prev.map((app: Application) => 
+        app.id === mrg.main_app!.id 
+          ? { ...app, assignment_status: mainStatus } 
+          : app
+      ));
+    }
+    if (mrg.assist_app) {
+      setApplications((prev: Application[]) => prev.map((app: Application) => 
+        app.id === mrg.assist_app!.id 
+          ? { ...app, assignment_status: assistStatus } 
+          : app
+      ));
+    }
   };
 
   // [수정] 저장 버튼 핸들러: 변경된 것만 필터링
@@ -164,7 +223,7 @@ export default function LectureDetailPage({ params }: { params: Promise<{ id: st
       return;
     }
 
-    if (!confirm(`총 ${changedItems.length}건의 변경사항을 저장하시겠습니까?`)) return;
+    if (!confirm(`변경사항을 저장하시겠습니까?`)) return;
     
     setIsSubmitting(true);
     
@@ -210,7 +269,7 @@ export default function LectureDetailPage({ params }: { params: Promise<{ id: st
       <ContentWrapper>
         <SectionMenu>
           <MenuItem $isActive={activeSection === 'info'} onClick={() => scrollToSection('info')}>강의 상세 정보</MenuItem>
-          <MenuItem $isActive={activeSection === 'applications'} onClick={() => scrollToSection('applications')}>지원자 관리 ({applications.length})</MenuItem>
+          <MenuItem $isActive={activeSection === 'applications'} onClick={() => scrollToSection('applications')}>지원자 관리 ({stats.total})</MenuItem>
         </SectionMenu>
 
         <RightPanel>
@@ -223,7 +282,7 @@ export default function LectureDetailPage({ params }: { params: Promise<{ id: st
               <DetailRow><DetailLabel>강의 유형</DetailLabel><DetailValue>{lecture.type} / {lecture.category}</DetailValue></DetailRow>
               <DetailRow><DetailLabel>교육 대상</DetailLabel><DetailValue>{lecture.target}</DetailValue></DetailRow>
               <DetailRow><DetailLabel>인원</DetailLabel><DetailValue>{lecture.capacity}</DetailValue></DetailRow>
-              {/* <DetailRow><DetailLabel>일시</DetailLabel><DetailValue>{lecture.period_start} ~ {lecture.period_end}</DetailValue></DetailRow> */}
+              <DetailRow><DetailLabel>일시</DetailLabel><DetailValue></DetailValue></DetailRow>
               <DetailRow><DetailLabel>장소</DetailLabel><DetailValue>{lecture.location}</DetailValue></DetailRow>
               <DetailRow><DetailLabel>담당자</DetailLabel><DetailValue>{lecture.manager_name} ({lecture.manager_phone})</DetailValue></DetailRow>
               <DetailRow><DetailLabel>콘텐츠</DetailLabel><DetailValue>{lecture.content}</DetailValue></DetailRow>
@@ -250,39 +309,38 @@ export default function LectureDetailPage({ params }: { params: Promise<{ id: st
                   <Thead>
                     <tr>
                       <th style={{ width: '20%' }}>이름</th>
-                      <th style={{ width: '15%' }}>지원 분야</th>
-                      <th style={{ width: '15%' }}>지원일</th>
-                      <th style={{ width: '25%' }}>배정 상태</th>
-                      <th style={{ width: '25%' }}>읽음 상태</th>
+                      <th style={{ width: '20%' }}>지원 분야</th>
+                      <th style={{ width: '20%' }}>지원일</th>
+                      <th style={{ width: '20%' }}>배정 상태</th>
+                      <th style={{ width: '20%' }}>읽음 상태</th>
                     </tr>
                   </Thead>
                   <Tbody>
                     {filteredList.map((app) => (
-                      <tr key={app.id}>
+                      <tr key={app.user.id}>
                         <td>
                           <ApplicantName>{app.user.name}</ApplicantName>
                           <ApplicantMeta>{app.user.major}</ApplicantMeta>
                         </td>
                         <td>
-                          <RoleBadge key={app.applied_role} $role={app.applied_role}>
-                            {app.applied_role === 'main' ? '주강사' : '보조'}
-                          </RoleBadge>
+                          {app.applied_role.includes("main") ? <RoleBadge key={'main'} $role={'main'}>주강사</RoleBadge> : null}
+                          {app.applied_role.includes("assist") ? <RoleBadge key={'assist'} $role={'assist'}>보조</RoleBadge> : null}
                         </td>
-                        <td><ApplicantMeta>{app.created_at}</ApplicantMeta></td>
+                        <td><ApplicantMeta>{new Date(app.created_at).toLocaleDateString()}</ApplicantMeta></td>
                         <td>
                           <StatusSelect 
-                            value={getUiStatusValue(app.assignment_status, app.applied_role)}
-                            $status={app.assignment_status}
-                            $assignedRole={app.applied_role}
-                            onChange={(e) => handleStatusChange(app.id, e.target.value as UiAssignmentStatus)}
+                            value={app.status}
+                            $status={app.status}
+                            onChange={(e) => handleStatusChange(app, e.target.value as UiAssignmentStatus)}
                             >
                             <option value="pending">대기중</option>
-                            <option value="assigned_main">주도로쌤 배정</option>
-                            <option value="assigned_assist">보조도로쌤 배정</option>
+                            {app.applied_role.includes("main") ? <option value="assigned_main">주도로쌤 배정</option> : null}
+                            {app.applied_role.includes("assist") ? <option value="assigned_assist">보조도로쌤 배정</option> : null}
                             <option value="rejected">반려</option>
                           </StatusSelect>
                         </td>
                         <td>
+                          <ApplicantMeta>{app.is_notification_read ? '읽음' : '-'}</ApplicantMeta>
                         </td>
                       </tr>
                     ))}
