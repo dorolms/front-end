@@ -28,8 +28,9 @@ interface MergedApplication {
   
   user: UserInfo;
   created_at: string;
-  is_notification_read: boolean;
+  ui_read_status_text: string;
 };
+
 
 // [추가] 날짜 문자열(YYYY-MM-DD)을 받아 요일(월, 화..)을 반환하는 함수
 const getWeekday = (dateString: string) => {
@@ -115,10 +116,21 @@ export default function LectureDetailPage({ params }: { params: Promise<{ id: st
   }, [id, isAuthChecked]);
 
   const mergedList = useMemo(() => {
+    
+    const readStatusMap = new Map<number, string>();
+    
+    // 원본 데이터를 순회하며 '배정됨(assigned)' 상태인 건만 체크
+    initapplications.forEach(app => {
+      if (app.assignment_status === 'assigned') {
+        // 배정된 상태라면 읽음 여부에 따라 텍스트 결정
+        readStatusMap.set(app.user.id, app.is_notification_read ? '읽음' : '대기');
+      }
+    });
+    
     const map = new Map<number, MergedApplication>();
-
     applications.forEach(app => {
       const uid = app.user.id;
+      const readText = readStatusMap.get(uid) || '-';
       
       if (!map.has(uid)) {
         map.set(uid, {
@@ -128,7 +140,7 @@ export default function LectureDetailPage({ params }: { params: Promise<{ id: st
           created_at: app.created_at,
           status: 'pending',
           applied_role: [],
-          is_notification_read: false
+          ui_read_status_text: readText
         });
       }
 
@@ -147,7 +159,7 @@ export default function LectureDetailPage({ params }: { params: Promise<{ id: st
     });
     
     return Array.from(map.values());
-  }, [applications]);
+  }, [applications, initapplications]);
 
   const filteredList = useMemo(() => {
     if (activeFilter === 'all') return mergedList;
@@ -180,13 +192,6 @@ export default function LectureDetailPage({ params }: { params: Promise<{ id: st
       container.scrollTo({ top: section.offsetTop - 20, behavior: 'smooth' });
     }
   };
-
-  // const getUiStatusValue = (status: AssignmentStatus, role: LectureRole | null): UiAssignmentStatus => {
-  //   if (status === 'assigned') {
-  //     return role === 'main' ? 'assigned_main' : 'assigned_assist';
-  //   }
-  //   return status === 'rejected' ? 'rejected' : 'pending';
-  // };
 
   const handleStatusChange = (mrg: MergedApplication, uiValue: UiAssignmentStatus) => {
     let mainStatus: AssignmentStatus = 'pending';
@@ -229,8 +234,7 @@ export default function LectureDetailPage({ params }: { params: Promise<{ id: st
 
       // 상태나 배정된 역할이 하나라도 다르면 '변경된 데이터'로 간주
       return (
-        curApp.assignment_status !== originalApp.assignment_status ||
-        curApp.applied_role !== originalApp.applied_role
+        curApp.assignment_status !== originalApp.assignment_status
       );
     });
 
@@ -257,12 +261,21 @@ export default function LectureDetailPage({ params }: { params: Promise<{ id: st
     try {
       // TODO: 실제 API 호출 (예: await axios.patch('/api/lectures/applications/bulk', payload))
       
-      payload.forEach(patchApplications);
+      await Promise.all(payload.map(item => patchApplications(item)));
       
       alert('저장되었습니다.');
       
       // [중요] 저장이 성공했으므로, 현재 상태를 다시 '원본'으로 갱신 (기준점 재설정)
-      setInitApplications(JSON.parse(JSON.stringify(applications)));
+      const newAppsState = applications.map(app => {
+        const isChanged = changedItems.some(item => item.id === app.id);
+        if (isChanged) {
+          // 변경된 항목은 최신 배정 상태 유지 + 읽음 상태 초기화
+          return { ...app, is_notification_read: false };
+        }
+        return app; // 변경 안 된 항목은 그대로 유지
+      });
+      setApplications(newAppsState);
+      setInitApplications(JSON.parse(JSON.stringify(newAppsState)));
       
     } catch (error) {
       console.error(error);
@@ -373,7 +386,7 @@ export default function LectureDetailPage({ params }: { params: Promise<{ id: st
                           </StatusSelect>
                         </td>
                         <td>
-                          <ApplicantMeta>{app.is_notification_read ? '읽음' : '-'}</ApplicantMeta>
+                          <ApplicantMeta>{app.ui_read_status_text}</ApplicantMeta>
                         </td>
                       </tr>
                     ))}
