@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import LectureTabs, { LectureTab } from "./components/LectureTabs";
 import LectureListView from "./components/list/LectureListView";
 import LectureCalendarView from "./components/calendar/LectureCalendarView";
+import NewLectureButton from "./components/NewLectureButton";
 import type { Lecture } from "./types";
 
 const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
@@ -59,6 +60,7 @@ export default function ClientPage() {
 
   return (
     <div>
+      <NewLectureButton />
       <LectureTabs value={tab} onChange={setTab} />
       {tab === "list" ? (
         <LectureListView lectures={lectures} />

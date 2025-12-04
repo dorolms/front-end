@@ -1,175 +1,73 @@
-// src/app/instructor/calendar/ClientPage.tsx
-"use client";
+'use client';
 
-import React, { useEffect, useMemo, useState } from "react";
-import styled from "styled-components";
+import { useState, useEffect } from 'react';
+import {
+  Wrap,
+  BreadCrumb,
+  Title,
+  Grid,
+  CalendarBox,
+  CardRow,
+  LeftPanel,
+  RightPanel,
+} from './styles';
 
-import InstructorStatusFilterBar from "./components/InstructorStatusFilterBar";
-import InstructorMonthlyCalendar from "./components/InstructorMonthlyCalendar";
-import InstructorEventDetailModal from "./components/InstructorEventDetailModal";
-import type {
-  Lecture,
-  Schedule,
-  CalendarEvent,
-  MyCalendarFilter,
-} from "./types";
+import InstructorWeeklyCalendar from './components/InstructorMonthlyCalendar';
+import InstructorEventDetailModal from './components/InstructorEventDetailModal';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
+import * as API from './api';
+import type { InstructorEventItem } from './types';
+import type { Notice } from '../../instructor/notices/types';
 
-const ClientPage: React.FC = () => {
-  const [lectures, setLectures] = useState<Lecture[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+export default function InstructorClientPage() {
+  const [selectedEvent, setSelectedEvent] = useState<InstructorEventItem | null>(null);
+  const [notices, setNotices] = useState<Notice[]>([]);
+  const [events, setEvents] = useState<InstructorEventItem[]>([]);
 
-  const [currentFilter, setCurrentFilter] = useState<MyCalendarFilter>("all");
-
-  const [selectedLecture, setSelectedLecture] = useState<Lecture | null>(null);
-  const [selectedSchedule, setSelectedSchedule] = useState<Schedule | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-
-  // 📡 /api/lectures/lectures/?mode=my 호출
   useEffect(() => {
-    const fetchMyCalendar = async () => {
-      if (!API_BASE_URL) {
-        setError("API 서버 주소(.env)가 설정되어 있지 않습니다.");
-        setLoading(false);
-        return;
-      }
-
-      // 🔑 localStorage 에서 accessToken 읽기
-      const accessToken =
-        typeof window !== "undefined"
-          ? localStorage.getItem("accessToken")
-          : null;
-
-      if (!accessToken) {
-        setError("로그인이 필요합니다. 다시 로그인 해주세요.");
-        setLoading(false);
-        return;
-      }
-
-      setLoading(true);
-      setError(null);
-
-      try {
-        const res = await fetch(
-          `${API_BASE_URL}/api/lectures/lectures/?mode=my`,
-          {
-            method: "GET",
-            headers: {
-              Authorization: `Bearer ${accessToken}`, // ✅ 핵심
-              "Content-Type": "application/json",
-            },
-            credentials: "include", // 쿠키 같이 쓰는 경우 대비(없어도 큰 상관 X)
-          }
-        );
-
-        if (!res.ok) {
-          throw new Error(
-            `나의 강의 캘린더를 불러오는데 실패했습니다. (status: ${res.status})`
-          );
-        }
-
-        const data: Lecture[] = await res.json();
-        setLectures(data);
-      } catch (err) {
-        console.error(err);
-        setError(
-          err instanceof Error
-            ? err.message
-            : "알 수 없는 오류가 발생했습니다."
-        );
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchMyCalendar();
+    loadDashboardData();
   }, []);
 
-  // 🎛 필터 적용 (all / ASSIGNED / PENDING)
-  const filteredLectures = useMemo(() => {
-    if (currentFilter === "all") return lectures;
-    return lectures.filter(
-      (lecture) => lecture.my_application_status === currentFilter
-    );
-  }, [lectures, currentFilter]);
+  const loadDashboardData = async () => {
+    try {
+      const noticesData = await API.fetchLatestNotices();
+      setNotices(noticesData);
 
-  // 📅 FullCalendar용 이벤트로 변환
-  const calendarEvents: CalendarEvent[] = useMemo(
-    () =>
-      filteredLectures.flatMap((lecture) =>
-        lecture.schedules.map((schedule) => ({
-          id: String(schedule.id),
-          title: lecture.title,
-          start: `${schedule.date}T${schedule.start_time}`,
-          extendedProps: {
-            lecture,
-            schedule,
-          },
-        }))
-      ),
-    [filteredLectures]
-  );
-
-  const handleEventClick = (lecture: Lecture, schedule: Schedule) => {
-    setSelectedLecture(lecture);
-    setSelectedSchedule(schedule);
-    setIsModalOpen(true);
+      const eventsData = await API.fetchMyLectures();
+      setEvents(eventsData);
+    } catch (error) {
+      console.error('데이터 로딩 실패', error);
+    }
   };
 
-  const handleCloseModal = () => {
-    setIsModalOpen(false);
+  const handleEventClick = async (event: InstructorEventItem) => {
+    const detail = await API.fetchLectureDetail(event.id);
+    if (detail) {
+      setSelectedEvent({
+        ...event,
+        content: detail.content || event.content,
+        location: detail.location || event.location,
+        instructors: detail.instructors || event.instructors,
+      });
+    } else {
+      setSelectedEvent(event);
+    }
   };
-
-  if (loading) {
-    return (
-      <PageContainer>
-        <StatusText>나의 강의 캘린더를 불러오는 중입니다... ⏳</StatusText>
-      </PageContainer>
-    );
-  }
-
-  if (error) {
-    return (
-      <PageContainer>
-        <StatusText>⚠️ {error}</StatusText>
-      </PageContainer>
-    );
-  }
 
   return (
-    <PageContainer>
-      <InstructorStatusFilterBar
-        currentFilter={currentFilter}
-        onFilterChange={setCurrentFilter}
-      />
-
-      <InstructorMonthlyCalendar
-        events={calendarEvents}
-        onEventClick={handleEventClick}
-      />
-
-      <InstructorEventDetailModal
-        lecture={selectedLecture}
-        schedule={selectedSchedule}
-        isOpen={isModalOpen}
-        onClose={handleCloseModal}
-      />
-    </PageContainer>
+    <Wrap>
+        <CalendarBox>
+          <InstructorWeeklyCalendar
+            events={events}
+            onEventClick={handleEventClick}
+          />
+        </CalendarBox>
+      {selectedEvent && (
+        <InstructorEventDetailModal
+          event={selectedEvent}
+          onClose={() => setSelectedEvent(null)}
+        />
+      )}
+    </Wrap>
   );
-};
-
-const PageContainer = styled.div`
-  width: 100%;
-  padding: 24px 0;
-`;
-
-const StatusText = styled.div`
-  padding: 40px 0;
-  text-align: center;
-  color: #6b7280;
-  font-size: 14px;
-`;
-
-export default ClientPage;
+}

@@ -1,16 +1,17 @@
 // LectureCalendarView.tsx
 import React, { useState, useMemo } from 'react';
 import styled from 'styled-components';
+import { useRouter } from "next/navigation";
 import { Lecture, Schedule, CalendarEvent } from '../../types';
 import InstructorStatusFilterBar, { InstructorFilter } from './InstructorStatusFilterBar';
 import InstructorMonthlyCalendar from './InstructorMonthlyCalendar';
-import InstructorEventDetailModal from './InstructorEventDetailModal';
 
 interface LectureCalendarViewProps {
   lectures: Lecture[];
 }
 
 const LectureCalendarView: React.FC<LectureCalendarViewProps> = ({ lectures }) => {
+  const router = useRouter();
   const [filter, setFilter] = useState<InstructorFilter>('ALL');
   const [selectedLecture, setSelectedLecture] = useState<Lecture | null>(null);
   const [selectedSchedule, setSelectedSchedule] = useState<Schedule | null>(null);
@@ -49,15 +50,7 @@ const LectureCalendarView: React.FC<LectureCalendarViewProps> = ({ lectures }) =
   }, [lectures, filter]);
 
   const handleEventClick = (lecture: Lecture, schedule: Schedule) => {
-    setSelectedLecture(lecture);
-    setSelectedSchedule(schedule);
-    setIsModalOpen(true);
-  };
-
-  const handleCloseModal = () => {
-    setIsModalOpen(false);
-    setSelectedLecture(null);
-    setSelectedSchedule(null);
+    router.push(`/manager/lectures/${lecture.id}/assign`);
   };
 
   return (
@@ -68,13 +61,6 @@ const LectureCalendarView: React.FC<LectureCalendarViewProps> = ({ lectures }) =
       />
 
       <InstructorMonthlyCalendar events={calendarEvents} onEventClick={handleEventClick} />
-
-      <InstructorEventDetailModal
-        lecture={selectedLecture}
-        schedule={selectedSchedule}
-        isOpen={isModalOpen}
-        onClose={handleCloseModal}
-      />
     </Container>
   );
 };

@@ -1,19 +1,29 @@
 // LectureCalendarView.tsx
 import React, { useState, useMemo } from 'react';
 import styled from 'styled-components';
-import { Lecture, Schedule, CalendarEvent } from '../../types';
+import { LectureDetail, Schedule} from '../../types'; 
 import InstructorStatusFilterBar, { InstructorFilter } from './InstructorStatusFilterBar';
 import InstructorMonthlyCalendar from './InstructorMonthlyCalendar';
 import InstructorEventDetailModal from '../InstructorEventDetailModal';
 
+// CalendarEvent 타입 정의
+type CalendarEvent = {
+  id: string;
+  title: string;
+  start: string;
+  extendedProps: {
+    lecture: LectureDetail;
+    schedule: Schedule;
+  };
+};
+
 interface LectureCalendarViewProps {
-  lectures: Lecture[];
+  lectures: LectureDetail[];
 }
 
 const LectureCalendarView: React.FC<LectureCalendarViewProps> = ({ lectures }) => {
   const [filter, setFilter] = useState<InstructorFilter>('ALL');
-  const [selectedLecture, setSelectedLecture] = useState<Lecture | null>(null);
-  const [selectedSchedule, setSelectedSchedule] = useState<Schedule | null>(null);
+  const [selectedLectureId, setSelectedLectureId] = useState<number | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   // 필터링된 강의를 CalendarEvent 형식으로 변환
@@ -21,13 +31,13 @@ const LectureCalendarView: React.FC<LectureCalendarViewProps> = ({ lectures }) =
     const events: CalendarEvent[] = [];
 
     lectures.forEach((lecture) => {
-      const status = lecture.status; // 'RECRUITING', 'COMPLETED' 등
+      const status = lecture.status;
 
-      // 🔎 필터 적용
+      // 필터 적용
       if (filter === 'RECRUITING' && status !== 'RECRUITING') {
         return;
       }
-      // "모집 완료"는 일단 "RECRUITING이 아닌 강의"로 간주
+      
       if (filter === 'COMPLETED' && status === 'RECRUITING') {
         return;
       }
@@ -36,9 +46,9 @@ const LectureCalendarView: React.FC<LectureCalendarViewProps> = ({ lectures }) =
         events.push({
           id: `${lecture.id}-${schedule.id}`,
           title: lecture.title,
-          start: `${schedule.date}T${schedule.start_time}`,
+          start: `${schedule.date}T${schedule.start_time}`, // ✅ date → lecture_date
           extendedProps: {
-            lecture,
+            lecture, 
             schedule,
           },
         });
@@ -48,16 +58,15 @@ const LectureCalendarView: React.FC<LectureCalendarViewProps> = ({ lectures }) =
     return events;
   }, [lectures, filter]);
 
-  const handleEventClick = (lecture: Lecture, schedule: Schedule) => {
-    setSelectedLecture(lecture);
-    setSelectedSchedule(schedule);
+  // 캘린더 이벤트 클릭 핸들러
+  const handleEventClick = (lecture: LectureDetail, schedule: Schedule) => {
+    setSelectedLectureId(lecture.id);
     setIsModalOpen(true);
   };
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
-    setSelectedLecture(null);
-    setSelectedSchedule(null);
+    setSelectedLectureId(null);
   };
 
   return (
@@ -66,12 +75,14 @@ const LectureCalendarView: React.FC<LectureCalendarViewProps> = ({ lectures }) =
         activeFilter={filter}
         onChangeFilter={setFilter}
       />
-
-      <InstructorMonthlyCalendar events={calendarEvents} onEventClick={handleEventClick} />
+      
+      <InstructorMonthlyCalendar
+        events={calendarEvents}
+        onEventClick={handleEventClick}
+      />
 
       <InstructorEventDetailModal
-        lecture={selectedLecture}
-        schedule={selectedSchedule}
+        lectureId={selectedLectureId}
         isOpen={isModalOpen}
         onClose={handleCloseModal}
       />

@@ -1,68 +1,60 @@
 import React, { useEffect, useState } from 'react';
 import styled, { keyframes } from 'styled-components';
-import { Lecture, Schedule, LectureDetail } from '../types';
-// 🔹 분리된 액션 버튼 컴포넌트 import
-import LectureActionButtons from './LectureActionButtons'; // 파일 경로에 맞게 수정해주세요.
+import { LectureDetail } from '../types';
+import LectureActionButtons from './LectureActionButtons';
 
 // =========================================================================
-// 🧩 임시 모달 컴포넌트 (ActionButtons에서 사용하지 않으므로 그대로 유지)
+// 🧩 확인 모달 컴포넌트
 // =========================================================================
-interface SimpleModalProps {
+interface ConfirmModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onConfirm: () => void;
   title: string;
-  children?: React.ReactNode;
+  message: string;
+  confirmText?: string;
+  isLoading?: boolean;
 }
 
-const SimpleModal: React.FC<SimpleModalProps> = ({
+const ConfirmModal: React.FC<ConfirmModalProps> = ({
   isOpen,
   onClose,
+  onConfirm,
   title,
-  children,
+  message,
+  confirmText = '확인',
+  isLoading = false,
 }) => {
   if (!isOpen) return null;
 
   return (
     <Overlay onClick={onClose}>
-      <ModalContainer onClick={(e) => e.stopPropagation()} style={{ maxWidth: '400px' }}>
+      <ConfirmModalContainer onClick={(e) => e.stopPropagation()}>
         <ModalHeader>
           <ModalTitle>{title}</ModalTitle>
           <CloseButton onClick={onClose}>×</CloseButton>
         </ModalHeader>
-        <ModalBody style={{ padding: '30px' }}>
-          {children}
-          <div style={{ marginTop: '20px', textAlign: 'right' }}>
-            <RetryButton onClick={onClose}>닫기</RetryButton>
-          </div>
-        </ModalBody>
-      </ModalContainer>
+        <ConfirmModalBody>
+          <p>{message}</p>
+          <ButtonGroup>
+            <CancelButton onClick={onClose} disabled={isLoading}>
+              취소
+            </CancelButton>
+            <ConfirmButton onClick={onConfirm} disabled={isLoading}>
+              {isLoading ? '처리 중...' : confirmText}
+            </ConfirmButton>
+          </ButtonGroup>
+        </ConfirmModalBody>
+      </ConfirmModalContainer>
     </Overlay>
   );
 };
-
-const ApplicationModal: React.FC<SimpleModalProps> = (props) => (
-  <SimpleModal {...props} title="강의 신청하기">
-    <p>
-      **{props.title.replace('강의 신청하기', '')}** 강의에 신청하시겠습니까? (신청 로직 구현 필요)
-    </p>
-  </SimpleModal>
-);
-
-const CancellationModal: React.FC<SimpleModalProps> = (props) => (
-  <SimpleModal {...props} title="강의 신청 취소 확인">
-    <p>
-      **{props.title.replace('강의 신청 취소 확인', '')}** 강의 신청을 정말로 취소하시겠습니까? (취소 로직 구현 필요)
-    </p>
-  </SimpleModal>
-);
-
 
 // =========================================================================
 // 🎬 메인 모달 컴포넌트
 // =========================================================================
 interface InstructorEventDetailModalProps {
-  lecture: Lecture | null;
-  schedule: Schedule | null;
+  lectureId: number | null;
   isOpen: boolean;
   onClose: () => void;
 }
@@ -70,8 +62,7 @@ interface InstructorEventDetailModalProps {
 const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
 
 const InstructorEventDetailModal: React.FC<InstructorEventDetailModalProps> = ({
-  lecture,
-  schedule,
+  lectureId,
   isOpen,
   onClose,
 }) => {
@@ -79,26 +70,30 @@ const InstructorEventDetailModal: React.FC<InstructorEventDetailModalProps> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // 🔹 신청/취소 모달 상태 추가
-  const [isApplyModalOpen, setIsApplyModalOpen] = useState(false);
+  // 🔹 신청/취소 API 호출 로딩 상태
+  const [isActionLoading, setIsActionLoading] = useState(false);
+
+  // 🔹 확인 모달 상태 (취소만 사용)
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
 
+  // 🔹 신청 완료 상태 추가
+  const [applicationSuccess, setApplicationSuccess] = useState(false);
+
   useEffect(() => {
-    if (isOpen && lecture) {
-      fetchLectureDetail(lecture.id);
+    if (isOpen && lectureId) {
+      fetchLectureDetail(lectureId);
     }
 
-    // 모달 닫힐 때 데이터 초기화 및 보조 모달 상태 초기화
     if (!isOpen) {
       setLectureDetail(null);
       setError(null);
-      setIsApplyModalOpen(false);
       setIsCancelModalOpen(false);
+      setIsActionLoading(false);
+      setApplicationSuccess(false);
     }
-  }, [isOpen, lecture?.id]);
+  }, [isOpen, lectureId]);
 
   const fetchLectureDetail = async (id: number) => {
-    // ... (기존 fetchLectureDetail 로직 유지)
     if (!baseUrl) {
       setError('API 서버 주소(.env)가 설정되어 있지 않습니다.');
       return;
@@ -132,14 +127,168 @@ const InstructorEventDetailModal: React.FC<InstructorEventDetailModalProps> = ({
       }
 
       const data: LectureDetail = await response.json();
+      console.log('--- API 응답 원본 데이터 ---');
+      console.log(data);
+      console.log('------------------------------');
       setLectureDetail(data);
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : '오류가 발생했습니다.'
-      );
+      setError(err instanceof Error ? err.message : '오류가 발생했습니다.');
       console.error('Failed to fetch lecture detail:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // 🔹 강의 신청 API 호출 (역할 포함)
+  const handleApplyLecture = async (appliedRole: 'main' | 'assist') => {
+    if (!lectureDetail || !lectureId) return;
+
+    const accessToken =
+      typeof window !== 'undefined'
+        ? localStorage.getItem('accessToken')
+        : null;
+
+    if (!accessToken) {
+      alert('로그인이 필요합니다.');
+      return;
+    }
+
+    setIsActionLoading(true);
+
+    try {
+      const requestBody = {
+        lecture: lectureId,
+        applied_role: appliedRole,
+      };
+
+      console.log('=== 강의 신청 요청 ===');
+      console.log('URL:', `${baseUrl}/api/lectures/applications/`);
+      console.log('Body:', requestBody);
+      console.log('=====================');
+
+      const response = await fetch(
+        `${baseUrl}/api/lectures/applications/`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+          body: JSON.stringify(requestBody),
+        }
+      );
+
+      console.log('Response status:', response.status);
+
+      if (!response.ok) {
+        let errorMessage = '강의 신청에 실패했습니다.';
+        
+        const responseText = await response.text();
+        console.error('Server response:', responseText);
+        
+        try {
+          const errorData = JSON.parse(responseText);
+          
+          if (errorData.lecture_id) {
+            errorMessage = `lecture_id 오류: ${errorData.lecture_id.join(', ')}`;
+          } else if (errorData.lecture) {
+            errorMessage = `lecture 오류: ${errorData.lecture.join(', ')}`;
+          } else if (errorData.applied_role) {
+            errorMessage = `applied_role 오류: ${errorData.applied_role.join(', ')}`;
+          } else if (errorData.detail) {
+            errorMessage = errorData.detail;
+          } else if (errorData.message) {
+            errorMessage = errorData.message;
+          } else if (errorData.error) {
+            errorMessage = errorData.error;
+          } else {
+            errorMessage = JSON.stringify(errorData);
+          }
+        } catch {
+          errorMessage = `서버 오류 (${response.status}): ${responseText.substring(0, 100)}`;
+        }
+        
+        throw new Error(errorMessage);
+      }
+
+      const result = await response.json();
+      console.log('Success response:', result);
+
+      // ✅ 신청 성공! 성공 플래그만 설정하고 새로고침은 나중에
+      setApplicationSuccess(true);
+      
+    } catch (err) {
+      alert(err instanceof Error ? err.message : '오류가 발생했습니다.');
+      console.error('Failed to apply lecture:', err);
+      throw err;
+    } finally {
+      setIsActionLoading(false);
+    }
+  };
+
+  // 🔹 신청 모달이 완전히 닫힐 때 호출되는 콜백
+  const handleApplicationModalClose = async () => {
+    // 신청이 성공했다면 강의 정보를 새로고침
+    if (applicationSuccess && lectureId) {
+      await fetchLectureDetail(lectureId);
+      setApplicationSuccess(false);
+    }
+  };
+
+  // 🔹 강의 신청 취소 API 호출
+  const handleCancelLecture = async () => {
+    if (!lectureDetail || !lectureId) return;
+
+    const accessToken =
+      typeof window !== 'undefined'
+        ? localStorage.getItem('accessToken')
+        : null;
+
+    if (!accessToken) {
+      alert('로그인이 필요합니다.');
+      return;
+    }
+
+    setIsActionLoading(true);
+
+    try {
+      const response = await fetch(
+        `${baseUrl}/api/lectures/applications/${lectureId}`,
+        {
+          method: 'DELETE',
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+        }
+      );
+
+      if (!response.ok) {
+        let errorMessage = '강의 신청 취소에 실패했습니다.';
+        
+        const responseText = await response.text();
+        console.error('Server response:', responseText);
+        
+        try {
+          const errorData = JSON.parse(responseText);
+          errorMessage = errorData.message || errorData.error || errorData.detail || errorMessage;
+        } catch {
+          errorMessage = `서버 오류 (${response.status})`;
+        }
+        
+        throw new Error(errorMessage);
+      }
+
+      await fetchLectureDetail(lectureId);
+      setIsCancelModalOpen(false);
+      alert('강의 신청이 취소되었습니다.');
+    } catch (err) {
+      alert(err instanceof Error ? err.message : '오류가 발생했습니다.');
+      console.error('Failed to cancel lecture:', err);
+    } finally {
+      setIsActionLoading(false);
     }
   };
 
@@ -172,12 +321,11 @@ const InstructorEventDetailModal: React.FC<InstructorEventDetailModalProps> = ({
       <Overlay onClick={onClose}>
         <ModalContainer onClick={(e) => e.stopPropagation()}>
           <ModalHeader>
-            <ModalTitle>{lecture?.title || '강의 정보'}</ModalTitle>
+            <ModalTitle>{lectureDetail?.title || '강의 정보'}</ModalTitle>
             <CloseButton onClick={onClose}>×</CloseButton>
           </ModalHeader>
 
           <ModalBody>
-            {/* 로딩/에러 메시지 표시 */}
             {loading && (
               <LoadingContainer>
                 <LoadingSpinner />
@@ -188,7 +336,7 @@ const InstructorEventDetailModal: React.FC<InstructorEventDetailModalProps> = ({
             {error && (
               <ErrorContainer>
                 <ErrorText>{error}</ErrorText>
-                <RetryButton onClick={() => lecture && fetchLectureDetail(lecture.id)}>
+                <RetryButton onClick={() => lectureId && fetchLectureDetail(lectureId)}>
                   다시 시도
                 </RetryButton>
               </ErrorContainer>
@@ -233,20 +381,21 @@ const InstructorEventDetailModal: React.FC<InstructorEventDetailModalProps> = ({
                   </InfoRow>
                 </Section>
 
-                {/* 🔹 액션 버튼 컴포넌트를 분리하여 사용 */}
                 <Divider />
                 <Section>
                   <SectionTitle>강사 액션</SectionTitle>
                   <LectureActionButtons
                     status={lectureDetail.status}
                     myApplicationStatus={lectureDetail.my_application_status}
-                    onOpenApplyModal={() => setIsApplyModalOpen(true)}
-                    onOpenCancelModal={() => setIsCancelModalOpen(true)}
+                    isLoading={isActionLoading}
+                    onApply={handleApplyLecture}
+                    onCancel={() => setIsCancelModalOpen(true)}
+                    onApplicationModalClose={handleApplicationModalClose}
+                    lectureTitle={lectureDetail.title}
                   />
                 </Section>
                 <Divider />
 
-                {/* ... (나머지 섹션들 유지: 일정, 모집 정보, 내용, 특이사항, 첨부파일, 확정 강사) */}
                 <Section>
                   <SectionTitle>강의 일정</SectionTitle>
                   {lectureDetail.schedules.map((sch) => (
@@ -334,26 +483,23 @@ const InstructorEventDetailModal: React.FC<InstructorEventDetailModalProps> = ({
         </ModalContainer>
       </Overlay>
 
-      {/* 🔹 신청/취소 보조 모달 */}
-      <ApplicationModal
-        isOpen={isApplyModalOpen}
-        onClose={() => setIsApplyModalOpen(false)}
-        title={lecture?.title || '강의 신청하기'}
-      />
-      <CancellationModal
+      {/* 🔹 취소 확인 모달 */}
+      <ConfirmModal
         isOpen={isCancelModalOpen}
         onClose={() => setIsCancelModalOpen(false)}
-        title={lecture?.title || '강의 신청 취소 확인'}
+        onConfirm={handleCancelLecture}
+        title="강의 신청 취소"
+        message={`"${lectureDetail?.title}" 강의 신청을 정말로 취소하시겠습니까?`}
+        confirmText="취소하기"
+        isLoading={isActionLoading}
       />
     </>
   );
 };
 
 // =========================================================================
-// 💅 스타일 컴포넌트 (ActionButtons 관련 스타일은 LectureActionButtons.tsx로 이동됨)
+// 💅 스타일 컴포넌트
 // =========================================================================
-
-// ... (기존 스타일 컴포넌트 Overlay, ModalContainer, ModalHeader, ModalTitle, CloseButton, ModalBody, LoadingContainer, LoadingSpinner, LoadingText, ErrorContainer, ErrorText, RetryButton, Section, SectionTitle, InfoRow, Label, Value, StatusBadge, ContentBox, Divider, AttachmentLink)는 그대로 유지
 
 const spin = keyframes`
   to { transform: rotate(360deg); }
@@ -382,6 +528,15 @@ const ModalContainer = styled.div`
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+`;
+
+const ConfirmModalContainer = styled.div`
+  background: white;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 400px;
+  overflow: hidden;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
 `;
 
@@ -426,6 +581,66 @@ const ModalBody = styled.div`
   padding: 24px;
   overflow-y: auto;
   flex: 1;
+`;
+
+const ConfirmModalBody = styled.div`
+  padding: 24px;
+
+  p {
+    margin: 0 0 24px 0;
+    color: #374151;
+    font-size: 15px;
+    line-height: 1.6;
+  }
+`;
+
+const ButtonGroup = styled.div`
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+`;
+
+const CancelButton = styled.button`
+  padding: 10px 20px;
+  background-color: #F3F4F6;
+  color: #4B5563;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    background-color: #E5E7EB;
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+`;
+
+const ConfirmButton = styled.button`
+  padding: 10px 20px;
+  background-color: #3B82F6;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    background-color: #2563EB;
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+    background-color: #93C5FD;
+  }
 `;
 
 const LoadingContainer = styled.div`
