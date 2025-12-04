@@ -130,7 +130,9 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const [upcomingLectures, setUpcomingLectures] = useState<UpcomingLecture[]>([]);
+  const [upcomingLectures, setUpcomingLectures] = useState<UpcomingLecture[]>(
+    []
+  );
   const [isUpcomingLoading, setIsUpcomingLoading] = useState(false);
   const [upcomingError, setUpcomingError] = useState<string | null>(null);
 
@@ -221,10 +223,10 @@ export default function LoginPage() {
 
       try {
         const baseUrl =
-          process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api";
+          process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000";
 
         const response = await fetch(
-          `${baseUrl}/lectures/schedules/public-upcoming/`
+          `${baseUrl}/api/lectures/schedules/public-upcoming/`
         );
 
         if (!response.ok) {
@@ -273,8 +275,7 @@ export default function LoginPage() {
             value={role}
             onChange={(e) =>
               setRole(e.target.value === "manager" ? "manager" : "instructor")
-            }
-          >
+            }>
             <option value="instructor">강사</option>
             <option value="manager">매니저</option>
           </Select>
@@ -297,8 +298,7 @@ export default function LoginPage() {
                 fontSize: 12,
                 marginTop: 4,
                 marginBottom: 0,
-              }}
-            >
+              }}>
               {errorMessage}
             </p>
           )}

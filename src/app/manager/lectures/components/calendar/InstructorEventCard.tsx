@@ -1,6 +1,6 @@
-import React from 'react';
-import styled from 'styled-components';
-import { Lecture, Schedule } from '../../types';
+import React from "react";
+import styled from "styled-components";
+import { Lecture, Schedule } from "../../types";
 
 interface InstructorEventCardProps {
   lecture: Lecture;
@@ -10,61 +10,60 @@ interface InstructorEventCardProps {
 
 const getTypeColor = (type: string, isRecruiting: boolean) => {
   const colors = {
-    normal: { bg: '#FFF9E6', border: '#FFD700' },
-    doroland: { bg: '#E6F0FF', border: '#1E3A8A' },
-    booth: { bg: '#FFE6E6', border: '#DC2626' },
-    etc: { bg: '#F3F4F6', border: '#6B7280' },
-    competition: { bg: '#E0F2FE', border: '#0EA5E9' },
-    camp: { bg: '#ECFDF5', border: '#10B981' }
+    normal: { bg: "#FFF9E6", border: "#FFD700" },
+    doroland: { bg: "#E6F0FF", border: "#1E3A8A" },
+    booth: { bg: "#FFE6E6", border: "#DC2626" },
+    etc: { bg: "#F3F4F6", border: "#6B7280" },
+    competition: { bg: "#E0F2FE", border: "#0EA5E9" },
+    camp: { bg: "#ECFDF5", border: "#10B981" },
   };
 
   const colorSet = colors[type as keyof typeof colors] || colors.etc;
-  
+
   if (!isRecruiting) {
     return {
-      bg: '#F9FAFB',
-      border: '#D1D5DB'
+      bg: "#F9FAFB",
+      border: "#D1D5DB",
     };
   }
-  
+
   return colorSet;
 };
 
-const InstructorEventCard: React.FC<InstructorEventCardProps> = ({ 
-  lecture, 
-  schedule, 
-  onClick 
+const InstructorEventCard: React.FC<InstructorEventCardProps> = ({
+  lecture,
+  schedule,
+  onClick,
 }) => {
-  const isRecruiting = lecture.status === 'RECRUITING';
+  const isRecruiting = lecture.status === "RECRUITING";
   const colors = getTypeColor(lecture.type, isRecruiting);
 
   return (
-    <CardContainer 
+    <CardContainer
       onClick={onClick}
-      bgColor={colors.bg}
-      borderColor={colors.border}
-      isRecruiting={isRecruiting}
-    >
+      $bgColor={colors.bg}
+      $borderColor={colors.border}
+      $isRecruiting={isRecruiting}>
       <Time>{schedule.start_time.slice(0, 5)}</Time>
-      <Title isRecruiting={isRecruiting}>{lecture.title}</Title>
+      <Title $isRecruiting={isRecruiting}>{lecture.title}</Title>
       {!isRecruiting && <StatusBadge>모집 완료</StatusBadge>}
     </CardContainer>
   );
 };
 
-const CardContainer = styled.div<{ 
-  bgColor: string; 
-  borderColor: string;
-  isRecruiting: boolean;
+const CardContainer = styled.div<{
+  $bgColor: string;
+  $borderColor: string;
+  $isRecruiting: boolean;
 }>`
-  background-color: ${props => props.bgColor};
-  border-left: 3px solid ${props => props.borderColor};
+  background-color: ${(props) => props.$bgColor};
+  border-left: 3px solid ${(props) => props.$borderColor};
   padding: 4px 6px;
   margin: 2px 0;
   border-radius: 3px;
   cursor: pointer;
   transition: all 0.2s;
-  opacity: ${props => props.isRecruiting ? 1 : 0.7};
+  opacity: ${(props) => (props.$isRecruiting ? 1 : 0.7)};
 
   &:hover {
     transform: translateX(2px);
@@ -79,9 +78,9 @@ const Time = styled.div`
   margin-bottom: 2px;
 `;
 
-const Title = styled.div<{ isRecruiting: boolean }>`
+const Title = styled.div<{ $isRecruiting: boolean }>`
   font-size: 12px;
-  color: ${props => props.isRecruiting ? '#111827' : '#6B7280'};
+  color: ${(props) => (props.$isRecruiting ? "#111827" : "#6B7280")};
   font-weight: 500;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -90,8 +89,8 @@ const Title = styled.div<{ isRecruiting: boolean }>`
 
 const StatusBadge = styled.span`
   font-size: 10px;
-  color: #6B7280;
-  background-color: #E5E7EB;
+  color: #6b7280;
+  background-color: #e5e7eb;
   padding: 1px 4px;
   border-radius: 2px;
   margin-top: 2px;
