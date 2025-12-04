@@ -1,14 +1,7 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useRef } from 'react';
-import {
-  Wrap,
-  BreadCrumb,
-  Title,
-  Grid,
-  LeftPanel,
-  RightPanel,
-} from './styles';
+import { useState, useEffect, useRef } from "react";
+import { Wrap, BreadCrumb, Title, Grid, LeftPanel, RightPanel } from "./styles";
 
 type Instructor = {
   id: number;
@@ -32,7 +25,7 @@ type ChatMessage = RawMessage & {
 };
 
 type WsMessageEvent = {
-  event: 'message';
+  event: "message";
   message_id: number;
   sender_id: number;
   recipient_id: number;
@@ -41,29 +34,29 @@ type WsMessageEvent = {
 };
 
 type WsReadEvent = {
-  event: 'read';
+  event: "read";
   reader_id: number;
   other_user_id: number;
   message_ids: number[];
 };
 
-type WsAnyEvent = Partial<WsMessageEvent & WsReadEvent> & {
-  event?: string;
-  [key: string]: any;
-};
+type WsAnyEvent =
+  | WsMessageEvent
+  | WsReadEvent
+  | { event: string; [key: string]: any };
 
 // --- 백엔드 주소 상수 (필요하면 .env에서 NEXT_PUBLIC_BACKEND_* 로 override 가능) ---
 const BACKEND_HTTP_BASE =
-  process.env.NEXT_PUBLIC_BACKEND_HTTP_BASE ?? 'http://localhost:8000';
+  process.env.NEXT_PUBLIC_BACKEND_HTTP_BASE ?? "http://localhost:8000";
 const BACKEND_WS_BASE =
-  process.env.NEXT_PUBLIC_BACKEND_WS_BASE ?? 'ws://localhost:8000';
+  process.env.NEXT_PUBLIC_BACKEND_WS_BASE ?? "ws://localhost:8000";
 // ------------------------------------------------------------------------
 
 // localStorage 에서 accessToken 읽기
 function getAccessToken(): string | null {
-  if (typeof window === 'undefined') return null;
+  if (typeof window === "undefined") return null;
   try {
-    return window.localStorage.getItem('accessToken');
+    return window.localStorage.getItem("accessToken");
   } catch {
     return null;
   }
@@ -88,21 +81,21 @@ function getInstructorDisplayName(instructor: Instructor): string {
 }
 
 function formatTime(iso: string) {
-  if (!iso) return '';
+  if (!iso) return "";
   const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return '';
-  return d.toLocaleTimeString('ko-KR', {
-    hour: '2-digit',
-    minute: '2-digit',
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toLocaleTimeString("ko-KR", {
+    hour: "2-digit",
+    minute: "2-digit",
   });
 }
 
 export default function ManagerMessagesPage() {
   const [instructors, setInstructors] = useState<Instructor[]>([]);
   const [isLoadingInstructors, setIsLoadingInstructors] = useState(false);
-  const [selectedInstructorId, setSelectedInstructorId] = useState<number | null>(
-    null
-  );
+  const [selectedInstructorId, setSelectedInstructorId] = useState<
+    number | null
+  >(null);
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
@@ -110,7 +103,7 @@ export default function ManagerMessagesPage() {
   const [ws, setWs] = useState<WebSocket | null>(null);
   const [isWsConnected, setIsWsConnected] = useState(false);
 
-  const [sendText, setSendText] = useState('');
+  const [sendText, setSendText] = useState("");
   const [error, setError] = useState<string | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
@@ -119,8 +112,8 @@ export default function ManagerMessagesPage() {
   useEffect(() => {
     if (!messagesEndRef.current) return;
     messagesEndRef.current.scrollIntoView({
-      behavior: 'smooth',
-      block: 'end',
+      behavior: "smooth",
+      block: "end",
     });
   }, [messages.length]);
 
@@ -135,14 +128,14 @@ export default function ManagerMessagesPage() {
         const res = await fetch(
           `${BACKEND_HTTP_BASE}/api/accounts/instructors/`,
           {
-            method: 'GET',
-            headers: createAuthHeaders({ 'Content-Type': 'application/json' }),
-            credentials: 'include',
+            method: "GET",
+            headers: createAuthHeaders({ "Content-Type": "application/json" }),
+            credentials: "include",
           }
         );
 
         if (res.status === 401) {
-          throw new Error('UNAUTHORIZED');
+          throw new Error("UNAUTHORIZED");
         }
 
         if (!res.ok) {
@@ -165,10 +158,10 @@ export default function ManagerMessagesPage() {
       } catch (e: any) {
         console.error(e);
         if (!cancelled) {
-          if (e?.message === 'UNAUTHORIZED') {
-            setError('로그인 정보가 유효하지 않습니다. 다시 로그인해주세요.');
+          if (e?.message === "UNAUTHORIZED") {
+            setError("로그인 정보가 유효하지 않습니다. 다시 로그인해주세요.");
           } else {
-            setError('강사 목록을 불러오는 중 오류가 발생했습니다.');
+            setError("강사 목록을 불러오는 중 오류가 발생했습니다.");
           }
         }
       } finally {
@@ -203,14 +196,14 @@ export default function ManagerMessagesPage() {
         const res = await fetch(
           `${BACKEND_HTTP_BASE}/api/communications/history/${selectedInstructorId}/`,
           {
-            method: 'GET',
-            headers: createAuthHeaders({ 'Content-Type': 'application/json' }),
-            credentials: 'include',
+            method: "GET",
+            headers: createAuthHeaders({ "Content-Type": "application/json" }),
+            credentials: "include",
           }
         );
 
         if (res.status === 401) {
-          throw new Error('UNAUTHORIZED');
+          throw new Error("UNAUTHORIZED");
         }
 
         if (!res.ok) {
@@ -236,10 +229,10 @@ export default function ManagerMessagesPage() {
       } catch (e: any) {
         console.error(e);
         if (!cancelled) {
-          if (e?.message === 'UNAUTHORIZED') {
-            setError('로그인 정보가 유효하지 않습니다. 다시 로그인해주세요.');
+          if (e?.message === "UNAUTHORIZED") {
+            setError("로그인 정보가 유효하지 않습니다. 다시 로그인해주세요.");
           } else {
-            setError('메시지 목록을 불러오는 중 오류가 발생했습니다.');
+            setError("메시지 목록을 불러오는 중 오류가 발생했습니다.");
           }
         }
       } finally {
@@ -271,7 +264,9 @@ export default function ManagerMessagesPage() {
 
     // 토큰이 없으면 연결 시도하지 않고 에러 표시
     if (!token) {
-      setError('로그인 정보가 없어 메시지 서버에 연결할 수 없습니다. 다시 로그인해주세요.');
+      setError(
+        "로그인 정보가 없어 메시지 서버에 연결할 수 없습니다. 다시 로그인해주세요."
+      );
       setIsWsConnected(false);
       return;
     }
@@ -293,15 +288,15 @@ export default function ManagerMessagesPage() {
     };
 
     socket.onerror = (event) => {
-      console.error('WebSocket error:', event);
-      setError('메시지 서버와의 연결 중 오류가 발생했습니다.');
+      console.error("WebSocket error:", event);
+      setError("메시지 서버와의 연결 중 오류가 발생했습니다.");
     };
 
     socket.onmessage = (event) => {
       try {
         const data: WsAnyEvent = JSON.parse(event.data);
 
-        if (data.event === 'message') {
+        if (data.event === "message") {
           const msgEvent = data as WsMessageEvent;
           const newMsg: ChatMessage = {
             id: msgEvent.message_id,
@@ -313,7 +308,7 @@ export default function ManagerMessagesPage() {
             isMine: msgEvent.sender_id !== selectedInstructorId,
           };
           setMessages((prev) => [...prev, newMsg]);
-        } else if (data.event === 'read') {
+        } else if (data.event === "read") {
           const readEvent = data as WsReadEvent;
           if (!readEvent.message_ids || !readEvent.message_ids.length) return;
 
@@ -331,7 +326,7 @@ export default function ManagerMessagesPage() {
           );
         }
       } catch (e) {
-        console.error('Failed to parse WS message:', e);
+        console.error("Failed to parse WS message:", e);
       }
     };
 
@@ -348,23 +343,33 @@ export default function ManagerMessagesPage() {
 
   const handleSend = () => {
     const text = sendText.trim();
-    if (!text || !ws || ws.readyState !== WebSocket.OPEN || !selectedInstructorId) {
+    if (
+      !text ||
+      !ws ||
+      ws.readyState !== WebSocket.OPEN ||
+      !selectedInstructorId
+    ) {
       return;
     }
 
     ws.send(
       JSON.stringify({
-        command: 'message',
+        command: "message",
         message: text,
       })
     );
-    setSendText('');
+    setSendText("");
   };
 
   const handleKeyDownOnTextarea = (
     e: React.KeyboardEvent<HTMLTextAreaElement>
   ) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    // IME 조합 중인지 확인
+    if (e.nativeEvent.isComposing || e.keyCode === 229) {
+      return;
+    }
+
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSend();
     }
@@ -383,14 +388,13 @@ export default function ManagerMessagesPage() {
         <div
           style={{
             marginBottom: 12,
-            padding: '8px 12px',
+            padding: "8px 12px",
             borderRadius: 6,
-            border: '1px solid #fecaca',
-            backgroundColor: '#fef2f2',
+            border: "1px solid #fecaca",
+            backgroundColor: "#fef2f2",
             fontSize: 13,
-            color: '#b91c1c',
-          }}
-        >
+            color: "#b91c1c",
+          }}>
           {error}
         </div>
       )}
@@ -400,35 +404,31 @@ export default function ManagerMessagesPage() {
         <LeftPanel>
           <div
             style={{
-              display: 'flex',
-              flexDirection: 'column',
-              height: '100%',
-            }}
-          >
+              display: "flex",
+              flexDirection: "column",
+              height: "100%",
+            }}>
             <div
               style={{
-                padding: '10px 12px',
-                borderBottom: '1px solid #e5e7eb',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-              }}
-            >
+                padding: "10px 12px",
+                borderBottom: "1px solid #e5e7eb",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+              }}>
               <div
                 style={{
                   fontSize: 14,
                   fontWeight: 600,
-                }}
-              >
+                }}>
                 강사 목록
               </div>
               {isLoadingInstructors && (
                 <span
                   style={{
                     fontSize: 11,
-                    color: '#9ca3af',
-                  }}
-                >
+                    color: "#9ca3af",
+                  }}>
                   불러오는 중…
                 </span>
               )}
@@ -437,28 +437,25 @@ export default function ManagerMessagesPage() {
             <div
               style={{
                 flex: 1,
-                overflowY: 'auto',
-              }}
-            >
+                overflowY: "auto",
+              }}>
               {!isLoadingInstructors && instructors.length === 0 && (
                 <div
                   style={{
                     padding: 12,
                     fontSize: 12,
-                    color: '#9ca3af',
-                  }}
-                >
+                    color: "#9ca3af",
+                  }}>
                   표시할 강사가 없습니다.
                 </div>
               )}
 
               <ul
                 style={{
-                  listStyle: 'none',
+                  listStyle: "none",
                   padding: 0,
                   margin: 0,
-                }}
-              >
+                }}>
                 {instructors.map((instructor) => {
                   const isSelected = instructor.id === selectedInstructorId;
                   return (
@@ -467,19 +464,18 @@ export default function ManagerMessagesPage() {
                         type="button"
                         onClick={() => handleSelectInstructor(instructor.id)}
                         style={{
-                          width: '100%',
-                          textAlign: 'left',
-                          padding: '8px 10px',
-                          border: 'none',
+                          width: "100%",
+                          textAlign: "left",
+                          padding: "8px 10px",
+                          border: "none",
                           backgroundColor: isSelected
-                            ? '#eff6ff'
-                            : 'transparent',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
+                            ? "#eff6ff"
+                            : "transparent",
+                          cursor: "pointer",
+                          display: "flex",
+                          alignItems: "center",
                           gap: 8,
-                        }}
-                      >
+                        }}>
                         {instructor.profile_photo_url && (
                           <img
                             src={instructor.profile_photo_url}
@@ -487,8 +483,8 @@ export default function ManagerMessagesPage() {
                             style={{
                               width: 32,
                               height: 32,
-                              borderRadius: '999px',
-                              objectFit: 'cover',
+                              borderRadius: "999px",
+                              objectFit: "cover",
                               flexShrink: 0,
                             }}
                           />
@@ -496,31 +492,28 @@ export default function ManagerMessagesPage() {
                         <div
                           style={{
                             minWidth: 0,
-                          }}
-                        >
+                          }}>
                           <div
                             style={{
                               fontSize: 14,
                               fontWeight: 500,
-                              color: isSelected ? '#1d4ed8' : '#111827',
+                              color: isSelected ? "#1d4ed8" : "#111827",
                               marginBottom: 2,
-                              whiteSpace: 'nowrap',
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                            }}
-                          >
+                              whiteSpace: "nowrap",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                            }}>
                             {getInstructorDisplayName(instructor)}
                           </div>
                           <div
                             style={{
                               fontSize: 11,
-                              color: '#6b7280',
-                              whiteSpace: 'nowrap',
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                            }}
-                          >
-                            {instructor.portfolio || ''}
+                              color: "#6b7280",
+                              whiteSpace: "nowrap",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                            }}>
+                            {instructor.portfolio || ""}
                           </div>
                         </div>
                       </button>
@@ -536,52 +529,47 @@ export default function ManagerMessagesPage() {
         <RightPanel>
           <div
             style={{
-              display: 'flex',
-              flexDirection: 'column',
-              height: '100%',
-            }}
-          >
+              display: "flex",
+              flexDirection: "column",
+              height: "100%",
+            }}>
             {/* 채팅 헤더 */}
             <div
               style={{
-                padding: '10px 12px',
-                borderBottom: '1px solid #e5e7eb',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-              }}
-            >
+                padding: "10px 12px",
+                borderBottom: "1px solid #e5e7eb",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+              }}>
               <div>
                 <div
                   style={{
                     fontSize: 14,
                     fontWeight: 600,
-                  }}
-                >
+                  }}>
                   채팅창
                 </div>
                 <div
                   style={{
                     marginTop: 2,
                     fontSize: 12,
-                    color: '#6b7280',
-                  }}
-                >
+                    color: "#6b7280",
+                  }}>
                   {selectedInstructor
                     ? `${getInstructorDisplayName(
                         selectedInstructor
                       )} 님과 대화 중`
-                    : '왼쪽에서 대화할 강사를 선택해주세요.'}
+                    : "왼쪽에서 대화할 강사를 선택해주세요."}
                 </div>
               </div>
               {selectedInstructorId && (
                 <div
                   style={{
                     fontSize: 11,
-                    color: isWsConnected ? '#16a34a' : '#9ca3af',
-                  }}
-                >
-                  {isWsConnected ? '연결됨' : '연결 중…'}
+                    color: isWsConnected ? "#16a34a" : "#9ca3af",
+                  }}>
+                  {isWsConnected ? "연결됨" : "연결 중…"}
                 </div>
               )}
             </div>
@@ -591,18 +579,16 @@ export default function ManagerMessagesPage() {
               style={{
                 flex: 1,
                 padding: 12,
-                overflowY: 'auto',
-                backgroundColor: '#f8fafc',
-              }}
-            >
+                overflowY: "auto",
+                backgroundColor: "#f8fafc",
+              }}>
               {isLoadingHistory && selectedInstructorId && (
                 <div
                   style={{
                     fontSize: 12,
-                    color: '#6b7280',
+                    color: "#6b7280",
                     marginBottom: 8,
-                  }}
-                >
+                  }}>
                   기존 메시지를 불러오는 중입니다…
                 </div>
               )}
@@ -613,9 +599,8 @@ export default function ManagerMessagesPage() {
                   <div
                     style={{
                       fontSize: 12,
-                      color: '#9ca3af',
-                    }}
-                  >
+                      color: "#9ca3af",
+                    }}>
                     아직 주고받은 메시지가 없습니다. 첫 메시지를 보내보세요.
                   </div>
                 )}
@@ -624,9 +609,8 @@ export default function ManagerMessagesPage() {
                 <div
                   style={{
                     fontSize: 12,
-                    color: '#9ca3af',
-                  }}
-                >
+                    color: "#9ca3af",
+                  }}>
                   왼쪽 강사 목록에서 대화할 상대를 선택하면 메시지 목록이
                   표시됩니다.
                 </div>
@@ -637,41 +621,38 @@ export default function ManagerMessagesPage() {
                   <div
                     key={msg.id}
                     style={{
-                      display: 'flex',
-                      justifyContent: msg.isMine ? 'flex-end' : 'flex-start',
+                      display: "flex",
+                      justifyContent: msg.isMine ? "flex-end" : "flex-start",
                       marginBottom: 6,
-                    }}
-                  >
+                    }}>
                     <div
                       style={{
-                        maxWidth: '70%',
-                        padding: '6px 10px',
+                        maxWidth: "70%",
+                        padding: "6px 10px",
                         borderRadius: 10,
                         fontSize: 13,
                         lineHeight: 1.4,
-                        whiteSpace: 'pre-wrap',
-                        wordBreak: 'break-word',
-                        backgroundColor: msg.isMine ? '#2563eb' : '#ffffff',
-                        color: msg.isMine ? '#ffffff' : '#111827',
-                        border: msg.isMine ? 'none' : '1px solid #e5e7eb',
+                        whiteSpace: "pre-wrap",
+                        wordBreak: "break-word",
+                        backgroundColor: msg.isMine ? "#2563eb" : "#ffffff",
+                        color: msg.isMine ? "#ffffff" : "#111827",
+                        border: msg.isMine ? "none" : "1px solid #e5e7eb",
                         boxShadow:
-                          '0 1px 2px rgba(15,23,42,0.06), 0 0 0 1px rgba(15,23,42,0.02)',
-                      }}
-                    >
+                          "0 1px 2px rgba(15,23,42,0.06), 0 0 0 1px rgba(15,23,42,0.02)",
+                      }}>
                       <div>{msg.content}</div>
                       <div
                         style={{
                           marginTop: 3,
-                          display: 'flex',
-                          justifyContent: 'flex-end',
+                          display: "flex",
+                          justifyContent: "flex-end",
                           gap: 6,
                           fontSize: 10,
                           opacity: 0.8,
-                        }}
-                      >
+                        }}>
                         <span>{formatTime(msg.sent_at)}</span>
                         {msg.isMine && (
-                          <span>{msg.read_at ? '읽음' : '전송됨'}</span>
+                          <span>{msg.read_at ? "읽음" : "전송됨"}</span>
                         )}
                       </div>
                     </div>
@@ -684,10 +665,9 @@ export default function ManagerMessagesPage() {
             {/* 입력 영역 */}
             <div
               style={{
-                borderTop: '1px solid #e5e7eb',
+                borderTop: "1px solid #e5e7eb",
                 padding: 10,
-              }}
-            >
+              }}>
               <textarea
                 value={sendText}
                 onChange={(e) => setSendText(e.target.value)}
@@ -695,28 +675,27 @@ export default function ManagerMessagesPage() {
                 disabled={!selectedInstructorId || !isWsConnected}
                 placeholder={
                   selectedInstructor
-                    ? '메시지를 입력하세요. (Enter: 보내기, Shift+Enter: 줄바꿈)'
-                    : '강사를 먼저 선택하세요.'
+                    ? "메시지를 입력하세요. (Enter: 보내기, Shift+Enter: 줄바꿈)"
+                    : "강사를 먼저 선택하세요."
                 }
                 style={{
-                  width: '100%',
+                  width: "100%",
                   minHeight: 60,
-                  resize: 'none',
+                  resize: "none",
                   fontSize: 13,
-                  padding: '6px 8px',
+                  padding: "6px 8px",
                   borderRadius: 6,
-                  border: '1px solid #d1d5db',
-                  outline: 'none',
-                  boxSizing: 'border-box',
+                  border: "1px solid #d1d5db",
+                  outline: "none",
+                  boxSizing: "border-box",
                   marginBottom: 6,
                 }}
               />
               <div
                 style={{
-                  display: 'flex',
-                  justifyContent: 'flex-end',
-                }}
-              >
+                  display: "flex",
+                  justifyContent: "flex-end",
+                }}>
                 <button
                   type="button"
                   onClick={handleSend}
@@ -726,25 +705,24 @@ export default function ManagerMessagesPage() {
                     !sendText.trim().length
                   }
                   style={{
-                    padding: '6px 14px',
+                    padding: "6px 14px",
                     fontSize: 13,
                     borderRadius: 999,
-                    border: 'none',
+                    border: "none",
                     backgroundColor:
                       !selectedInstructorId ||
                       !isWsConnected ||
                       !sendText.trim().length
-                        ? '#9ca3af'
-                        : '#2563eb',
-                    color: '#ffffff',
+                        ? "#9ca3af"
+                        : "#2563eb",
+                    color: "#ffffff",
                     cursor:
                       !selectedInstructorId ||
                       !isWsConnected ||
                       !sendText.trim().length
-                        ? 'default'
-                        : 'pointer',
-                  }}
-                >
+                        ? "default"
+                        : "pointer",
+                  }}>
                   보내기
                 </button>
               </div>
