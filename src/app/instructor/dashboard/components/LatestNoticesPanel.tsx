@@ -208,6 +208,11 @@ export default function LatestNoticesPanel({ notices }: Props) {
 
   const top6 = notices.slice(0, 5);
 
+  const getShortTitle = (title: string) => {
+    const MAX = 30; // 원하는 길이로 조절 가능
+    return title.length > MAX ? `${title.slice(0, MAX)}...` : title;
+  };
+
   // 날짜 포맷팅 함수 (YYYY.MM.DD)
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -241,14 +246,14 @@ export default function LatestNoticesPanel({ notices }: Props) {
                 <Link
                   href={`/instructor/notices/${notice.id}`}
                   className="text"
-                  title={notice.title}
+                  title={notice.title} // 전체 제목은 툴팁으로
                   // 페이지 이동 막고, 대시보드에서 바로 모달만 띄우기
                   onClick={(e) => {
                     e.preventDefault();
                     setSelectedNotice(notice as unknown as Notice);
                   }}
                 >
-                  {notice.title}
+                  {getShortTitle(notice.title)}
                 </Link>
               </TitleArea>
               <DateText>{formatDate(notice.createdAt)}</DateText>
