@@ -1,786 +1,350 @@
-import React, { useEffect, useState } from 'react';
+// src/app/instructor/dashboard/components/InstructorEventDetailModal.tsx
+'use client';
+
+import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import styled, { keyframes } from 'styled-components';
-import { LectureDetail } from '../types';
-import LectureActionButtons from './LectureActionButtons';
+import type { InstructorEventItem } from '../types';
 
-// =========================================================================
-// 🧩 확인 모달 컴포넌트
-// =========================================================================
-interface ConfirmModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onConfirm: () => void;
-  title: string;
-  message: string;
-  confirmText?: string;
-  isLoading?: boolean;
-}
+// --- Icons ---
+const CloseIcon = () => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <line x1="18" y1="6" x2="6" y2="18"></line>
+    <line x1="6" y1="6" x2="18" y2="18"></line>
+  </svg>
+);
+const MapPinIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+    <circle cx="12" cy="10" r="3"></circle>
+  </svg>
+);
+const FileTextIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+    <polyline points="14 2 14 8 20 8"></polyline>
+    <line x1="16" y1="13" x2="8" y2="13"></line>
+    <line x1="16" y1="17" x2="8" y2="17"></line>
+    <polyline points="10 9 9 9 8 9"></polyline>
+  </svg>
+);
+const UsersIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+    <circle cx="9" cy="7" r="4"></circle>
+    <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+    <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+  </svg>
+);
+const ClockIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <circle cx="12" cy="12" r="10"></circle>
+    <polyline points="12 6 12 12 16 14"></polyline>
+  </svg>
+);
 
-const ConfirmModal: React.FC<ConfirmModalProps> = ({
-  isOpen,
-  onClose,
-  onConfirm,
-  title,
-  message,
-  confirmText = '확인',
-  isLoading = false,
-}) => {
-  if (!isOpen) return null;
-
-  return (
-    <Overlay onClick={onClose}>
-      <ConfirmModalContainer onClick={(e) => e.stopPropagation()}>
-        <ModalHeader>
-          <ModalTitle>{title}</ModalTitle>
-          <CloseButton onClick={onClose}>×</CloseButton>
-        </ModalHeader>
-        <ConfirmModalBody>
-          <p>{message}</p>
-          <ButtonGroup>
-            <CancelButton onClick={onClose} disabled={isLoading}>
-              취소
-            </CancelButton>
-            <ConfirmButton onClick={onConfirm} disabled={isLoading}>
-              {isLoading ? '처리 중...' : confirmText}
-            </ConfirmButton>
-          </ButtonGroup>
-        </ConfirmModalBody>
-      </ConfirmModalContainer>
-    </Overlay>
-  );
-};
-
-// =========================================================================
-// 🎬 메인 모달 컴포넌트
-// =========================================================================
-interface InstructorEventDetailModalProps {
-  lectureId: number | null;
-  isOpen: boolean;
-  onClose: () => void;
-}
-
-const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
-
-const InstructorEventDetailModal: React.FC<InstructorEventDetailModalProps> = ({
-  lectureId,
-  isOpen,
-  onClose,
-}) => {
-  const [lectureDetail, setLectureDetail] = useState<LectureDetail | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  // 🔹 신청/취소 API 호출 로딩 상태
-  const [isActionLoading, setIsActionLoading] = useState(false);
-
-  // 🔹 확인 모달 상태 (취소만 사용)
-  const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
-
-  // 🔹 신청 완료 상태 추가
-  const [applicationSuccess, setApplicationSuccess] = useState(false);
-
-  useEffect(() => {
-    if (isOpen && lectureId) {
-      fetchLectureDetail(lectureId);
-    }
-
-    if (!isOpen) {
-      setLectureDetail(null);
-      setError(null);
-      setIsCancelModalOpen(false);
-      setIsActionLoading(false);
-      setApplicationSuccess(false);
-    }
-  }, [isOpen, lectureId]);
-
-  const fetchLectureDetail = async (id: number) => {
-    if (!baseUrl) {
-      setError('API 서버 주소(.env)가 설정되어 있지 않습니다.');
-      return;
-    }
-
-    const accessToken =
-      typeof window !== 'undefined'
-        ? localStorage.getItem('accessToken')
-        : null;
-
-    if (!accessToken) {
-      setError('로그인이 필요합니다. 다시 로그인 후 이용해주세요.');
-      return;
-    }
-
-    setLoading(true);
-    setError(null);
-
-    try {
-      const response = await fetch(`${baseUrl}/api/lectures/lectures/${id}`, {
-        method: 'GET',
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-      });
-
-      if (!response.ok) {
-        throw new Error('강의 정보를 불러오는데 실패했습니다.');
-      }
-
-      const data: LectureDetail = await response.json();
-      console.log('--- API 응답 원본 데이터 ---');
-      console.log(data);
-      console.log('------------------------------');
-      setLectureDetail(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : '오류가 발생했습니다.');
-      console.error('Failed to fetch lecture detail:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // 🔹 강의 신청 API 호출 (역할 포함)
-  const handleApplyLecture = async (appliedRole: 'main' | 'assist') => {
-    if (!lectureDetail || !lectureId) return;
-
-    const accessToken =
-      typeof window !== 'undefined'
-        ? localStorage.getItem('accessToken')
-        : null;
-
-    if (!accessToken) {
-      alert('로그인이 필요합니다.');
-      return;
-    }
-
-    setIsActionLoading(true);
-
-    try {
-      const requestBody = {
-        lecture: lectureId,
-        applied_role: appliedRole,
-      };
-
-      console.log('=== 강의 신청 요청 ===');
-      console.log('URL:', `${baseUrl}/api/lectures/applications/`);
-      console.log('Body:', requestBody);
-      console.log('=====================');
-
-      const response = await fetch(
-        `${baseUrl}/api/lectures/applications/`,
-        {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            'Content-Type': 'application/json',
-          },
-          credentials: 'include',
-          body: JSON.stringify(requestBody),
-        }
-      );
-
-      console.log('Response status:', response.status);
-
-      if (!response.ok) {
-        let errorMessage = '강의 신청에 실패했습니다.';
-        
-        const responseText = await response.text();
-        console.error('Server response:', responseText);
-        
-        try {
-          const errorData = JSON.parse(responseText);
-          
-          if (errorData.lecture_id) {
-            errorMessage = `lecture_id 오류: ${errorData.lecture_id.join(', ')}`;
-          } else if (errorData.lecture) {
-            errorMessage = `lecture 오류: ${errorData.lecture.join(', ')}`;
-          } else if (errorData.applied_role) {
-            errorMessage = `applied_role 오류: ${errorData.applied_role.join(', ')}`;
-          } else if (errorData.detail) {
-            errorMessage = errorData.detail;
-          } else if (errorData.message) {
-            errorMessage = errorData.message;
-          } else if (errorData.error) {
-            errorMessage = errorData.error;
-          } else {
-            errorMessage = JSON.stringify(errorData);
-          }
-        } catch {
-          errorMessage = `서버 오류 (${response.status}): ${responseText.substring(0, 100)}`;
-        }
-        
-        throw new Error(errorMessage);
-      }
-
-      const result = await response.json();
-      console.log('Success response:', result);
-
-      // ✅ 신청 성공! 성공 플래그만 설정하고 새로고침은 나중에
-      setApplicationSuccess(true);
-      
-    } catch (err) {
-      alert(err instanceof Error ? err.message : '오류가 발생했습니다.');
-      console.error('Failed to apply lecture:', err);
-      throw err;
-    } finally {
-      setIsActionLoading(false);
-    }
-  };
-
-  // 🔹 신청 모달이 완전히 닫힐 때 호출되는 콜백
-  const handleApplicationModalClose = async () => {
-    // 신청이 성공했다면 강의 정보를 새로고침
-    if (applicationSuccess && lectureId) {
-      await fetchLectureDetail(lectureId);
-      setApplicationSuccess(false);
-    }
-  };
-
-  // 🔹 강의 신청 취소 API 호출
-  const handleCancelLecture = async () => {
-    if (!lectureDetail || !lectureId) return;
-
-    const accessToken =
-      typeof window !== 'undefined'
-        ? localStorage.getItem('accessToken')
-        : null;
-
-    if (!accessToken) {
-      alert('로그인이 필요합니다.');
-      return;
-    }
-
-    setIsActionLoading(true);
-
-    try {
-      const response = await fetch(
-        `${baseUrl}/api/lectures/applications/${lectureId}`,
-        {
-          method: 'DELETE',
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            'Content-Type': 'application/json',
-          },
-          credentials: 'include',
-        }
-      );
-
-      if (!response.ok) {
-        let errorMessage = '강의 신청 취소에 실패했습니다.';
-        
-        const responseText = await response.text();
-        console.error('Server response:', responseText);
-        
-        try {
-          const errorData = JSON.parse(responseText);
-          errorMessage = errorData.message || errorData.error || errorData.detail || errorMessage;
-        } catch {
-          errorMessage = `서버 오류 (${response.status})`;
-        }
-        
-        throw new Error(errorMessage);
-      }
-
-      await fetchLectureDetail(lectureId);
-      setIsCancelModalOpen(false);
-      alert('강의 신청이 취소되었습니다.');
-    } catch (err) {
-      alert(err instanceof Error ? err.message : '오류가 발생했습니다.');
-      console.error('Failed to cancel lecture:', err);
-    } finally {
-      setIsActionLoading(false);
-    }
-  };
-
-  if (!isOpen) return null;
-
-  const getTypeLabel = (type: string) => {
-    const map: Record<string, string> = {
-      general: '일반',
-      competition: '대회',
-      camp: '캠프',
-      doroland: '도로랜드',
-      booth: '부스',
-      etc: '기타',
-    };
-    return map[type] || type;
-  };
-
-  const getStatusLabel = (status: string) => {
-    const map: Record<string, string> = {
-      RECRUITING: '모집 중',
-      ALLOCATING: '배정 중',
-      COMPLETED: '배정 완료',
-      COMPETITION: '배정 완료',
-    };
-    return map[status] || status;
-  };
-
-  return (
-    <>
-      <Overlay onClick={onClose}>
-        <ModalContainer onClick={(e) => e.stopPropagation()}>
-          <ModalHeader>
-            <ModalTitle>{lectureDetail?.title || '강의 정보'}</ModalTitle>
-            <CloseButton onClick={onClose}>×</CloseButton>
-          </ModalHeader>
-
-          <ModalBody>
-            {loading && (
-              <LoadingContainer>
-                <LoadingSpinner />
-                <LoadingText>로딩 중...</LoadingText>
-              </LoadingContainer>
-            )}
-
-            {error && (
-              <ErrorContainer>
-                <ErrorText>{error}</ErrorText>
-                <RetryButton onClick={() => lectureId && fetchLectureDetail(lectureId)}>
-                  다시 시도
-                </RetryButton>
-              </ErrorContainer>
-            )}
-
-            {!loading && !error && lectureDetail && (
-              <>
-                <Section>
-                  <SectionTitle>기본 정보</SectionTitle>
-                  <InfoRow>
-                    <Label>강의 타입</Label>
-                    <Value>{getTypeLabel(lectureDetail.type)}</Value>
-                  </InfoRow>
-
-                  {lectureDetail.category && (
-                    <InfoRow>
-                      <Label>강의 구분</Label>
-                      <Value>{lectureDetail.category}</Value>
-                    </InfoRow>
-                  )}
-
-                  <InfoRow>
-                    <Label>상태</Label>
-                    <StatusBadge status={lectureDetail.status}>
-                      {getStatusLabel(lectureDetail.status)}
-                    </StatusBadge>
-                  </InfoRow>
-
-                  <InfoRow>
-                    <Label>장소</Label>
-                    <Value>{lectureDetail.location}</Value>
-                  </InfoRow>
-
-                  <InfoRow>
-                    <Label>대상</Label>
-                    <Value>{lectureDetail.target}</Value>
-                  </InfoRow>
-
-                  <InfoRow>
-                    <Label>정원</Label>
-                    <Value>{lectureDetail.capacity}명</Value>
-                  </InfoRow>
-                </Section>
-
-                <Divider />
-                <Section>
-                  <SectionTitle>강사 액션</SectionTitle>
-                  <LectureActionButtons
-                    status={lectureDetail.status}
-                    myApplicationStatus={lectureDetail.my_application_status}
-                    isLoading={isActionLoading}
-                    onApply={handleApplyLecture}
-                    onCancel={() => setIsCancelModalOpen(true)}
-                    onApplicationModalClose={handleApplicationModalClose}
-                    lectureTitle={lectureDetail.title}
-                  />
-                </Section>
-                <Divider />
-
-                <Section>
-                  <SectionTitle>강의 일정</SectionTitle>
-                  {lectureDetail.schedules.map((sch) => (
-                    <InfoRow key={sch.id}>
-                      <Label>{sch.date}</Label>
-                      <Value>
-                        {sch.start_time.slice(0, 5)} - {sch.end_time.slice(0, 5)}
-                      </Value>
-                    </InfoRow>
-                  ))}
-                </Section>
-
-                <Divider />
-
-                <Section>
-                  <SectionTitle>모집 정보</SectionTitle>
-                  <InfoRow>
-                    <Label>모집 마감</Label>
-                    <Value>{lectureDetail.end_date}</Value>
-                  </InfoRow>
-
-                  <InfoRow>
-                    <Label>모집 인원</Label>
-                    <Value>
-                      메인 {lectureDetail.recruitment_main}명 / 보조 {lectureDetail.recruitment_assist}명
-                    </Value>
-                  </InfoRow>
-
-                  <InfoRow>
-                    <Label>강의료</Label>
-                    <Value>{lectureDetail.fee}</Value>
-                  </InfoRow>
-                </Section>
-
-                {lectureDetail.content && (
-                  <>
-                    <Divider />
-                    <Section>
-                      <SectionTitle>강의 내용</SectionTitle>
-                      <ContentBox>{lectureDetail.content}</ContentBox>
-                    </Section>
-                  </>
-                )}
-
-                {lectureDetail.note && (
-                  <>
-                    <Divider />
-                    <Section>
-                      <SectionTitle>특이사항</SectionTitle>
-                      <ContentBox>{lectureDetail.note}</ContentBox>
-                    </Section>
-                  </>
-                )}
-
-                {lectureDetail.attachment_url && (
-                  <>
-                    <Divider />
-                    <Section>
-                      <SectionTitle>첨부파일</SectionTitle>
-                      <AttachmentLink
-                        href={lectureDetail.attachment_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        📎 첨부파일 다운로드
-                      </AttachmentLink>
-                    </Section>
-                  </>
-                )}
-
-                {lectureDetail.confirmed_instructors.length > 0 && (
-                  <>
-                    <Divider />
-                    <Section>
-                      <SectionTitle>확정 강사</SectionTitle>
-                      <InfoRow>
-                        <Value>{lectureDetail.confirmed_instructors.length}명 확정</Value>
-                      </InfoRow>
-                    </Section>
-                  </>
-                )}
-              </>
-            )}
-          </ModalBody>
-        </ModalContainer>
-      </Overlay>
-
-      {/* 🔹 취소 확인 모달 */}
-      <ConfirmModal
-        isOpen={isCancelModalOpen}
-        onClose={() => setIsCancelModalOpen(false)}
-        onConfirm={handleCancelLecture}
-        title="강의 신청 취소"
-        message={`"${lectureDetail?.title}" 강의 신청을 정말로 취소하시겠습니까?`}
-        confirmText="취소하기"
-        isLoading={isActionLoading}
-      />
-    </>
-  );
-};
-
-// =========================================================================
-// 💅 스타일 컴포넌트
-// =========================================================================
-
-const spin = keyframes`
-  to { transform: rotate(360deg); }
+// --- Animations ---
+const fadeIn = keyframes`
+  from { opacity: 0; } to { opacity: 1; }
+`;
+const slideUp = keyframes`
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
 `;
 
-const Overlay = styled.div`
+// --- Styled Components ---
+const Backdrop = styled.div`
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px); /* 배경 흐림 효과 */
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 1000;
-  padding: 20px;
+  z-index: 9999;
+  animation: ${fadeIn} 0.2s ease-out;
 `;
 
-const ModalContainer = styled.div`
-  background: white;
-  border-radius: 12px;
-  width: 100%;
-  max-width: 600px;
-  max-height: 90vh;
-  overflow: hidden;
+const ModalBox = styled.div`
+  background: #fff;
+  border-radius: 20px;
+  width: 500px;
+  max-width: 90vw;
+  padding: 32px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
   display: flex;
   flex-direction: column;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  gap: 24px;
+  animation: ${slideUp} 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
 `;
 
-const ConfirmModalContainer = styled.div`
-  background: white;
-  border-radius: 12px;
-  width: 100%;
-  max-width: 400px;
-  overflow: hidden;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-`;
-
-const ModalHeader = styled.div`
+const Header = styled.div`
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  padding: 20px 24px;
-  border-bottom: 1px solid #E5E7EB;
-  flex-shrink: 0;
+  align-items: flex-start;
 `;
 
-const ModalTitle = styled.h2`
-  font-size: 20px;
-  font-weight: 600;
-  color: #111827;
-  margin: 0;
-`;
-
-const CloseButton = styled.button`
-  background: none;
-  border: none;
-  font-size: 32px;
-  color: #6B7280;
-  cursor: pointer;
-  padding: 0;
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 4px;
-  transition: all 0.2s;
-
-  &:hover {
-    background-color: #F3F4F6;
-    color: #111827;
-  }
-`;
-
-const ModalBody = styled.div`
-  padding: 24px;
-  overflow-y: auto;
-  flex: 1;
-`;
-
-const ConfirmModalBody = styled.div`
-  padding: 24px;
-
-  p {
-    margin: 0 0 24px 0;
-    color: #374151;
-    font-size: 15px;
-    line-height: 1.6;
-  }
-`;
-
-const ButtonGroup = styled.div`
-  display: flex;
-  gap: 12px;
-  justify-content: flex-end;
-`;
-
-const CancelButton = styled.button`
-  padding: 10px 20px;
-  background-color: #F3F4F6;
-  color: #4B5563;
-  border: none;
-  border-radius: 6px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-
-  &:hover {
-    background-color: #E5E7EB;
-  }
-
-  &:disabled {
-    cursor: not-allowed;
-    opacity: 0.5;
-  }
-`;
-
-const ConfirmButton = styled.button`
-  padding: 10px 20px;
-  background-color: #3B82F6;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-
-  &:hover {
-    background-color: #2563EB;
-  }
-
-  &:disabled {
-    cursor: not-allowed;
-    opacity: 0.5;
-    background-color: #93C5FD;
-  }
-`;
-
-const LoadingContainer = styled.div`
+const TitleArea = styled.div`
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 40px 20px;
+  gap: 8px;
+
+  h2 {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: #111;
+    line-height: 1.3;
+  }
 `;
 
-const LoadingSpinner = styled.div`
-  width: 40px;
-  height: 40px;
-  border: 4px solid #E5E7EB;
-  border-top-color: #3B82F6;
+const Badge = styled.span`
+  display: inline-block;
+  padding: 4px 10px;
+  background: #eff6ff;
+  color: #3b82f6;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border-radius: 6px;
+  width: fit-content;
+`;
+
+const CloseBtn = styled.button`
+  background: #f3f4f6;
+  border: none;
   border-radius: 50%;
-  animation: ${spin} 0.8s linear infinite;
-`;
-
-const LoadingText = styled.div`
-  margin-top: 16px;
-  color: #6B7280;
-  font-size: 14px;
-`;
-
-const ErrorContainer = styled.div`
+  width: 36px;
+  height: 36px;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 40px 20px;
-`;
-
-const ErrorText = styled.div`
-  color: #DC2626;
-  font-size: 14px;
-  margin-bottom: 16px;
-  text-align: center;
-`;
-
-const RetryButton = styled.button`
-  padding: 8px 16px;
-  background-color: #3B82F6;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  font-size: 14px;
-  font-weight: 500;
   cursor: pointer;
+  color: #666;
   transition: all 0.2s;
 
   &:hover {
-    background-color: #2563EB;
+    background: #e5e7eb;
+    color: #111;
+  }
+`;
+
+const TimeBadge = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #f9fafb;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  color: #374151;
+  font-weight: 600;
+  font-size: 0.95rem;
+
+  svg {
+    color: #9ca3af;
   }
 `;
 
 const Section = styled.div`
-  margin-bottom: 20px;
-
-  &:last-child {
-    margin-bottom: 0;
-  }
-`;
-
-const SectionTitle = styled.h3`
-  font-size: 16px;
-  font-weight: 600;
-  color: #111827;
-  margin: 0 0 12px 0;
-`;
-
-const InfoRow = styled.div`
   display: flex;
-  align-items: flex-start;
-  margin-bottom: 12px;
+  flex-direction: column;
+  gap: 8px;
+`;
 
-  &:last-child {
-    margin-bottom: 0;
+const SectionLabel = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+
+  svg {
+    color: #cbd5e1;
   }
-`;
-
-const Label = styled.div`
-  font-weight: 600;
-  color: #374151;
-  min-width: 100px;
-  font-size: 14px;
-`;
-
-const Value = styled.div`
-  color: #111827;
-  font-size: 14px;
-  flex: 1;
-`;
-
-const StatusBadge = styled.span<{ status: string }>`
-  padding: 4px 12px;
-  border-radius: 12px;
-  font-size: 13px;
-  font-weight: 500;
-  background-color: ${props => {
-    if (props.status === 'RECRUITING') return '#DBEAFE';
-    if (props.status === 'ALLOCATING') return '#FEF3C7';
-    return '#E5E7EB';
-  }};
-  color: ${props => {
-    if (props.status === 'RECRUITING') return '#1E40AF';
-    if (props.status === 'ALLOCATING') return '#92400E';
-    return '#374151';
-  }};
 `;
 
 const ContentBox = styled.div`
-  background-color: #F9FAFB;
-  padding: 12px;
-  border-radius: 8px;
-  font-size: 14px;
-  color: #374151;
-  line-height: 1.6;
+  background: #fff;
+  border: 1px solid #f1f5f9;
+  padding: 14px;
+  border-radius: 12px;
+  font-size: 0.95rem;
+  color: #334155;
+  line-height: 1.5;
   white-space: pre-wrap;
 `;
 
-const Divider = styled.div`
-  height: 1px;
-  background-color: #E5E7EB;
-  margin: 20px 0;
+const InstructorList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 `;
 
-const AttachmentLink = styled.a`
-  display: inline-flex;
+const InstructorCard = styled.div<{ $isMain?: boolean }>`
+  display: flex;
   align-items: center;
-  color: #3B82F6;
-  text-decoration: none;
-  font-size: 14px;
-  font-weight: 500;
-  transition: color 0.2s;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-radius: 10px;
+  background: ${(props) => (props.$isMain ? '#eff6ff' : '#f8fafc')};
+  border: 1px solid ${(props) => (props.$isMain ? '#dbeafe' : '#f1f5f9')};
 
-  &:hover {
-    color: #2563EB;
-    text-decoration: underline;
+  .left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: ${(props) => (props.$isMain ? '#3b82f6' : '#cbd5e1')};
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    font-weight: 700;
+  }
+  .info {
+    display: flex;
+    flex-direction: column;
+    .name {
+      font-weight: 700;
+      color: ${(props) => (props.$isMain ? '#1e293b' : '#475569')};
+      font-size: 0.95rem;
+    }
+    .role {
+      font-size: 0.75rem;
+      color: ${(props) => (props.$isMain ? '#3b82f6' : '#94a3b8')};
+      font-weight: 600;
+    }
+  }
+  .phone {
+    font-size: 0.85rem;
+    color: #64748b;
+    font-weight: 500;
   }
 `;
 
-export default InstructorEventDetailModal;
+type Props = {
+  event: InstructorEventItem;
+  onClose: () => void;
+};
+
+export default function InstructorEventDetailModal({ event, onClose }: Props) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) return null;
+
+  const startDate = new Date(event.start);
+  const endDate = new Date(event.end);
+
+  const dateStr = `${startDate.getFullYear()}년 ${
+    startDate.getMonth() + 1
+  }월 ${startDate.getDate()}일`;
+  const timeStr = `${String(startDate.getHours()).padStart(2, '0')}:${String(
+    startDate.getMinutes(),
+  ).padStart(2, '0')} ~ ${String(endDate.getHours()).padStart(2, '0')}:${String(
+    endDate.getMinutes(),
+  ).padStart(2, '0')}`;
+
+  const mainInstructor = event.instructors.find((i) => i.role === 'MAIN');
+  const assistInstructors = event.instructors.filter((i) => i.role === 'ASSISTANT');
+
+  // 확정대기(PENDING), 확정(CONFIRMED) 상태에서만 강사 정보 노출
+  const showInstructorInfo =
+    event.instructorStatus === 'PENDING' || event.instructorStatus === 'CONFIRMED';
+
+  return createPortal(
+    <Backdrop onClick={onClose}>
+      <ModalBox onClick={(e) => e.stopPropagation()}>
+        <Header>
+          <TitleArea>
+            {/* 카테고리 정보가 있다면 표시, 없으면 기본값 */}
+            <Badge>{event.category || '강의'}</Badge>
+            <h2>{event.title}</h2>
+          </TitleArea>
+          <CloseBtn onClick={onClose}>
+            <CloseIcon />
+          </CloseBtn>
+        </Header>
+
+        <TimeBadge>
+          <ClockIcon />
+          {dateStr} &nbsp;|&nbsp; {timeStr}
+        </TimeBadge>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+          <Section>
+            <SectionLabel>
+              <MapPinIcon /> 강의 장소
+            </SectionLabel>
+            <ContentBox>{event.location || '장소 미정'}</ContentBox>
+          </Section>
+          <Section>
+            <SectionLabel>
+              <FileTextIcon /> 콘텐츠
+            </SectionLabel>
+            <ContentBox>{event.content || '-'}</ContentBox>
+          </Section>
+        </div>
+
+        <Section>
+          <SectionLabel>
+            <UsersIcon /> 담당 강사
+          </SectionLabel>
+
+          {showInstructorInfo ? (
+            <InstructorList>
+              {/* 주강사 */}
+              {mainInstructor ? (
+                <InstructorCard $isMain>
+                  <div className="left">
+                    <div className="avatar">{mainInstructor.name.slice(0, 1)}</div>
+                    <div className="info">
+                      <span className="name">{mainInstructor.name} 강사님</span>
+                      <span className="role">주 도로쌤</span>
+                    </div>
+                  </div>
+                  <div className="phone">{mainInstructor.phone}</div>
+                </InstructorCard>
+              ) : (
+                <ContentBox style={{ textAlign: 'center', color: '#999' }}>
+                  주강사 배정 전
+                </ContentBox>
+              )}
+
+              {/* 보조강사 */}
+              {assistInstructors.map((assist, index) => (
+                <InstructorCard key={index}>
+                  <div className="left">
+                    <div className="avatar">{assist.name.slice(0, 1)}</div>
+                    <div className="info">
+                      <span className="name">{assist.name} 강사님</span>
+                      <span className="role">보조 도로쌤</span>
+                    </div>
+                  </div>
+                  <div className="phone">{assist.phone}</div>
+                </InstructorCard>
+              ))}
+            </InstructorList>
+          ) : (
+            // 신청 상태(APPLIED)에서는 이름/연락처 대신 안내 문구만 표시
+            <ContentBox style={{ textAlign: 'center', color: '#999' }}>
+              담당 강사는 배정이 완료된 후 확인할 수 있습니다.
+            </ContentBox>
+          )}
+        </Section>
+      </ModalBox>
+    </Backdrop>,
+    document.body,
+  );
+}
