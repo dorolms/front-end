@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import LectureTabs, { LectureTab } from "./components/LectureTabs";
 import LectureListView from "./components/list/LectureListView";
 import LectureCalendarView from "./components/calendar/LectureCalendarView";
+import NewLectureButton from "./components/NewLectureButton";
 import type { Lecture } from "./types";
 
 const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
@@ -16,38 +17,50 @@ export default function ClientPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const load = async () => {
-      try {
-        setLoading(true);
-        setError(null);
+  const load = async () => {
+    try {
+      setLoading(true);
+      setError(null);
 
-        const res = await fetch(`${baseUrl}/api/lectures/lectures/`, {
-          method: "GET",
-          credentials: "include",
-        });
+      // 🔑 localStorage에서 토큰 꺼내기
+      const accessToken =
+        typeof window !== "undefined"
+          ? localStorage.getItem("accessToken")
+          : "";
 
-        if (!res.ok) {
-          throw new Error(`API 호출 실패 (status: ${res.status})`);
-        }
+      const res = await fetch(`${baseUrl}/api/lectures/lectures/`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${accessToken}`, // 💥 핵심!
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+      });
 
-        const data = (await res.json()) as Lecture[];
-        setLectures(data);
-      } catch (e: any) {
-        console.error(e);
-        setError(e?.message ?? "알 수 없는 에러");
-      } finally {
-        setLoading(false);
+      if (!res.ok) {
+        throw new Error(`API 호출 실패 (status: ${res.status})`);
       }
-    };
 
-    load();
-  }, []);
+      const data = (await res.json()) as Lecture[];
+      setLectures(data);
+
+    } catch (e: any) {
+      console.error(e);
+      setError(e?.message ?? "알 수 없는 에러");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  load();
+}, []);
 
   if (loading) return <div>로딩 중...</div>;
   if (error) return <div>에러: {error}</div>;
 
   return (
     <div>
+      <NewLectureButton />
       <LectureTabs value={tab} onChange={setTab} />
       {tab === "list" ? (
         <LectureListView lectures={lectures} />

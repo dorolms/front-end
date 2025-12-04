@@ -1,9 +1,9 @@
 import React from 'react';
 import styled from 'styled-components';
-import { Lecture, Schedule } from '../../types';
+import { LectureDetail, Schedule } from '../../types';
 
 interface InstructorEventCardProps {
-  lecture: Lecture;
+  lecture: LectureDetail;
   schedule: Schedule;
   onClick: () => void;
 }

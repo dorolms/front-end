@@ -1,10 +1,10 @@
 // src/app/instructor/lectures/components/list/LectureListView.tsx
 "use client";
 import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import SearchBar from "./SearchBar";
 import Pagination from "./Pagination";
 import LectureListTable, { LectureListRow } from "./LectureListTable";
-import InstructorEventDetailModal from "./InstructorEventDetailModal";
 import type { Lecture, LectureApiStatus } from "../../types";
 
 const PAGE_SIZE = 10;
@@ -16,6 +16,7 @@ type Props = {
 export default function LectureListView({ lectures }: Props) {
   const [keyword, setKeyword] = useState("");
   const [page, setPage] = useState(1);
+  const router = useRouter();
   
   // 모달 상태 관리
   const [selectedLecture, setSelectedLecture] = useState<Lecture | null>(null);
@@ -43,19 +44,13 @@ export default function LectureListView({ lectures }: Props) {
   const pageRows = filteredRows.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   // 행 클릭 핸들러
-  const handleRowClick = (row: LectureListRow) => {
-    const lecture = lectures.find((l) => l.id === row.id);
-    if (lecture) {
-      setSelectedLecture(lecture);
-      setIsModalOpen(true);
-    }
-  };
+  // 행 클릭 핸들러
+const handleRowClick = (row: LectureListRow) => {
+  router.push(`/manager/lectures/${row.id}/assign`);
+};
 
-  // 모달 닫기 핸들러
-  const handleCloseModal = () => {
-    setIsModalOpen(false);
-    setSelectedLecture(null);
-  };
+
+  
 
   return (
     <>
@@ -78,13 +73,6 @@ export default function LectureListView({ lectures }: Props) {
         onPageChange={setPage} 
       />
 
-      {/* 모달 */}
-      <InstructorEventDetailModal
-        lecture={selectedLecture}
-        schedule={null}
-        isOpen={isModalOpen}
-        onClose={handleCloseModal}
-      />
     </>
   );
 }

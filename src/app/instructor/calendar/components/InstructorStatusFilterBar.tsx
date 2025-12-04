@@ -1,80 +1,45 @@
-import React from 'react';
-import styled from 'styled-components';
-// types.ts에서 정의된 MyCalendarFilter 타입을 사용합니다.
-import { MyCalendarFilter } from '../types'; 
+"use client";
+
+import { FilterType } from "../types";
 
 interface InstructorStatusFilterBarProps {
-  currentFilter: MyCalendarFilter;
-  onFilterChange: (filter: MyCalendarFilter) => void;
+  selectedFilter: FilterType;
+  onFilterChange: (filter: FilterType) => void;
 }
 
-// 필터 버튼 정의 및 레이블 매핑
-const filters: { value: MyCalendarFilter; label: string; emoji: string }[] = [
-  { value: 'all', label: '전체', emoji: '🗓️' },
-  { value: 'ASSIGNED', label: '확정됨', emoji: '✅' },
-  { value: 'PENDING', label: '배정대기', emoji: '🕒' },
-];
-
-const InstructorStatusFilterBar: React.FC<InstructorStatusFilterBarProps> = ({
-  currentFilter,
+export default function InstructorStatusFilterBar({
+  selectedFilter,
   onFilterChange,
-}) => {
+}: InstructorStatusFilterBarProps) {
+  const filters: { label: FilterType; icon: string }[] = [
+    { label: "전체", icon: "🚫" },
+    { label: "확정됨", icon: "✅" },
+    { label: "배정대기", icon: "⏰" },
+  ];
+
   return (
-    <FilterContainer>
-      <FilterLabel>나의 강의 현황:</FilterLabel>
-      <FilterButtonGroup>
+    <div className="flex items-center gap-3 mb-4">
+      <span className="text-gray-700 font-medium">나의 강의 현황:</span>
+      <div className="flex gap-2">
         {filters.map((filter) => (
-          <FilterButton
-            key={filter.value}
-            active={currentFilter === filter.value}
-            onClick={() => onFilterChange(filter.value)}
+          <button
+            key={filter.label}
+            onClick={() => onFilterChange(filter.label)}
+            className={`px-4 py-2 rounded-full border-2 transition-all duration-200 flex items-center gap-2 ${
+              selectedFilter === filter.label
+                ? filter.label === "전체"
+                  ? "bg-red-50 border-red-500 text-red-700"
+                  : filter.label === "확정됨"
+                  ? "bg-green-50 border-green-500 text-green-700"
+                  : "bg-yellow-50 border-yellow-500 text-yellow-700"
+                : "bg-white border-gray-300 text-gray-700 hover:border-gray-400"
+            }`}
           >
-            {filter.emoji} {filter.label}
-          </FilterButton>
+            <span className="text-lg">{filter.icon}</span>
+            <span className="font-medium">{filter.label}</span>
+          </button>
         ))}
-      </FilterButtonGroup>
-    </FilterContainer>
+      </div>
+    </div>
   );
-};
-
-// --- Styled Components ---
-
-const FilterContainer = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 16px 0;
-  border-bottom: 1px solid #E5E7EB;
-  margin-bottom: 20px;
-`;
-
-const FilterLabel = styled.div`
-  font-weight: 700;
-  color: #1F2937;
-  font-size: 16px;
-`;
-
-const FilterButtonGroup = styled.div`
-  display: flex;
-  gap: 10px;
-`;
-
-const FilterButton = styled.button<{ active: boolean }>`
-  padding: 8px 18px;
-  border-radius: 9999px; /* Fully rounded */
-  border: 2px solid ${props => props.active ? '#10B981' : '#D1D5DB'};
-  background-color: ${props => props.active ? '#ECFDF5' : 'white'};
-  color: ${props => props.active ? '#065F46' : '#6B7280'};
-  font-weight: 600;
-  font-size: 14px;
-  cursor: pointer;
-  transition: all 0.2s;
-  white-space: nowrap;
-  box-shadow: ${props => props.active ? '0 2px 4px rgba(16, 185, 129, 0.2)' : 'none'};
-
-  &:hover {
-    border-color: ${props => props.active ? '#059669' : '#9CA3AF'};
-  }
-`;
-
-export default InstructorStatusFilterBar;
+}

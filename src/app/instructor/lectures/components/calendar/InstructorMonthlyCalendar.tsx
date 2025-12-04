@@ -3,12 +3,21 @@ import styled from 'styled-components';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
-import { CalendarEvent, Lecture, Schedule } from '../../types';
+import { LectureDetail, Schedule } from '../../types';
 import InstructorEventCard from './InstructorEventCard';
+
+interface CalendarEvent {
+  title: string;
+  start: string;
+  extendedProps: {
+    lecture: LectureDetail;
+    schedule: Schedule;
+  };
+}
 
 interface InstructorMonthlyCalendarProps {
   events: CalendarEvent[];
-  onEventClick: (lecture: Lecture, schedule: Schedule) => void;
+  onEventClick: (lecture: LectureDetail, schedule: Schedule) => void;
 }
 
 const InstructorMonthlyCalendar: React.FC<InstructorMonthlyCalendarProps> = ({
@@ -31,7 +40,7 @@ const InstructorMonthlyCalendar: React.FC<InstructorMonthlyCalendarProps> = ({
           Today
         </TodayButton>
       </CalendarHeader>
-
+      
       <StyledCalendarWrapper>
         <FullCalendar
           ref={calendarRef}
