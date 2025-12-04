@@ -170,7 +170,6 @@ export default function InstructorLectureNewPage() {
       <ScrollArea>
         <FormLayout id="lecture-form" onSubmit={handleSubmit}>
           
-          {/* Row 1: 강의 제목 */}
           <FormRow>
             <FormLabel>
               강의 제목 <span className="required">*</span>
@@ -178,6 +177,7 @@ export default function InstructorLectureNewPage() {
             <InputArea>
               <Input
                 type="text" name="title"
+                maxLength={255}
                 placeholder="예: [2025-1학기] 도로초등학교 4학년 AI 기초 교육"
                 value={formData.title} onChange={handleChange} required
                 style={{ fontSize: '16px', fontWeight: '600' }}
@@ -185,7 +185,6 @@ export default function InstructorLectureNewPage() {
             </InputArea>
           </FormRow>
 
-          {/* Row 2: 분류 */}
           <FormRow>
             <FormLabel>강의 유형 <span className="required">*</span></FormLabel>
             <InputArea>
@@ -197,26 +196,11 @@ export default function InstructorLectureNewPage() {
                   <option value="doroland">도로랜드</option>
                   <option value="booth">부스</option>
                 </Select>
-                <Input type="text" name="category" placeholder="강의 구분 (예: AI/SW)" value={formData.category} onChange={handleChange} required />
+                <Input type="text" name="category" maxLength={100} placeholder="강의 구분 (예: AI/SW)" value={formData.category} onChange={handleChange} required />
               </Row>
             </InputArea>
           </FormRow>
-          
-          {/* Row 3: 교육 대상 */}
-          <FormRow>
-            <FormLabel>교육 대상 <span className="required">*</span></FormLabel>
-            <InputArea>
-              <Input type="text" name="target" placeholder="예: 초등학교 4학년" value={formData.target} onChange={handleChange} required />
-            </InputArea>
-          </FormRow>
-          <FormRow>
-            <FormLabel>인원 <span className="required">*</span></FormLabel>
-            <InputArea>
-              <Input type="text" name="capacity" placeholder="예: 학급 당 30명, 2개 학급" value={formData.capacity} onChange={handleChange} required />
-            </InputArea>
-          </FormRow>
 
-           {/* [수정] 강의 일정 (다건 입력) */}
           <FormRow>
             <FormLabel>
               강의 일정 <span className="required">*</span>
@@ -224,7 +208,6 @@ export default function InstructorLectureNewPage() {
             <InputArea>
               {formData.schedules.map((schedule, index) => (
                 <ScheduleRow key={index}>
-                  {/* 날짜 */}
                   <Input 
                     type="date" 
                     value={schedule.date} 
@@ -232,7 +215,6 @@ export default function InstructorLectureNewPage() {
                     required 
                     style={{ flex: 1.2 }}
                   />
-                  {/* 시작 시간 */}
                   <Input 
                     type="time" 
                     value={schedule.start_time} 
@@ -241,7 +223,6 @@ export default function InstructorLectureNewPage() {
                     style={{ flex: 1 }}
                   />
                   <span>~</span>
-                  {/* 종료 시간 */}
                   <Input 
                     type="time" 
                     value={schedule.end_time} 
@@ -262,19 +243,30 @@ export default function InstructorLectureNewPage() {
               </AddScheduleButton>
             </InputArea>
           </FormRow>
-                
-          {/* Row 6: 강의 장소 */}
+          
           <FormRow>
             <FormLabel>강의 장소 <span className="required">*</span></FormLabel>
             <InputArea>
               <InputWrapper>
-                <Input type="text" name="location" placeholder="주소 입력.." value={formData.location} onChange={handleChange} required />
+                <Input type="text" name="location" maxLength={255} placeholder="주소 입력.." value={formData.location} onChange={handleChange} required />
               </InputWrapper>
             </InputArea>
           </FormRow>
 
+          <FormRow>
+            <FormLabel>교육 대상 <span className="required">*</span></FormLabel>
+            <InputArea>
+              <Input type="text" name="target" maxLength={255} placeholder="예: 초등학교 4학년" value={formData.target} onChange={handleChange} required />
+            </InputArea>
+          </FormRow>
+          
+          <FormRow>
+            <FormLabel>인원 <span className="required">*</span></FormLabel>
+            <InputArea>
+              <Input type="text" name="capacity" maxLength={100} placeholder="예: 학급 당 30명, 2개 학급" value={formData.capacity} onChange={handleChange} required />
+            </InputArea>
+          </FormRow>
 
-          {/* Row 8: 콘텐츠 */}
           <FormRow>
             <FormLabel>콘텐츠<p>강의 상세 내용, 커리큘럼 등</p></FormLabel>
             <InputArea>
@@ -282,6 +274,16 @@ export default function InstructorLectureNewPage() {
             </InputArea>
           </FormRow>
 
+          <FormRow>
+            <FormLabel>첨부파일 URL </FormLabel>
+            <InputArea>
+              <Row>
+                <InputWrapper>
+                  <Input type="text" name="attachment_url" maxLength={255} placeholder="선택) 파일 URL을 복사하여 붙여넣으세요 - 예: https://example.com/detail.pdf" value={formData.attachment_url} onChange={handleChange} />
+                </InputWrapper>
+              </Row>
+            </InputArea>
+          </FormRow>
           {/* Row 9: 파일 첨부 */}
           {/* <FormRow>
             <FormLabel>관련 파일 첨부</FormLabel>
@@ -297,21 +299,6 @@ export default function InstructorLectureNewPage() {
               </FileLabel>
             </InputArea>
           </FormRow> */}
-
-          <FormRow>
-            <FormLabel>첨부파일 URL </FormLabel>
-            <InputArea>
-              <Row>
-                <InputWrapper>
-                  <Input type="text" name="attachment_url" placeholder="선택) 파일 URL을 복사하여 붙여넣으세요 - 예: https://example.com/detail.pdf" value={formData.attachment_url} onChange={handleChange} />
-                </InputWrapper>
-                {/* <InputWrapper>
-                  <Input type="number" name="fee_assist" placeholder="보조 도로쌤 급여 (원)" min="0" value={formData.fee_assist} onChange={handleChange} data-has-unit="true" />
-                  <span className="unit">원</span>
-                </InputWrapper> */}
-              </Row>
-            </InputArea>
-          </FormRow>
 
           <FormRow>
             <FormLabel>필요 주도로쌤 수 <span className="required">*</span></FormLabel>
@@ -346,7 +333,7 @@ export default function InstructorLectureNewPage() {
           </FormRow>
 
           <FormRow>
-            <FormLabel>급여 <span className="required">*</span></FormLabel>
+            <FormLabel>강의료 <span className="required">*</span></FormLabel>
             <InputArea>
               <Row>
                 <InputWrapper>
