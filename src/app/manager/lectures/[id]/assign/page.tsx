@@ -347,7 +347,10 @@ export default function LectureDetailPage({ params }: { params: Promise<{ id: st
                   </Thead>
                   <Tbody>
                     {filteredList.map((app) => (
-                      <tr key={app.user.id}>
+                      <tr
+                        key={app.user.id}
+                        onClick={() => window.open(`/manager/instructors?id=${app.user.id}`, '_blank')}
+                      >
                         <td>
                           <ApplicantName>{app.user.name}</ApplicantName>
                           <ApplicantMeta>{app.user.major}</ApplicantMeta>
@@ -357,7 +360,7 @@ export default function LectureDetailPage({ params }: { params: Promise<{ id: st
                           {app.applied_role.includes("assist") ? <RoleBadge key={'assist'} $role={'assist'}>보조</RoleBadge> : null}
                         </td>
                         <td><ApplicantMeta>{new Date(app.created_at).toLocaleDateString()}</ApplicantMeta></td>
-                        <td>
+                        <td onClick={(e) => e.stopPropagation()}>
                           <StatusSelect 
                             value={app.status}
                             $status={app.status}

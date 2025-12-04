@@ -139,7 +139,7 @@ export const Thead = styled.thead`
   }
 `;
 export const Tbody = styled.tbody`
-  tr { background-color: #fff; &:hover { background-color: #f9fafb; } }
+  tr { background-color: #fff; cursor: pointer; &:hover { background-color: #f9fafb; } }
   td { padding: 16px; vertical-align: middle; border-bottom: 1px solid #e5e7eb; }
 `;
 
