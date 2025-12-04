@@ -152,25 +152,19 @@ export const RoleBadge = styled.span<{ $role: string }>`
 export const ApplicantName = styled.div` font-size: 15px; font-weight: 600; color: #111; margin-bottom: 4px; `;
 export const ApplicantMeta = styled.div` font-size: 13px; color: #6b7280; `;
 
-export const PortfolioButton = styled.button`
-  display: inline-flex; align-items: center; gap: 6px;
-  padding: 6px 12px; border: 1px solid #e5e7eb; border-radius: 6px;
-  font-size: 13px; font-weight: 500; color: #374151; background: white; cursor: pointer;
-  &:hover { background: #eff6ff; color: #3b82f6; border-color: #93c5fd; }
-`;
-
-export const StatusSelect = styled.select<{ $status: DbAssignmentStatus; $assignedRole: LectureRole | null }>`
+type UiAssignmentStatus = 'pending' | 'assigned_main' | 'assigned_assist' | 'rejected';
+export const StatusSelect = styled.select<{ $status: UiAssignmentStatus; }>`
   padding: 8px 12px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer;
   border: 1px solid transparent; outline: none; width: 140px;
-  background-color: ${({ $status, $assignedRole }) => {
-    if ($status === 'assigned' && $assignedRole === 'main') return '#dbeafe';
-    if ($status === 'assigned' && $assignedRole === 'assist') return '#dcfce7';
+  background-color: ${({ $status }) => {
+    if ($status === 'assigned_main') return '#dbeafe';
+    if ($status === 'assigned_assist') return '#dcfce7';
     if ($status === 'rejected') return '#fee2e2';
     return '#f3f4f6';
   }};
-  color: ${({ $status, $assignedRole }) => {
-    if ($status === 'assigned' && $assignedRole === 'main') return '#1d4ed8';
-    if ($status === 'assigned' && $assignedRole === 'assist') return '#166534';
+  color: ${({ $status }) => {
+    if ($status === 'assigned_main') return '#1d4ed8';
+    if ($status === 'assigned_assist') return '#166534';
     if ($status === 'rejected') return '#991b1b';
     return '#4b5563';
   }};
