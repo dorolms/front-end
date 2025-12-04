@@ -76,45 +76,86 @@ export const DropdownItem = styled.li`
   
   .name { font-weight: 600; color: #111; font-size: 15px; }
   .meta { font-size: 12px; color: #888; }
-`;
-
-// 2. 명함 스타일 프로필
-export const ProfileCard = styled.div`
-  background: white; border-radius: 16px; padding: 30px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.05); border: 1px solid #e5e7eb;
-  display: flex; align-items: flex-start; gap: 30px;
-`;
-
-// [색상 수정] #EFF6FF, #3478F6
-export const ProfileImage = styled.div`
-  width: 100px; height: 100px; border-radius: 50%; flex-shrink: 0;
-  background-color: #EFF6FF; color: #3478F6;
-  display: flex; justify-content: center; align-items: center;
-  font-size: 36px; font-weight: 700;
-  border: 4px solid #f5f3ff;
-`;
-
-export const ProfileInfo = styled.div`
-  flex: 1; display: flex; flex-direction: column; gap: 10px;
-`;
+  `;
+  
+  
+  // 2. 명함 스타일 프로필
+  
+  export const ProfileCard = styled.div`
+    background: white; border-radius: 16px; padding: 30px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05); border: 1px solid #e5e7eb;
+    display: flex; align-items: flex-start; gap: 30px;
+  `;
+  
+  // [색상 수정] #EFF6FF, #3478F6
+  export const ProfileImage = styled.div`
+    width: 100px; height: 100px; border-radius: 50%; flex-shrink: 0;
+    background-color: #EFF6FF; color: #3478F6;
+    display: flex; justify-content: center; align-items: center;
+    font-size: 36px; font-weight: 700;
+    border: 4px solid #f5f3ff;
+  `;
+  
+  export const ProfileInfo = styled.div`
+    flex: 1; display: flex; flex-direction: column; gap: 10px;
+  `;
 
 export const NameTag = styled.div`
-  display: flex; align-items: center; gap: 10px;
-  h2 { font-size: 22px; font-weight: 800; color: #111; margin: 0; }
-  span { background: #f3f4f6; color: #4b5563; font-size: 12px; padding: 4px 8px; border-radius: 4px; font-weight: 500; }
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  
+  h2 {
+    font-size: 26px;
+    font-weight: 800;
+    color: #111;
+    margin: 0;
+    letter-spacing: -0.5px;
+  }
 `;
 
-export const ContactInfo = styled.div`
-  display: flex; gap: 16px;
-  font-size: 14px; color: #4b5563;
-  div { display: flex; align-items: center; gap: 6px; }
+// [신규] 전공/소속을 감싸는 래퍼
+export const MajorWrapper = styled.div`
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 2px; /* 이름과의 간격 미세 조정 */
 `;
 
-export const BioBox = styled.div`
-  padding: 12px 16px; background-color: #f9fafb; border-radius: 8px;
-  font-size: 14px; color: #374151; line-height: 1.5; white-space: pre-wrap;
-  border: 1px solid #f3f4f6;
+// [신규] 전공 박스 (MajorBox) 스타일
+export const MajorBadge = styled.div`
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  background-color: #EFF6FF; /* 연한 파랑 배경 */
+  color: #3478F6; /* 비비드 파랑 텍스트 */
+  font-size: 14px;
+  font-weight: 600;
+  border-radius: 8px;
+  border: 1px solid #dbeafe; /* 테두리 살짝 */
+  
+  /* 아이콘 스타일 */
+  svg { width: 16px; height: 16px; }
 `;
+
+// export const ContactInfo = styled.div`
+//   display: flex;
+//   flex-direction: column;
+//   gap: 6px;
+//   margin-top: 8px;
+//   padding-top: 16px;
+//   border-top: 1px solid #f3f4f6; /* 구분선 추가로 깔끔하게 */
+  
+//   div {
+//     display: flex;
+//     align-items: center;
+//     gap: 10px;
+//     font-size: 14px;
+//     color: #6b7280;
+//     font-weight: 400;
+//   }
+// `;
 
 // 3. 포트폴리오 상세 (구조 변경)
 

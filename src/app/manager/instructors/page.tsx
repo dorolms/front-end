@@ -19,14 +19,14 @@ PageContainer,
   ProfileImage,
   ProfileInfo,
   NameTag,
-  ContactInfo,
-  BioBox,
+  // ContactInfo,
   PortfolioSection,
   PortfolioHeader,
   PortfolioScrollArea,
   SectionTitle,
   PortfolioContent,
-  EmptyState
+  EmptyState,
+  MajorWrapper, MajorBadge
 } from './styles';
 
 const parseJwt = (token: string) => {
@@ -217,13 +217,22 @@ export default function InstructorLookupPage() {
               <NameTag>
                 <h2>{selectedInstructor.name}</h2>
               </NameTag>
+              <MajorWrapper>
+              <MajorBadge>
+                {/* 학사모 아이콘 */}
+                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 14l9-5-9-5-9 5 9 5z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
+                </svg>
+                {selectedInstructor.major}
+              </MajorBadge>
               
-              <ContactInfo>
-                <div>📞 {selectedInstructor.phone_number ? selectedInstructor.phone_number : "xxx-xxxx-xxxx"}</div>
-                <div>📧 {selectedInstructor.email ? selectedInstructor.email : "xxxxx@xxx.com"}</div>
-              </ContactInfo>
-
-              <BioBox>{selectedInstructor.major}</BioBox>
+              {/* 필요시 학교나 다른 태그도 여기에 추가 가능 */}
+              {/* <MajorBadge>🏫 한양대학교</MajorBadge> */}
+            </MajorWrapper>
+              {/* <ContactInfo>
+                <div>📧 {selectedInstructor.email  || "xxxxx@xxx.com"}</div>
+              </ContactInfo> */}
             </ProfileInfo>
           </ProfileCard>
         )}

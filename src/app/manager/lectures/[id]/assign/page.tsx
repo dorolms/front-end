@@ -31,6 +31,23 @@ interface MergedApplication {
   is_notification_read: boolean;
 };
 
+// [추가] 날짜 문자열(YYYY-MM-DD)을 받아 요일(월, 화..)을 반환하는 함수
+const getWeekday = (dateString: string) => {
+  const days = ['일', '월', '화', '수', '목', '금', '토'];
+  const date = new Date(dateString);
+  return days[date.getDay()];
+};
+
+const getLecType = (type: string) => {
+  const map: Record<string, string> = {
+    "general": "일반",
+    "doroland": "도로랜드",
+    "booth": "부스",
+    "competition": "대회",
+    "camp": "캠프"
+  }
+  return map[type];
+}
 export default function LectureDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
 
@@ -262,7 +279,7 @@ export default function LectureDetailPage({ params }: { params: Promise<{ id: st
   return (
     <PageContainer>
       <Header>
-        <PageTitle>강의 상세 및 배정<StatusBadge>모집중</StatusBadge></PageTitle>
+        <PageTitle>강의 상세 및 배정{/* <StatusBadge>모집중</StatusBadge> */}</PageTitle>
         <BackButton onClick={() => router.back()}>목록으로</BackButton>
       </Header>
 
@@ -279,18 +296,31 @@ export default function LectureDetailPage({ params }: { params: Promise<{ id: st
             <Section ref={sectionRefs.info}>
               <SectionTitle>강의 상세 정보</SectionTitle>
               <DetailRow><DetailLabel>강의 제목</DetailLabel><DetailValue style={{ fontSize: '18px', fontWeight: 700 }}>{lecture.title}</DetailValue></DetailRow>
-              <DetailRow><DetailLabel>강의 유형</DetailLabel><DetailValue>{lecture.type} / {lecture.category}</DetailValue></DetailRow>
-              <DetailRow><DetailLabel>교육 대상</DetailLabel><DetailValue>{lecture.target}</DetailValue></DetailRow>
-              <DetailRow><DetailLabel>인원</DetailLabel><DetailValue>{lecture.capacity}</DetailValue></DetailRow>
-              <DetailRow><DetailLabel>일시</DetailLabel><DetailValue></DetailValue></DetailRow>
+              <DetailRow><DetailLabel>강의 유형</DetailLabel><DetailValue>{getLecType(lecture.type)}</DetailValue></DetailRow>
+              <DetailRow><DetailLabel>강의 구분</DetailLabel><DetailValue>{lecture.category}</DetailValue></DetailRow>
+              <DetailRow><DetailLabel>일시</DetailLabel><DetailValue>
+                {lecture.schedules && lecture.schedules.length > 0 ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                      {lecture.schedules.map((sch, idx) => (
+                        <div key={idx}>
+                          {/* 날짜 (요일 포함하면 좋음) + 시간 (초 제외) */}
+                          •  {sch.date}({getWeekday(sch.date)}) {sch.start_time.slice(0, 5)} ~ {sch.end_time.slice(0, 5)}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <span style={{ color: '#999' }}>일정 정보 없음</span>
+                  )}</DetailValue></DetailRow>
               <DetailRow><DetailLabel>장소</DetailLabel><DetailValue>{lecture.location}</DetailValue></DetailRow>
               <DetailRow><DetailLabel>담당자</DetailLabel><DetailValue>{lecture.manager_name} ({lecture.manager_phone})</DetailValue></DetailRow>
-              <DetailRow><DetailLabel>콘텐츠</DetailLabel><DetailValue>{lecture.content}</DetailValue></DetailRow>
-              <DetailRow><DetailLabel>첨부파일</DetailLabel><DetailValue>{lecture.attachment_url ? <AttachmentLink href="#">📎 {lecture.attachment_url}</AttachmentLink> : <span style={{color:'#999'}}>없음</span>}</DetailValue></DetailRow>
-              <DetailRow><DetailLabel>모집</DetailLabel><DetailValue>주 {lecture.recruitment_main}명 / 보조 {lecture.recruitment_assist}명</DetailValue></DetailRow>
+              <DetailRow><DetailLabel>교육 대상</DetailLabel><DetailValue>{lecture.target}</DetailValue></DetailRow>
+              <DetailRow><DetailLabel>인원</DetailLabel><DetailValue>{lecture.capacity}</DetailValue></DetailRow>
+              <DetailRow><DetailLabel>콘텐츠</DetailLabel><DetailValue>{lecture.content || <span style={{ color: '#999' }}>상세 정보 없음</span>}</DetailValue></DetailRow>
+              <DetailRow><DetailLabel>첨부파일</DetailLabel><DetailValue>{lecture.attachment_url ? <AttachmentLink href={lecture.attachment_url} target="_blank">📎 {lecture.attachment_url}</AttachmentLink> : <span style={{color:'#999'}}>없음</span>}</DetailValue></DetailRow>
+              <DetailRow><DetailLabel>모집 인원</DetailLabel><DetailValue>주 {lecture.recruitment_main}명 / 보조 {lecture.recruitment_assist}명</DetailValue></DetailRow>
               <DetailRow><DetailLabel>강의료</DetailLabel><DetailValue>{lecture.fee}</DetailValue></DetailRow>
-              <DetailRow><DetailLabel>마감일</DetailLabel><DetailValue className="highlight">{lecture.end_date} 까지</DetailValue></DetailRow>
-              <DetailRow><DetailLabel>특이사항</DetailLabel><DetailValue className="highlight">{lecture.note}</DetailValue></DetailRow>
+              <DetailRow><DetailLabel>모집 마감일</DetailLabel><DetailValue className="highlight">{lecture.end_date} 까지</DetailValue></DetailRow>
+              <DetailRow><DetailLabel>특이사항</DetailLabel><DetailValue className="highlight">{lecture.note || <span style={{ color: '#999' }}>특이 사항 없음</span>}</DetailValue></DetailRow>
             </Section>
 
             <hr style={{ border: 'none', borderTop: '1px solid #eee', margin: '40px 0' }} />
