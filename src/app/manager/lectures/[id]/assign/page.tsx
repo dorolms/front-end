@@ -44,7 +44,7 @@ const getLecType = (type: string) => {
     "doroland": "도로랜드",
     "booth": "부스",
     "competition": "대회",
-    "": ""
+    "camp": "캠프"
   }
   return map[type];
 }
