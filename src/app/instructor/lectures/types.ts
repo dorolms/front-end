@@ -72,4 +72,5 @@ export interface LectureDetail {
   schedules: Schedule[];
   applications: any | null;
   confirmed_instructors: any[];
+  my_application_status: 'pending' | 'confirmed' | 'rejected' | null;
 }

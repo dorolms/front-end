@@ -9,6 +9,8 @@ interface InstructorEventDetailModalProps {
   onClose: () => void;
 }
 
+const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+
 const InstructorEventDetailModal: React.FC<InstructorEventDetailModalProps> = ({
   lecture,
   schedule,
@@ -18,8 +20,6 @@ const InstructorEventDetailModal: React.FC<InstructorEventDetailModalProps> = ({
   const [lectureDetail, setLectureDetail] = useState<LectureDetail | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
 
   useEffect(() => {
     if (isOpen && lecture) {
@@ -34,20 +34,46 @@ const InstructorEventDetailModal: React.FC<InstructorEventDetailModalProps> = ({
   }, [isOpen, lecture?.id]);
 
   const fetchLectureDetail = async (id: number) => {
+    // 🔹 환경 변수 체크
+    if (!baseUrl) {
+      setError('API 서버 주소(.env)가 설정되어 있지 않습니다.');
+      return;
+    }
+
+    // 🔹 accessToken 가져오기
+    const accessToken =
+      typeof window !== 'undefined'
+        ? localStorage.getItem('accessToken')
+        : null;
+
+    if (!accessToken) {
+      setError('로그인이 필요합니다. 다시 로그인 후 이용해주세요.');
+      return;
+    }
+
     setLoading(true);
     setError(null);
     
     try {
-      const response = await fetch(`${baseUrl}/api/lectures/lectures/${id}`);
+      const response = await fetch(`${baseUrl}/api/lectures/lectures/${id}`, {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${accessToken}`, // ✅ JWT 인증 헤더
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include', // 쿠키도 함께 쓰는 경우 대비
+      });
       
       if (!response.ok) {
         throw new Error('강의 정보를 불러오는데 실패했습니다.');
       }
       
-      const data = await response.json();
+      const data: LectureDetail = await response.json();
       setLectureDetail(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : '오류가 발생했습니다.');
+      setError(
+        err instanceof Error ? err.message : '오류가 발생했습니다.'
+      );
       console.error('Failed to fetch lecture detail:', err);
     } finally {
       setLoading(false);
@@ -149,7 +175,9 @@ const InstructorEventDetailModal: React.FC<InstructorEventDetailModalProps> = ({
                 {lectureDetail.schedules.map((sch) => (
                   <InfoRow key={sch.id}>
                     <Label>{sch.date}</Label>
-                    <Value>{sch.start_time.slice(0, 5)} - {sch.end_time.slice(0, 5)}</Value>
+                    <Value>
+                      {sch.start_time.slice(0, 5)} - {sch.end_time.slice(0, 5)}
+                    </Value>
                   </InfoRow>
                 ))}
               </Section>
@@ -201,7 +229,11 @@ const InstructorEventDetailModal: React.FC<InstructorEventDetailModalProps> = ({
                   <Divider />
                   <Section>
                     <SectionTitle>첨부파일</SectionTitle>
-                    <AttachmentLink href={lectureDetail.attachment_url} target="_blank" rel="noopener noreferrer">
+                    <AttachmentLink
+                      href={lectureDetail.attachment_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
                       📎 첨부파일 다운로드
                     </AttachmentLink>
                   </Section>

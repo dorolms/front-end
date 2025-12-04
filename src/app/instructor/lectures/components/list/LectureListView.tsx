@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import SearchBar from "./SearchBar";
 import Pagination from "./Pagination";
 import LectureListTable, { LectureListRow } from "./LectureListTable";
-import InstructorEventDetailModal from "./InstructorEventDetailModal";
+import InstructorEventDetailModal from "../InstructorEventDetailModal";
 import type { Lecture, LectureApiStatus } from "../../types";
 
 const PAGE_SIZE = 10;
