@@ -8,17 +8,18 @@ import { isTokenValid, getUserRole } from './jwt';
 import { createLecture } from './api';
 
 // [수정] 스타일 파일에서 import
-import {
-  PageContainer, Header, PageTitle, BackButton,
-  ScrollArea, FormLayout, FormRow, FormLabel, InputArea,
-  Input, TextArea, Select, Row, InputWrapper,
-  // FileLabel,
-  FixedBottomBar, Button,
-  AddScheduleButton, ScheduleRow, DeleteButton
-} from './styles';
+// import {
+//   PageContainer, Header, PageTitle, BackButton,
+//   ScrollArea, FormLayout, FormRow, FormLabel, InputArea,
+//   Input, TextArea, Select, Row, InputWrapper,
+//   // FileLabel,
+//   FixedBottomBar, Button,
+//   AddScheduleButton, ScheduleRow, DeleteButton
+// } from './styles';
 
 // --- Main Component ---
 
+import LectureForm from '../components/form/LectureForm';
 
 export default function InstructorLectureNewPage() {
   const router = useRouter();
@@ -52,6 +53,7 @@ export default function InstructorLectureNewPage() {
 
   }, [router]);
 
+  /*
   // [유지] 원본의 폼 상태
   const [formData, setFormData] = useState({
     title: '', type: 'general', category: '',
@@ -106,9 +108,10 @@ export default function InstructorLectureNewPage() {
   //     setFormData((prev) => ({ ...prev, file: e.target.files![0] }));
   //   }
   // };
+  */
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (formData: any) => {
+    // e.preventDefault();
     if (isSubmitting) return;
     setIsSubmitting(true);
     
@@ -120,7 +123,7 @@ export default function InstructorLectureNewPage() {
         title: formData.title,
         type: formData.type,
         category: formData.category,
-        status: 'RECRUITING',
+        status: formData.status,
         end_date: formData.end_date,
         capacity: formData.capacity,
         
@@ -161,224 +164,10 @@ export default function InstructorLectureNewPage() {
   }
 
   return (
-    <PageContainer>
-      <Header>
-        <PageTitle>새 강의 등록</PageTitle>
-        <BackButton onClick={() => router.back()}>목록으로</BackButton>
-      </Header>
-
-      <ScrollArea>
-        <FormLayout id="lecture-form" onSubmit={handleSubmit}>
-          
-          <FormRow>
-            <FormLabel>
-              강의 제목 <span className="required">*</span>
-            </FormLabel>
-            <InputArea>
-              <Input
-                type="text" name="title"
-                maxLength={255}
-                placeholder="예: [2025-1학기] 도로초등학교 4학년 AI 기초 교육"
-                value={formData.title} onChange={handleChange} required
-                style={{ fontSize: '16px', fontWeight: '600' }}
-              />
-            </InputArea>
-          </FormRow>
-
-          <FormRow>
-            <FormLabel>강의 유형 <span className="required">*</span></FormLabel>
-            <InputArea>
-              <Row>
-                <Select name="type" value={formData.type} onChange={handleChange}>
-                  <option value="general">일반</option>
-                  <option value="competition">대회</option>
-                  <option value="camp">캠프</option>
-                  <option value="doroland">도로랜드</option>
-                  <option value="booth">부스</option>
-                </Select>
-                <Input type="text" name="category" maxLength={100} placeholder="강의 구분 (예: AI/SW)" value={formData.category} onChange={handleChange} required />
-              </Row>
-            </InputArea>
-          </FormRow>
-
-          <FormRow>
-            <FormLabel>
-              강의 일정 <span className="required">*</span>
-            </FormLabel>
-            <InputArea>
-              {formData.schedules.map((schedule, index) => (
-                <ScheduleRow key={index}>
-                  <Input 
-                    type="date" 
-                    value={schedule.date} 
-                    onChange={(e) => handleScheduleChange(index, 'date', e.target.value)} 
-                    required 
-                    style={{ flex: 1.2 }}
-                  />
-                  <Input 
-                    type="time" 
-                    value={schedule.start_time} 
-                    onChange={(e) => handleScheduleChange(index, 'start_time', e.target.value)} 
-                    required 
-                    style={{ flex: 1 }}
-                  />
-                  <span>~</span>
-                  <Input 
-                    type="time" 
-                    value={schedule.end_time} 
-                    onChange={(e) => handleScheduleChange(index, 'end_time', e.target.value)} 
-                    required 
-                    style={{ flex: 1 }}
-                  />
-                  {/* 삭제 버튼 */}
-                  <DeleteButton type="button" onClick={() => removeSchedule(index)} title="일정 삭제">
-                    ✕
-                  </DeleteButton>
-                </ScheduleRow>
-              ))}
-              
-              {/* 일정 추가 버튼 */}
-              <AddScheduleButton type="button" onClick={addSchedule}>
-                + 일정 추가하기
-              </AddScheduleButton>
-            </InputArea>
-          </FormRow>
-          
-          <FormRow>
-            <FormLabel>강의 장소 <span className="required">*</span></FormLabel>
-            <InputArea>
-              <InputWrapper>
-                <Input type="text" name="location" maxLength={255} placeholder="주소 입력.." value={formData.location} onChange={handleChange} required />
-              </InputWrapper>
-            </InputArea>
-          </FormRow>
-
-          <FormRow>
-            <FormLabel>교육 대상 <span className="required">*</span></FormLabel>
-            <InputArea>
-              <Input type="text" name="target" maxLength={255} placeholder="예: 초등학교 4학년" value={formData.target} onChange={handleChange} required />
-            </InputArea>
-          </FormRow>
-          
-          <FormRow>
-            <FormLabel>인원 <span className="required">*</span></FormLabel>
-            <InputArea>
-              <Input type="text" name="capacity" maxLength={100} placeholder="예: 학급 당 30명, 2개 학급" value={formData.capacity} onChange={handleChange} required />
-            </InputArea>
-          </FormRow>
-
-          <FormRow>
-            <FormLabel>콘텐츠<p>강의 상세 내용, 커리큘럼 등</p></FormLabel>
-            <InputArea>
-              <TextArea name="content" placeholder="- 강의의 콘텐츠 정보." value={formData.content} onChange={handleChange} />
-            </InputArea>
-          </FormRow>
-
-          <FormRow>
-            <FormLabel>첨부파일 URL </FormLabel>
-            <InputArea>
-              <Row>
-                <InputWrapper>
-                  <Input type="text" name="attachment_url" maxLength={255} placeholder="선택) 파일 URL을 복사하여 붙여넣으세요 - 예: https://example.com/detail.pdf" value={formData.attachment_url} onChange={handleChange} />
-                </InputWrapper>
-              </Row>
-            </InputArea>
-          </FormRow>
-          {/* Row 9: 파일 첨부 */}
-          {/* <FormRow>
-            <FormLabel>관련 파일 첨부</FormLabel>
-            <InputArea>
-              <input type="file" id="file-upload" style={{ display: 'none' }} onChange={handleFileChange} />
-              <FileLabel htmlFor="file-upload">
-                <div className="icon">📁</div>
-                {formData.file ? (
-                  <span style={{ color: '#111', fontWeight: 600 }}>{formData.file.name}</span>
-                ) : (
-                  <span>클릭하여 파일을 업로드하세요 (최대 ?MB)</span>
-                )}
-              </FileLabel>
-            </InputArea>
-          </FormRow> */}
-
-          <FormRow>
-            <FormLabel>필요 주도로쌤 수 <span className="required">*</span></FormLabel>
-            <InputArea>
-              <Row>
-                <InputWrapper>
-                  <Input type="number" name="recruitment_main" placeholder="0" min="0" value={formData.recruitment_main} onChange={handleChange} data-has-unit="true" />
-                  <span className="unit">명</span>
-                </InputWrapper>
-                {/* <InputWrapper>
-                  <Input type="number" name="fee_main" placeholder="주 도로쌤 급여 (원)" min="0" value={formData.fee_main} onChange={handleChange} data-has-unit="true" />
-                  <span className="unit">원</span>
-                </InputWrapper> */}
-              </Row>
-            </InputArea>
-          </FormRow>
-
-          <FormRow>
-            <FormLabel>필요 보조도로쌤 수 <span className="required">*</span></FormLabel>
-            <InputArea>
-              <Row>
-                <InputWrapper>
-                  <Input type="number" name="recruitment_assist" placeholder="0" min="0" value={formData.recruitment_assist} onChange={handleChange} data-has-unit="true" />
-                  <span className="unit">명</span>
-                </InputWrapper>
-                {/* <InputWrapper>
-                  <Input type="number" name="fee_assist" placeholder="보조 도로쌤 급여 (원)" min="0" value={formData.fee_assist} onChange={handleChange} data-has-unit="true" />
-                  <span className="unit">원</span>
-                </InputWrapper> */}
-              </Row>
-            </InputArea>
-          </FormRow>
-
-          <FormRow>
-            <FormLabel>강의료 <span className="required">*</span></FormLabel>
-            <InputArea>
-              <Row>
-                <InputWrapper>
-                  <Input type="text" name="fee" placeholder="예: 주도로쌤 회차당 000원 / 보조도로쌤 회차당 000원" value={formData.fee} onChange={handleChange} required />
-                </InputWrapper>
-                {/* <InputWrapper>
-                  <Input type="number" name="fee_assist" placeholder="보조 도로쌤 급여 (원)" min="0" value={formData.fee_assist} onChange={handleChange} data-has-unit="true" />
-                  <span className="unit">원</span>
-                </InputWrapper> */}
-              </Row>
-            </InputArea>
-          </FormRow>
-
-          <FormRow>
-            <FormLabel>모집 마감일 <span className="required">*</span></FormLabel>
-            <InputArea>
-              <Input type="date" name="end_date" value={formData.end_date} onChange={handleChange} required />
-            </InputArea>
-          </FormRow>
-
-          <FormRow>
-            <FormLabel>특이사항
-              <p>강사 준비물, 유의사항 등</p>
-            </FormLabel>
-            <InputArea>
-              <TextArea
-                name="note"
-                placeholder="- 강사 준비물 및 유의사항&#13;&#10;- 기타 참고사항을 자세히 입력해주세요."
-                value={formData.note}
-                onChange={handleChange}
-              />
-            </InputArea>
-          </FormRow>
-
-        </FormLayout>
-      </ScrollArea>
-
-      <FixedBottomBar>
-        <Button type="button" onClick={() => router.back()} $variant="secondary" disabled={isSubmitting}>
-          취소
-        </Button>
-        <Button type="submit" form="lecture-form" $variant="primary" disabled={isSubmitting}>
-          {isSubmitting ? '등록 중...' : '강의 등록'}
-        </Button>
-      </FixedBottomBar>
-    </PageContainer>
+    <LectureForm 
+      where='new'
+      onSubmit={handleSubmit}
+      isSubmitting={isSubmitting}
+    />
   );
-}
+} 
