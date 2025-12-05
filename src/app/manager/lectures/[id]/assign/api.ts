@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // 환경 변수에서 API 주소를 가져오거나, 없으면 로컬 주소 사용
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
 const getAuthHeaders = () => {
   // 1. 로컬 스토리지에서 토큰 꺼내기
