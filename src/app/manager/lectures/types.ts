@@ -1,11 +1,21 @@
 // src/app/instructor/lectures/types.ts
 
-export type LectureType = 'general' | 'doroland' | 'booth' | 'etc' | 'competition' | 'camp';
+export type LectureType =
+  | "general"
+  | "doroland"
+  | "booth"
+  | "etc"
+  | "competition"
+  | "camp";
 
-export type LectureApiStatus = 'RECRUITING' | 'COMPETITION' | 'ALLOCATING' | 'COMPLETED';
+export type LectureApiStatus =
+  | "RECRUITING"
+  | "COMPETITION"
+  | "ALLOCATING"
+  | "COMPLETED";
 
 // 캘린더에서 사용하는 상태 (모집중/완료만)
-export type CalendarStatus = 'RECRUITING' | 'COMPLETED';
+export type CalendarStatus = "RECRUITING" | "COMPLETED";
 
 export interface Schedule {
   id: number;

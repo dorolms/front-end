@@ -17,7 +17,7 @@ export default function LectureListView({ lectures }: Props) {
   const [keyword, setKeyword] = useState("");
   const [page, setPage] = useState(1);
   const router = useRouter();
-  
+
   // 모달 상태 관리
   const [selectedLecture, setSelectedLecture] = useState<Lecture | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -30,7 +30,10 @@ export default function LectureListView({ lectures }: Props) {
     division: e.category ?? "",
     title: e.title ?? "",
     applicationPeriod: "~ " + formatDate(e.end_date),
-    applicationLabel: "-",
+    applicationLabel: formatApplicationCount(
+      e.applicant_count_main,
+      e.applicant_count_assist
+    ),
     statusLabel: convertStatus(e.status),
   }));
 
@@ -45,12 +48,9 @@ export default function LectureListView({ lectures }: Props) {
 
   // 행 클릭 핸들러
   // 행 클릭 핸들러
-const handleRowClick = (row: LectureListRow) => {
-  router.push(`/manager/lectures/${row.id}/assign`);
-};
-
-
-  
+  const handleRowClick = (row: LectureListRow) => {
+    router.push(`/manager/lectures/${row.id}/assign`);
+  };
 
   return (
     <>
@@ -61,18 +61,10 @@ const handleRowClick = (row: LectureListRow) => {
           onSubmit={() => setPage(1)}
         />
       </div>
-      
-      <LectureListTable 
-        rows={pageRows} 
-        onRowClick={handleRowClick}
-      />
-      
-      <Pagination 
-        page={page} 
-        totalPages={totalPages} 
-        onPageChange={setPage} 
-      />
 
+      <LectureListTable rows={pageRows} onRowClick={handleRowClick} />
+
+      <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
     </>
   );
 }
@@ -98,6 +90,15 @@ function convertStatus(status: LectureApiStatus) {
     COMPETITION: "배정 완료",
   };
   return map[status] ?? "상태 없음";
+}
+
+function formatApplicationCount(
+  main?: number | null,
+  assist?: number | null
+): string {
+  const m = main ?? 0;
+  const a = assist ?? 0;
+  return `${m}/${a}`; // 예: 0/0, 2/1 이런 식으로 표시
 }
 
 function formatDate(date: string | null | undefined) {

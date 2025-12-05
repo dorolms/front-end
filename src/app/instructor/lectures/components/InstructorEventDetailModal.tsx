@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react';
-import styled, { keyframes } from 'styled-components';
-import { LectureDetail } from '../types';
-import LectureActionButtons from './LectureActionButtons';
+import React, { useEffect, useState } from "react";
+import styled, { keyframes } from "styled-components";
+import { LectureDetail } from "../types";
+import LectureActionButtons from "./LectureActionButtons";
 
 // =========================================================================
 // 🧩 확인 모달 컴포넌트
@@ -22,7 +22,7 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
   onConfirm,
   title,
   message,
-  confirmText = '확인',
+  confirmText = "확인",
   isLoading = false,
 }) => {
   if (!isOpen) return null;
@@ -41,7 +41,7 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
               취소
             </CancelButton>
             <ConfirmButton onClick={onConfirm} disabled={isLoading}>
-              {isLoading ? '처리 중...' : confirmText}
+              {isLoading ? "처리 중..." : confirmText}
             </ConfirmButton>
           </ButtonGroup>
         </ConfirmModalBody>
@@ -61,12 +61,39 @@ interface InstructorEventDetailModalProps {
 
 const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
 
+// 🔹 JWT 토큰에서 user_id 추출 함수
+const getUserIdFromToken = (): string | null => {
+  if (typeof window === "undefined") return null;
+
+  const accessToken = localStorage.getItem("accessToken");
+  if (!accessToken) return null;
+
+  try {
+    // JWT는 header.payload.signature 형식
+    const payload = accessToken.split(".")[1];
+    const decodedPayload = JSON.parse(atob(payload));
+    console.log("🔓 디코딩된 JWT payload:", decodedPayload);
+
+    // user_id 또는 id 필드 찾기
+    const userId =
+      decodedPayload.user_id || decodedPayload.id || decodedPayload.sub;
+    console.log("👤 추출된 userId:", userId);
+
+    return userId ? String(userId) : null;
+  } catch (error) {
+    console.error("JWT 디코딩 실패:", error);
+    return null;
+  }
+};
+
 const InstructorEventDetailModal: React.FC<InstructorEventDetailModalProps> = ({
   lectureId,
   isOpen,
   onClose,
 }) => {
-  const [lectureDetail, setLectureDetail] = useState<LectureDetail | null>(null);
+  const [lectureDetail, setLectureDetail] = useState<LectureDetail | null>(
+    null
+  );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -95,17 +122,17 @@ const InstructorEventDetailModal: React.FC<InstructorEventDetailModalProps> = ({
 
   const fetchLectureDetail = async (id: number) => {
     if (!baseUrl) {
-      setError('API 서버 주소(.env)가 설정되어 있지 않습니다.');
+      setError("API 서버 주소(.env)가 설정되어 있지 않습니다.");
       return;
     }
 
     const accessToken =
-      typeof window !== 'undefined'
-        ? localStorage.getItem('accessToken')
+      typeof window !== "undefined"
+        ? localStorage.getItem("accessToken")
         : null;
 
     if (!accessToken) {
-      setError('로그인이 필요합니다. 다시 로그인 후 이용해주세요.');
+      setError("로그인이 필요합니다. 다시 로그인 후 이용해주세요.");
       return;
     }
 
@@ -114,42 +141,46 @@ const InstructorEventDetailModal: React.FC<InstructorEventDetailModalProps> = ({
 
     try {
       const response = await fetch(`${baseUrl}/api/lectures/lectures/${id}`, {
-        method: 'GET',
+        method: "GET",
         headers: {
           Authorization: `Bearer ${accessToken}`,
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
-        credentials: 'include',
+        credentials: "include",
       });
 
       if (!response.ok) {
-        throw new Error('강의 정보를 불러오는데 실패했습니다.');
+        throw new Error("강의 정보를 불러오는데 실패했습니다.");
       }
 
       const data: LectureDetail = await response.json();
-      console.log('--- API 응답 원본 데이터 ---');
+      console.log("--- API 응답 원본 데이터 ---");
       console.log(data);
-      console.log('------------------------------');
+      console.log("--- applications 배열 ---");
+      console.log(data.applications);
+      console.log("--- 현재 userId ---");
+      console.log(localStorage.getItem("userId"));
+      console.log("------------------------------");
       setLectureDetail(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : '오류가 발생했습니다.');
-      console.error('Failed to fetch lecture detail:', err);
+      setError(err instanceof Error ? err.message : "오류가 발생했습니다.");
+      console.error("Failed to fetch lecture detail:", err);
     } finally {
       setLoading(false);
     }
   };
 
   // 🔹 강의 신청 API 호출 (역할 포함)
-  const handleApplyLecture = async (appliedRole: 'main' | 'assist') => {
+  const handleApplyLecture = async (appliedRole: "main" | "assist") => {
     if (!lectureDetail || !lectureId) return;
 
     const accessToken =
-      typeof window !== 'undefined'
-        ? localStorage.getItem('accessToken')
+      typeof window !== "undefined"
+        ? localStorage.getItem("accessToken")
         : null;
 
     if (!accessToken) {
-      alert('로그인이 필요합니다.');
+      alert("로그인이 필요합니다.");
       return;
     }
 
@@ -161,41 +192,42 @@ const InstructorEventDetailModal: React.FC<InstructorEventDetailModalProps> = ({
         applied_role: appliedRole,
       };
 
-      console.log('=== 강의 신청 요청 ===');
-      console.log('URL:', `${baseUrl}/api/lectures/applications/`);
-      console.log('Body:', requestBody);
-      console.log('=====================');
+      console.log("=== 강의 신청 요청 ===");
+      console.log("URL:", `${baseUrl}/api/lectures/applications/`);
+      console.log("Body:", requestBody);
+      console.log("=====================");
 
-      const response = await fetch(
-        `${baseUrl}/api/lectures/applications/`,
-        {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            'Content-Type': 'application/json',
-          },
-          credentials: 'include',
-          body: JSON.stringify(requestBody),
-        }
-      );
+      const response = await fetch(`${baseUrl}/api/lectures/applications/`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify(requestBody),
+      });
 
-      console.log('Response status:', response.status);
+      console.log("Response status:", response.status);
 
       if (!response.ok) {
-        let errorMessage = '강의 신청에 실패했습니다.';
-        
+        let errorMessage = "강의 신청에 실패했습니다.";
+
         const responseText = await response.text();
-        console.error('Server response:', responseText);
-        
+        console.error("Server response:", responseText);
+
         try {
           const errorData = JSON.parse(responseText);
-          
+
           if (errorData.lecture_id) {
-            errorMessage = `lecture_id 오류: ${errorData.lecture_id.join(', ')}`;
+            errorMessage = `lecture_id 오류: ${errorData.lecture_id.join(
+              ", "
+            )}`;
           } else if (errorData.lecture) {
-            errorMessage = `lecture 오류: ${errorData.lecture.join(', ')}`;
+            errorMessage = `lecture 오류: ${errorData.lecture.join(", ")}`;
           } else if (errorData.applied_role) {
-            errorMessage = `applied_role 오류: ${errorData.applied_role.join(', ')}`;
+            errorMessage = `applied_role 오류: ${errorData.applied_role.join(
+              ", "
+            )}`;
           } else if (errorData.detail) {
             errorMessage = errorData.detail;
           } else if (errorData.message) {
@@ -206,21 +238,22 @@ const InstructorEventDetailModal: React.FC<InstructorEventDetailModalProps> = ({
             errorMessage = JSON.stringify(errorData);
           }
         } catch {
-          errorMessage = `서버 오류 (${response.status}): ${responseText.substring(0, 100)}`;
+          errorMessage = `서버 오류 (${
+            response.status
+          }): ${responseText.substring(0, 100)}`;
         }
-        
+
         throw new Error(errorMessage);
       }
 
       const result = await response.json();
-      console.log('Success response:', result);
+      console.log("Success response:", result);
 
       // ✅ 신청 성공! 성공 플래그만 설정하고 새로고침은 나중에
       setApplicationSuccess(true);
-      
     } catch (err) {
-      alert(err instanceof Error ? err.message : '오류가 발생했습니다.');
-      console.error('Failed to apply lecture:', err);
+      alert(err instanceof Error ? err.message : "오류가 발생했습니다.");
+      console.error("Failed to apply lecture:", err);
       throw err;
     } finally {
       setIsActionLoading(false);
@@ -230,63 +263,135 @@ const InstructorEventDetailModal: React.FC<InstructorEventDetailModalProps> = ({
   // 🔹 신청 모달이 완전히 닫힐 때 호출되는 콜백
   const handleApplicationModalClose = async () => {
     // 신청이 성공했다면 강의 정보를 새로고침
-    if (applicationSuccess && lectureId) {
-      await fetchLectureDetail(lectureId);
-      setApplicationSuccess(false);
+    // if (applicationSuccess && lectureId) {
+    //   await fetchLectureDetail(lectureId);
+    //   setApplicationSuccess(false);
+    // }
+    if (applicationSuccess) {
+      window.location.reload(); // ✅ 페이지 전체를 새로고침
     }
+  };
+
+  // 🔹 현재 사용자의 신청 ID 찾기 함수 추가
+  const getMyApplicationId = (): number | null => {
+    console.log("🔍 getMyApplicationId 호출");
+
+    if (!lectureDetail || !lectureDetail.applications) {
+      console.log("❌ lectureDetail 또는 applications 없음");
+      return null;
+    }
+
+    console.log("📋 applications 배열:", lectureDetail.applications);
+
+    // 🔍 JWT 토큰에서 userId 추출
+    const currentUserId = getUserIdFromToken();
+    console.log("👤 현재 userId (JWT에서 추출):", currentUserId);
+
+    if (!currentUserId) {
+      console.log("❌ userId 추출 실패");
+      return null;
+    }
+
+    // applications 배열에서 현재 사용자의 신청 찾기
+    const myApplication = lectureDetail.applications.find((app: any) => {
+      console.log(
+        `비교 중: app.user.id=${app.user.id} (타입: ${typeof app.user
+          .id}) vs currentUserId=${currentUserId} (타입: ${typeof currentUserId})`
+      );
+      // 둘 다 숫자로 비교
+      return app.user.id === parseInt(currentUserId);
+    });
+
+    console.log("🎯 찾은 신청:", myApplication);
+
+    // 신청이 있으면 application id 반환
+    const applicationId = myApplication ? myApplication.id : null;
+    console.log("✅ 반환할 applicationId:", applicationId);
+
+    return applicationId;
   };
 
   // 🔹 강의 신청 취소 API 호출
   const handleCancelLecture = async () => {
-    if (!lectureDetail || !lectureId) return;
+    if (!lectureDetail) return;
+
+    // ✅ 내 신청 ID 찾기
+    const myApplicationId = getMyApplicationId();
+
+    if (!myApplicationId) {
+      alert("신청 정보를 찾을 수 없습니다.");
+      console.error("❌ applicationId를 찾을 수 없습니다.");
+      return;
+    }
 
     const accessToken =
-      typeof window !== 'undefined'
-        ? localStorage.getItem('accessToken')
+      typeof window !== "undefined"
+        ? localStorage.getItem("accessToken")
         : null;
 
     if (!accessToken) {
-      alert('로그인이 필요합니다.');
+      alert("로그인이 필요합니다.");
       return;
     }
 
     setIsActionLoading(true);
 
     try {
+      console.log("=== 신청 취소 시도 ===");
+      console.log("Application ID:", myApplicationId);
+      console.log("Lecture ID:", lectureId);
+
       const response = await fetch(
-        `${baseUrl}/api/lectures/applications/${lectureId}`,
+        `${baseUrl}/api/lectures/applications/${myApplicationId}/`,
         {
-          method: 'DELETE',
+          method: "DELETE",
           headers: {
             Authorization: `Bearer ${accessToken}`,
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
-          credentials: 'include',
+          credentials: "include",
         }
       );
 
+      console.log("Response status:", response.status);
+
       if (!response.ok) {
-        let errorMessage = '강의 신청 취소에 실패했습니다.';
-        
+        let errorMessage = "강의 신청 취소에 실패했습니다.";
+
         const responseText = await response.text();
-        console.error('Server response:', responseText);
-        
+        console.error("Server response:", responseText);
+
         try {
           const errorData = JSON.parse(responseText);
-          errorMessage = errorData.message || errorData.error || errorData.detail || errorMessage;
+
+          if (errorData.detail === "No Application matches the given query.") {
+            errorMessage = "신청 내역을 찾을 수 없습니다.";
+          } else {
+            errorMessage =
+              errorData.message ||
+              errorData.error ||
+              errorData.detail ||
+              errorMessage;
+          }
         } catch {
           errorMessage = `서버 오류 (${response.status})`;
         }
-        
+
         throw new Error(errorMessage);
       }
 
-      await fetchLectureDetail(lectureId);
+      console.log("✅ 신청 취소 성공");
+
+      if (lectureId) {
+        await fetchLectureDetail(lectureId);
+      }
+
       setIsCancelModalOpen(false);
-      alert('강의 신청이 취소되었습니다.');
+
+      window.location.reload();
     } catch (err) {
-      alert(err instanceof Error ? err.message : '오류가 발생했습니다.');
-      console.error('Failed to cancel lecture:', err);
+      alert(err instanceof Error ? err.message : "오류가 발생했습니다.");
+      console.error("Failed to cancel lecture:", err);
     } finally {
       setIsActionLoading(false);
     }
@@ -296,24 +401,64 @@ const InstructorEventDetailModal: React.FC<InstructorEventDetailModalProps> = ({
 
   const getTypeLabel = (type: string) => {
     const map: Record<string, string> = {
-      general: '일반',
-      competition: '대회',
-      camp: '캠프',
-      doroland: '도로랜드',
-      booth: '부스',
-      etc: '기타',
+      general: "일반",
+      competition: "대회",
+      camp: "캠프",
+      doroland: "도로랜드",
+      booth: "부스",
+      etc: "기타",
     };
     return map[type] || type;
   };
 
   const getStatusLabel = (status: string) => {
     const map: Record<string, string> = {
-      RECRUITING: '모집 중',
-      ALLOCATING: '배정 중',
-      COMPLETED: '배정 완료',
-      COMPETITION: '배정 완료',
+      RECRUITING: "모집 중",
+      ALLOCATING: "배정 중",
+      COMPLETED: "배정 완료",
+      COMPETITION: "배정 완료",
     };
     return map[status] || status;
+  };
+
+  // 🔹 현재 로그인한 사용자의 신청 상태 찾기
+  const getMyApplicationStatus = (): string | null => {
+    console.log("🔍 getMyApplicationStatus 호출");
+
+    if (!lectureDetail || !lectureDetail.applications) {
+      console.log("❌ lectureDetail 또는 applications 없음");
+      return null;
+    }
+
+    console.log("📋 applications 배열:", lectureDetail.applications);
+
+    // 🔍 JWT 토큰에서 userId 추출
+    const currentUserId = getUserIdFromToken();
+
+    console.log("👤 현재 userId (JWT에서 추출):", currentUserId);
+
+    if (!currentUserId) {
+      console.log("❌ userId 추출 실패");
+      return null;
+    }
+
+    // applications 배열에서 현재 사용자의 신청 찾기
+    const myApplication = lectureDetail.applications.find((app: any) => {
+      console.log(
+        `비교 중: app.user.id=${app.user.id} (타입: ${typeof app.user
+          .id}) vs currentUserId=${currentUserId} (타입: ${typeof currentUserId})`
+      );
+      // 둘 다 숫자로 비교
+      return app.user.id === parseInt(currentUserId);
+    });
+
+    console.log("🎯 찾은 신청:", myApplication);
+
+    // 신청이 있으면 assignment_status 반환
+    const status = myApplication ? myApplication.assignment_status : null;
+    console.log("✅ 반환할 status:", status);
+
+    return status;
   };
 
   return (
@@ -321,7 +466,7 @@ const InstructorEventDetailModal: React.FC<InstructorEventDetailModalProps> = ({
       <Overlay onClick={onClose}>
         <ModalContainer onClick={(e) => e.stopPropagation()}>
           <ModalHeader>
-            <ModalTitle>{lectureDetail?.title || '강의 정보'}</ModalTitle>
+            <ModalTitle>{lectureDetail?.title || "강의 정보"}</ModalTitle>
             <CloseButton onClick={onClose}>×</CloseButton>
           </ModalHeader>
 
@@ -336,7 +481,8 @@ const InstructorEventDetailModal: React.FC<InstructorEventDetailModalProps> = ({
             {error && (
               <ErrorContainer>
                 <ErrorText>{error}</ErrorText>
-                <RetryButton onClick={() => lectureId && fetchLectureDetail(lectureId)}>
+                <RetryButton
+                  onClick={() => lectureId && fetchLectureDetail(lectureId)}>
                   다시 시도
                 </RetryButton>
               </ErrorContainer>
@@ -384,15 +530,30 @@ const InstructorEventDetailModal: React.FC<InstructorEventDetailModalProps> = ({
                 <Divider />
                 <Section>
                   <SectionTitle>강사 액션</SectionTitle>
-                  <LectureActionButtons
-                    status={lectureDetail.status}
-                    myApplicationStatus={lectureDetail.my_application_status}
-                    isLoading={isActionLoading}
-                    onApply={handleApplyLecture}
-                    onCancel={() => setIsCancelModalOpen(true)}
-                    onApplicationModalClose={handleApplicationModalClose}
-                    lectureTitle={lectureDetail.title}
-                  />
+                  {(() => {
+                    const myStatus = getMyApplicationStatus();
+                    console.log(
+                      "🎬 렌더링 시점 - status:",
+                      lectureDetail.status
+                    );
+                    console.log(
+                      "🎬 렌더링 시점 - myApplicationStatus:",
+                      myStatus
+                    );
+
+                    return (
+                      <LectureActionButtons
+                        status={lectureDetail.status}
+                        myApplicationStatus={myStatus}
+                        isLoading={isActionLoading}
+                        onApply={handleApplyLecture}
+                        onCancel={() => setIsCancelModalOpen(true)}
+                        onApplicationModalClose={handleApplicationModalClose}
+                        lectureTitle={lectureDetail.title}
+                        lectureId={lectureDetail.id}
+                      />
+                    );
+                  })()}
                 </Section>
                 <Divider />
 
@@ -402,7 +563,8 @@ const InstructorEventDetailModal: React.FC<InstructorEventDetailModalProps> = ({
                     <InfoRow key={sch.id}>
                       <Label>{sch.date}</Label>
                       <Value>
-                        {sch.start_time.slice(0, 5)} - {sch.end_time.slice(0, 5)}
+                        {sch.start_time.slice(0, 5)} -{" "}
+                        {sch.end_time.slice(0, 5)}
                       </Value>
                     </InfoRow>
                   ))}
@@ -420,7 +582,8 @@ const InstructorEventDetailModal: React.FC<InstructorEventDetailModalProps> = ({
                   <InfoRow>
                     <Label>모집 인원</Label>
                     <Value>
-                      메인 {lectureDetail.recruitment_main}명 / 보조 {lectureDetail.recruitment_assist}명
+                      메인 {lectureDetail.recruitment_main}명 / 보조{" "}
+                      {lectureDetail.recruitment_assist}명
                     </Value>
                   </InfoRow>
 
@@ -458,8 +621,7 @@ const InstructorEventDetailModal: React.FC<InstructorEventDetailModalProps> = ({
                       <AttachmentLink
                         href={lectureDetail.attachment_url}
                         target="_blank"
-                        rel="noopener noreferrer"
-                      >
+                        rel="noopener noreferrer">
                         📎 첨부파일 다운로드
                       </AttachmentLink>
                     </Section>
@@ -472,7 +634,9 @@ const InstructorEventDetailModal: React.FC<InstructorEventDetailModalProps> = ({
                     <Section>
                       <SectionTitle>확정 강사</SectionTitle>
                       <InfoRow>
-                        <Value>{lectureDetail.confirmed_instructors.length}명 확정</Value>
+                        <Value>
+                          {lectureDetail.confirmed_instructors.length}명 확정
+                        </Value>
                       </InfoRow>
                     </Section>
                   </>
@@ -545,7 +709,7 @@ const ModalHeader = styled.div`
   justify-content: space-between;
   align-items: center;
   padding: 20px 24px;
-  border-bottom: 1px solid #E5E7EB;
+  border-bottom: 1px solid #e5e7eb;
   flex-shrink: 0;
 `;
 
@@ -560,7 +724,7 @@ const CloseButton = styled.button`
   background: none;
   border: none;
   font-size: 32px;
-  color: #6B7280;
+  color: #6b7280;
   cursor: pointer;
   padding: 0;
   width: 32px;
@@ -572,7 +736,7 @@ const CloseButton = styled.button`
   transition: all 0.2s;
 
   &:hover {
-    background-color: #F3F4F6;
+    background-color: #f3f4f6;
     color: #111827;
   }
 `;
@@ -602,8 +766,8 @@ const ButtonGroup = styled.div`
 
 const CancelButton = styled.button`
   padding: 10px 20px;
-  background-color: #F3F4F6;
-  color: #4B5563;
+  background-color: #f3f4f6;
+  color: #4b5563;
   border: none;
   border-radius: 6px;
   font-size: 14px;
@@ -612,7 +776,7 @@ const CancelButton = styled.button`
   transition: all 0.2s;
 
   &:hover {
-    background-color: #E5E7EB;
+    background-color: #e5e7eb;
   }
 
   &:disabled {
@@ -623,7 +787,7 @@ const CancelButton = styled.button`
 
 const ConfirmButton = styled.button`
   padding: 10px 20px;
-  background-color: #3B82F6;
+  background-color: #3b82f6;
   color: white;
   border: none;
   border-radius: 6px;
@@ -633,13 +797,13 @@ const ConfirmButton = styled.button`
   transition: all 0.2s;
 
   &:hover {
-    background-color: #2563EB;
+    background-color: #2563eb;
   }
 
   &:disabled {
     cursor: not-allowed;
     opacity: 0.5;
-    background-color: #93C5FD;
+    background-color: #93c5fd;
   }
 `;
 
@@ -654,15 +818,15 @@ const LoadingContainer = styled.div`
 const LoadingSpinner = styled.div`
   width: 40px;
   height: 40px;
-  border: 4px solid #E5E7EB;
-  border-top-color: #3B82F6;
+  border: 4px solid #e5e7eb;
+  border-top-color: #3b82f6;
   border-radius: 50%;
   animation: ${spin} 0.8s linear infinite;
 `;
 
 const LoadingText = styled.div`
   margin-top: 16px;
-  color: #6B7280;
+  color: #6b7280;
   font-size: 14px;
 `;
 
@@ -675,7 +839,7 @@ const ErrorContainer = styled.div`
 `;
 
 const ErrorText = styled.div`
-  color: #DC2626;
+  color: #dc2626;
   font-size: 14px;
   margin-bottom: 16px;
   text-align: center;
@@ -683,7 +847,7 @@ const ErrorText = styled.div`
 
 const RetryButton = styled.button`
   padding: 8px 16px;
-  background-color: #3B82F6;
+  background-color: #3b82f6;
   color: white;
   border: none;
   border-radius: 6px;
@@ -693,7 +857,7 @@ const RetryButton = styled.button`
   transition: all 0.2s;
 
   &:hover {
-    background-color: #2563EB;
+    background-color: #2563eb;
   }
 `;
 
@@ -740,20 +904,20 @@ const StatusBadge = styled.span<{ status: string }>`
   border-radius: 12px;
   font-size: 13px;
   font-weight: 500;
-  background-color: ${props => {
-    if (props.status === 'RECRUITING') return '#DBEAFE';
-    if (props.status === 'ALLOCATING') return '#FEF3C7';
-    return '#E5E7EB';
+  background-color: ${(props) => {
+    if (props.status === "RECRUITING") return "#DBEAFE";
+    if (props.status === "ALLOCATING") return "#FEF3C7";
+    return "#E5E7EB";
   }};
-  color: ${props => {
-    if (props.status === 'RECRUITING') return '#1E40AF';
-    if (props.status === 'ALLOCATING') return '#92400E';
-    return '#374151';
+  color: ${(props) => {
+    if (props.status === "RECRUITING") return "#1E40AF";
+    if (props.status === "ALLOCATING") return "#92400E";
+    return "#374151";
   }};
 `;
 
 const ContentBox = styled.div`
-  background-color: #F9FAFB;
+  background-color: #f9fafb;
   padding: 12px;
   border-radius: 8px;
   font-size: 14px;
@@ -764,21 +928,21 @@ const ContentBox = styled.div`
 
 const Divider = styled.div`
   height: 1px;
-  background-color: #E5E7EB;
+  background-color: #e5e7eb;
   margin: 20px 0;
 `;
 
 const AttachmentLink = styled.a`
   display: inline-flex;
   align-items: center;
-  color: #3B82F6;
+  color: #3b82f6;
   text-decoration: none;
   font-size: 14px;
   font-weight: 500;
   transition: color 0.2s;
 
   &:hover {
-    color: #2563EB;
+    color: #2563eb;
     text-decoration: underline;
   }
 `;

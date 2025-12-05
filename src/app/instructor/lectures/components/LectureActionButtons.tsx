@@ -1,15 +1,16 @@
-import React, { useState } from 'react';
-import styled from 'styled-components';
-import LectureApplicationModal from './LectureApplicationModal';
+import React, { useState } from "react";
+import styled from "styled-components";
+import LectureApplicationModal from "./LectureApplicationModal";
 
 interface ActionButtonsProps {
   status: string | null | undefined;
   myApplicationStatus: string | null | undefined;
   isLoading?: boolean;
-  onApply: (appliedRole: 'main' | 'assist') => Promise<void>;
+  onApply: (appliedRole: "main" | "assist") => Promise<void>;
   onCancel: () => void;
-  onApplicationModalClose?: () => void; // ✅ 새로 추가!
+  onApplicationModalClose?: () => void;
   lectureTitle?: string;
+  lectureId: number | null;
 }
 
 const LectureActionButtons: React.FC<ActionButtonsProps> = ({
@@ -20,24 +21,43 @@ const LectureActionButtons: React.FC<ActionButtonsProps> = ({
   onCancel,
   onApplicationModalClose,
   lectureTitle,
+  lectureId,
 }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+  console.log("📥 LectureActionButtons Props 받음:");
+  console.log("  - status (원본):", status, "타입:", typeof status);
+  console.log(
+    "  - myApplicationStatus (원본):",
+    myApplicationStatus,
+    "타입:",
+    typeof myApplicationStatus
+  );
+  console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+
+  // status를 대문자로 정규화
   const normalizedStatus = (() => {
     if (status == null) return null;
     return String(status).trim().toUpperCase();
   })();
 
+  // myApplicationStatus를 소문자로 정규화
   const normalizedMyStatus = (() => {
     if (myApplicationStatus == null) return null;
     return String(myApplicationStatus).trim().toLowerCase();
   })();
 
+  console.log("✅ 정규화 완료:");
+  console.log("  - normalizedStatus:", normalizedStatus);
+  console.log("  - normalizedMyStatus:", normalizedMyStatus);
+  console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+
   const handleApplyClick = () => {
     setIsModalOpen(true);
   };
 
-  const handleModalSubmit = async (appliedRole: 'main' | 'assist') => {
+  const handleModalSubmit = async (appliedRole: "main" | "assist") => {
     await onApply(appliedRole);
   };
 
@@ -51,99 +71,128 @@ const LectureActionButtons: React.FC<ActionButtonsProps> = ({
 
   // 0. status가 null/undefined
   if (normalizedStatus === null) {
+    console.log('🔴 분기: status가 null → "강의 상태 확인 불가"');
     return (
       <ActionButtonsContainer>
-        <StatusText disabled>강의 상태 확인 불가</StatusText>
+        <StatusText $disabled>강의 상태 확인 불가</StatusText>
       </ActionButtonsContainer>
     );
   }
 
   // 1. RECRUITING (모집 중)
-  if (normalizedStatus === 'RECRUITING') {
+  if (normalizedStatus === "RECRUITING") {
+    console.log("🟢 분기: RECRUITING");
+
+    // 신청하지 않은 경우
     if (normalizedMyStatus === null) {
+      console.log('  → myStatus가 null → "신청하기" 버튼');
       return (
         <>
           <ActionButtonsContainer>
-            <ActionButton $primary onClick={handleApplyClick} disabled={isLoading}>
-              {isLoading ? '신청 중...' : '신청하기'}
+            <ActionButton
+              $primary
+              onClick={handleApplyClick}
+              disabled={isLoading}>
+              {isLoading ? "신청 중..." : "신청하기"}
             </ActionButton>
           </ActionButtonsContainer>
           <LectureApplicationModal
             isOpen={isModalOpen}
             onClose={handleModalClose}
             onSubmit={handleModalSubmit}
-            lectureTitle={lectureTitle}
+            lectureId={lectureId}
           />
         </>
       );
     }
 
-    if (normalizedMyStatus === 'pending') {
+    // pending: 신청 완료, 배정 대기 중
+    if (normalizedMyStatus === "pending") {
+      console.log('  → myStatus가 pending → "취소하기" 버튼');
       return (
         <ActionButtonsContainer>
           <ActionButton onClick={onCancel} disabled={isLoading}>
-            {isLoading ? '취소 중...' : '취소하기'}
+            {isLoading ? "취소 중..." : "취소하기"}
           </ActionButton>
         </ActionButtonsContainer>
       );
     }
 
-    if (normalizedMyStatus === 'assigned') {
+    // assigned: 배정 완료
+    if (normalizedMyStatus === "assigned") {
+      console.log('  → myStatus가 assigned → "배정됨" 상태');
       return (
         <ActionButtonsContainer>
-          <StatusText complete>배정됨</StatusText>
+          <StatusText $complete>배정됨</StatusText>
         </ActionButtonsContainer>
       );
     }
 
-    if (normalizedMyStatus === 'rejected') {
+    // rejected: 거절됨
+    if (normalizedMyStatus === "rejected") {
+      console.log('  → myStatus가 rejected → "거절됨" 상태');
       return (
         <ActionButtonsContainer>
-          <StatusText rejected>거절됨</StatusText>
+          <StatusText $rejected>거절됨</StatusText>
         </ActionButtonsContainer>
       );
     }
+
+    console.log("  → myStatus가 알 수 없는 값:", normalizedMyStatus);
   }
 
-  // 2. ALLOCATING / COMPLETED
-  if (normalizedStatus === 'ALLOCATING' || normalizedStatus === 'COMPLETED') {
+  // 2. ALLOCATING / COMPLETED (배정 중 / 배정 완료)
+  if (normalizedStatus === "ALLOCATING" || normalizedStatus === "COMPLETED") {
+    console.log("🟡 분기: ALLOCATING or COMPLETED");
+
+    // 신청하지 않은 경우
     if (normalizedMyStatus === null) {
+      console.log('  → myStatus가 null → "마감" 상태');
       return (
         <ActionButtonsContainer>
-          <StatusText disabled>마감</StatusText>
+          <StatusText $disabled>마감</StatusText>
         </ActionButtonsContainer>
       );
     }
 
-    if (normalizedMyStatus === 'pending') {
+    // pending: 신청 완료 (배정 대기)
+    if (normalizedMyStatus === "pending") {
+      console.log('  → myStatus가 pending → "신청 완료" 상태');
       return (
         <ActionButtonsContainer>
-          <StatusText complete>신청 완료</StatusText>
+          <StatusText $complete>신청 완료</StatusText>
         </ActionButtonsContainer>
       );
     }
 
-    if (normalizedMyStatus === 'assigned') {
+    // assigned: 배정 완료
+    if (normalizedMyStatus === "assigned") {
+      console.log('  → myStatus가 assigned → "배정됨" 상태');
       return (
         <ActionButtonsContainer>
-          <StatusText complete>배정됨</StatusText>
+          <StatusText $complete>배정됨</StatusText>
         </ActionButtonsContainer>
       );
     }
 
-    if (normalizedMyStatus === 'rejected') {
+    // rejected: 거절됨
+    if (normalizedMyStatus === "rejected") {
+      console.log('  → myStatus가 rejected → "거절됨" 상태');
       return (
         <ActionButtonsContainer>
-          <StatusText rejected>거절됨</StatusText>
+          <StatusText $rejected>거절됨</StatusText>
         </ActionButtonsContainer>
       );
     }
+
+    console.log("  → myStatus가 알 수 없는 값:", normalizedMyStatus);
   }
 
   // 3. 그 외 이상한 값
+  console.log('🔴 분기: 알 수 없는 status → "상태 확인 불가"');
   return (
     <ActionButtonsContainer>
-      <StatusText disabled>상태 확인 불가</StatusText>
+      <StatusText $disabled>상태 확인 불가</StatusText>
     </ActionButtonsContainer>
   );
 };
@@ -166,23 +215,23 @@ const ActionButton = styled.button<{ $primary?: boolean; disabled?: boolean }>`
   ${(props) =>
     props.$primary
       ? `
-    background-color: ${props.disabled ? '#93C5FD' : '#3B82F6'};
+    background-color: ${props.disabled ? "#93C5FD" : "#3B82F6"};
     color: white;
-    cursor: ${props.disabled ? 'not-allowed' : 'pointer'};
-    &:hover { background-color: ${props.disabled ? '#93C5FD' : '#2563EB'}; }
+    cursor: ${props.disabled ? "not-allowed" : "pointer"};
+    &:hover { background-color: ${props.disabled ? "#93C5FD" : "#2563EB"}; }
   `
       : `
-    background-color: ${props.disabled ? '#E5E7EB' : '#F3F4F6'};
+    background-color: ${props.disabled ? "#E5E7EB" : "#F3F4F6"};
     color: #4B5563;
-    cursor: ${props.disabled ? 'not-allowed' : 'pointer'};
-    &:hover { background-color: ${props.disabled ? '#E5E7EB' : '#E5E7EB'}; }
+    cursor: ${props.disabled ? "not-allowed" : "pointer"};
+    &:hover { background-color: ${props.disabled ? "#E5E7EB" : "#E5E7EB"}; }
   `}
 `;
 
 const StatusText = styled.div<{
-  complete?: boolean;
-  disabled?: boolean;
-  rejected?: boolean;
+  $complete?: boolean;
+  $disabled?: boolean;
+  $rejected?: boolean;
 }>`
   padding: 10px 24px;
   border-radius: 8px;
@@ -191,22 +240,22 @@ const StatusText = styled.div<{
   text-align: center;
 
   ${(props) =>
-    props.complete
+    props.$complete
       ? `
     background-color: #D1FAE5;
     color: #065F46;
   `
-      : props.rejected
+      : props.$rejected
       ? `
     background-color: #FEE2E2;
     color: #991B1B;
   `
-      : props.disabled
+      : props.$disabled
       ? `
     background-color: #F3F4F6;
     color: #6B7280;
   `
-      : ''}
+      : ""}
 `;
 
 export default LectureActionButtons;

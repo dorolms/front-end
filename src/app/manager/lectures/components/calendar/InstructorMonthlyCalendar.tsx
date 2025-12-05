@@ -1,10 +1,10 @@
-import React, { useRef } from 'react';
-import styled from 'styled-components';
-import FullCalendar from '@fullcalendar/react';
-import dayGridPlugin from '@fullcalendar/daygrid';
-import interactionPlugin from '@fullcalendar/interaction';
-import { CalendarEvent, Lecture, Schedule } from '../../types';
-import InstructorEventCard from './InstructorEventCard';
+import React, { useRef } from "react";
+import styled from "styled-components";
+import FullCalendar from "@fullcalendar/react";
+import dayGridPlugin from "@fullcalendar/daygrid";
+import interactionPlugin from "@fullcalendar/interaction";
+import { CalendarEvent, Lecture, Schedule } from "../../types";
+import InstructorEventCard from "./InstructorEventCard";
 
 interface InstructorMonthlyCalendarProps {
   events: CalendarEvent[];
@@ -13,7 +13,7 @@ interface InstructorMonthlyCalendarProps {
 
 const InstructorMonthlyCalendar: React.FC<InstructorMonthlyCalendarProps> = ({
   events,
-  onEventClick
+  onEventClick,
 }) => {
   const calendarRef = useRef<FullCalendar>(null);
 
@@ -27,9 +27,7 @@ const InstructorMonthlyCalendar: React.FC<InstructorMonthlyCalendarProps> = ({
   return (
     <CalendarContainer>
       <CalendarHeader>
-        <TodayButton onClick={handleTodayClick}>
-          Today
-        </TodayButton>
+        <TodayButton onClick={handleTodayClick}>Today</TodayButton>
       </CalendarHeader>
 
       <StyledCalendarWrapper>
@@ -40,11 +38,12 @@ const InstructorMonthlyCalendar: React.FC<InstructorMonthlyCalendarProps> = ({
           locale="ko"
           height="auto"
           headerToolbar={{
-            left: 'prev',
-            center: 'title',
-            right: 'next'
+            left: "prev",
+            center: "title",
+            right: "next",
           }}
           events={events}
+          fixedWeekCount={false}
           eventContent={(eventInfo) => {
             const { lecture, schedule } = eventInfo.event.extendedProps;
             return (
@@ -75,7 +74,7 @@ const CalendarHeader = styled.div`
 
 const TodayButton = styled.button`
   padding: 10px 20px;
-  background-color: #3B82F6;
+  background-color: #3b82f6;
   color: white;
   border: none;
   border-radius: 8px;
@@ -85,7 +84,7 @@ const TodayButton = styled.button`
   transition: all 0.2s;
 
   &:hover {
-    background-color: #2563EB;
+    background-color: #2563eb;
     transform: translateY(-1px);
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   }
@@ -112,7 +111,7 @@ const StyledCalendarWrapper = styled.div`
 
   .fc-button {
     background-color: white !important;
-    border: 1px solid #E5E7EB !important;
+    border: 1px solid #e5e7eb !important;
     color: #374151 !important;
     padding: 8px 12px !important;
     border-radius: 8px !important;
@@ -120,8 +119,8 @@ const StyledCalendarWrapper = styled.div`
     transition: all 0.2s !important;
 
     &:hover {
-      background-color: #F3F4F6 !important;
-      border-color: #D1D5DB !important;
+      background-color: #f3f4f6 !important;
+      border-color: #d1d5db !important;
     }
 
     &:focus {
@@ -130,15 +129,15 @@ const StyledCalendarWrapper = styled.div`
   }
 
   .fc-button-active {
-    background-color: #3B82F6 !important;
+    background-color: #3b82f6 !important;
     color: white !important;
-    border-color: #3B82F6 !important;
+    border-color: #3b82f6 !important;
   }
 
   .fc-col-header-cell {
     padding: 12px 0;
-    background-color: #F9FAFB;
-    border-color: #E5E7EB !important;
+    background-color: #f9fafb;
+    border-color: #e5e7eb !important;
   }
 
   .fc-col-header-cell-cushion {
@@ -148,7 +147,7 @@ const StyledCalendarWrapper = styled.div`
   }
 
   .fc-daygrid-day {
-    border-color: #E5E7EB !important;
+    border-color: #e5e7eb !important;
   }
 
   .fc-daygrid-day-number {
@@ -159,7 +158,7 @@ const StyledCalendarWrapper = styled.div`
   }
 
   .fc-day-today {
-    background-color: #FEF3C7 !important;
+    background-color: #fef3c7 !important;
   }
 
   .fc-daygrid-day-frame {
@@ -179,7 +178,7 @@ const StyledCalendarWrapper = styled.div`
 
   .fc-more-link {
     font-size: 11px;
-    color: #3B82F6;
+    color: #3b82f6;
     font-weight: 600;
     margin: 2px 4px;
   }
