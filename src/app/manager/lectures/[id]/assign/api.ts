@@ -157,3 +157,19 @@ export const updateLecture = async (payload: UpdateLecturePayload) => {
     throw error; // 에러를 던져서 페이지에서 alert 등을 띄울 수 있게 함
   }
 };
+
+// [신규 추가] 강의 삭제 API
+export const deleteLecture = async (id: number) => {
+  try {
+    const response = await axios.delete(
+      `${API_BASE_URL}/api/lectures/lectures/${id}/`,
+      {
+        headers: getAuthHeaders(), // 인증 헤더 필수
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error(`강의 삭제 실패 (ID: ${id}):`, error);
+    throw error;
+  }
+};

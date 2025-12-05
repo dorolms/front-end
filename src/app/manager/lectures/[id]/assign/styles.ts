@@ -47,6 +47,7 @@ export const StatusBadge = styled.span`
 export const BackButton = styled.button`
   background: #f8f9fa;
   border: 1px solid #e9ecef;
+  height: 40px;
   padding: 8px 16px;
   border-radius: 6px;
   color: #666;
@@ -54,9 +55,47 @@ export const BackButton = styled.button`
   font-weight: 500;
   cursor: pointer;
   &:hover { background-color: #e9ecef; color: #333; }
+  `;
+
+export const EditButton = styled.button`
+  background-color: #3b82f6; /* 파란색 (원하는 테마 컬러로 변경) */
+  color: white;
+  height: 40px;
+  padding: 8px 20px;
+  white-space: nowrap;
+  border-radius: 6px;
+  border: none;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  
+  &:hover {
+    background-color: #2563eb; /* 호버 시 진한 파란색 */
+  }
 `;
 
-export const ContentWrapper = styled.div`
+export const DeleteButton = styled.button`
+  background-color: #ef4444; /* 빨간색 (Red-500) */
+  color: white;
+  
+  padding: 14px 32px; font-size: 16px; font-weight: 600; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: none;
+
+  display: flex;           
+  align-items: center;     /* 수직 중앙 정렬 */
+  justify-content: center; /* 내용물 수평 중앙 정렬 */
+  gap: 8px;                /* 아이콘과 텍스트 사이 간격 */
+
+
+  &:hover {
+    background-color: #dc2626; /* 호버 시 진한 빨강 (Red-600) */
+  }
+    &:disabled { opacity: 0.5; cursor: not-allowed; }
+`;
+  
+  export const ContentWrapper = styled.div`
   display: flex; gap: 10px; flex: 1; min-height: 0;
 `;
 
@@ -104,25 +143,6 @@ export const SectionTitle = styled.h2`
   }
 `;
 
-export const EditButton = styled.button`
-  margin-left: auto; /* 핵심: Flex 컨테이너에서 우측 끝으로 밈 */
-  background-color: #3b82f6; /* 파란색 (원하는 테마 컬러로 변경) */
-  color: white;
-  border: none;
-  border-radius: 6px;
-  padding: 6px 12px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 0.2s;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-
-  &:hover {
-    background-color: #2563eb; /* 호버 시 진한 파란색 */
-  }
-`;
 
 export const DetailRow = styled.div`
   display: grid; grid-template-columns: 220px 1fr; align-items: stretch; border-bottom: 1px solid #e5e7eb;

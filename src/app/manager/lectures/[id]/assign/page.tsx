@@ -3,7 +3,7 @@
 import React, { useState, useRef, useCallback, useMemo, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 // import { getLectureDetail, type LectureDetail, type Applicant, type LectureRole, type DbAssignmentStatus } from './api-mock';
-import { getLectureDetail, patchApplications, updateLecture, type LectureDetail, type Application, type LectureRole, type AssignmentStatus, type UserInfo, type patchData } from './api';
+import { getLectureDetail, patchApplications, updateLecture, deleteLecture, type LectureDetail, type Application, type LectureRole, type AssignmentStatus, type UserInfo, type patchData } from './api';
 
 import { isTokenValid, getUserRole } from './jwt';
 
@@ -15,7 +15,7 @@ import {
   AttachmentLink, FilterTabs, FilterButton, TableContainer,
   Table, Thead, Tbody, RoleBadge, ApplicantName, ApplicantMeta,
   StatusSelect, FixedBottomBar, Button, LoadingState, SidebarToggleButton, TitleArea,
-  EditButton,
+  EditButton, DeleteButton,
 } from './styles';
 import LectureForm from '../../components/form/LectureForm';
 
@@ -300,6 +300,21 @@ export default function LectureDetailPage({ params }: { params: Promise<{ id: st
     }
   };
 
+  const handleDelete = async () => {
+    if (!confirm('정말로 이 강의를 삭제하시겠습니까?\n삭제된 데이터는 복구할 수 없습니다.')) return;
+
+    try {
+      setIsSubmitting(true);
+      await deleteLecture(parseInt(id)); // API 호출
+      alert('강의가 삭제되었습니다.');
+      router.replace('/manager/lectures'); // 목록으로 이동
+    } catch (error) {
+      console.error(error);
+      alert('삭제 중 오류가 발생했습니다.');
+      setIsSubmitting(false);
+    }
+  };
+
   const handleSubmit = async (formData: any) => {
       // e.preventDefault();
       if (isSubmitting) return;
@@ -376,16 +391,16 @@ export default function LectureDetailPage({ params }: { params: Promise<{ id: st
           <PageTitle>강의 상세 및 배정{/* <StatusBadge>모집중</StatusBadge> */}</PageTitle>
         </TitleArea>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-    {!isEditing && (
-      <EditButton onClick={() => setIsEditing(true)}>
-        <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-        </svg>
-        강의 정보 수정
-      </EditButton>
-    )}
-        <BackButton onClick={() => router.push('/manager/lectures')}>목록으로</BackButton>
-      </div>
+            {!isEditing && (
+              <EditButton onClick={() => setIsEditing(true)}>
+                <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+                강의 정보 수정
+              </EditButton>
+            )}
+            <BackButton onClick={() => router.push('/manager/lectures')}>목록으로</BackButton>
+          </div>
       </Header>
 
       <ContentWrapper>
@@ -513,11 +528,18 @@ export default function LectureDetailPage({ params }: { params: Promise<{ id: st
           </ScrollArea>
           
           {isEditing ?
-          <FixedBottomBar>
-            <Button type="button" onClick={() => setIsEditing(false)} $variant="secondary" disabled={isSubmitting}>수정 취소</Button>
+          <FixedBottomBar style={{ justifyContent: 'space-between' }}>
+            <DeleteButton type="button" onClick={handleDelete} disabled={isSubmitting}>
+                <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+                강의 삭제
+              </DeleteButton>
+              
+            <div style={{ display: 'flex', gap: '12px' }}><Button type="button" onClick={() => setIsEditing(false)} $variant="secondary" disabled={isSubmitting}>수정 취소</Button>
             <Button type="submit" form='lecture-form' $variant="primary" disabled={isSubmitting}>
               {isSubmitting ? '저장 중...' : '강의 수정사항 저장'}
-            </Button>
+            </Button></div>
           </FixedBottomBar>
           :
             <FixedBottomBar>
