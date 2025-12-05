@@ -25,17 +25,6 @@ const LectureActionButtons: React.FC<ActionButtonsProps> = ({
 }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-  console.log("📥 LectureActionButtons Props 받음:");
-  console.log("  - status (원본):", status, "타입:", typeof status);
-  console.log(
-    "  - myApplicationStatus (원본):",
-    myApplicationStatus,
-    "타입:",
-    typeof myApplicationStatus
-  );
-  console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-
   // status를 대문자로 정규화
   const normalizedStatus = (() => {
     if (status == null) return null;
@@ -47,11 +36,6 @@ const LectureActionButtons: React.FC<ActionButtonsProps> = ({
     if (myApplicationStatus == null) return null;
     return String(myApplicationStatus).trim().toLowerCase();
   })();
-
-  console.log("✅ 정규화 완료:");
-  console.log("  - normalizedStatus:", normalizedStatus);
-  console.log("  - normalizedMyStatus:", normalizedMyStatus);
-  console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 
   const handleApplyClick = () => {
     setIsModalOpen(true);
@@ -71,7 +55,6 @@ const LectureActionButtons: React.FC<ActionButtonsProps> = ({
 
   // 0. status가 null/undefined
   if (normalizedStatus === null) {
-    console.log('🔴 분기: status가 null → "강의 상태 확인 불가"');
     return (
       <ActionButtonsContainer>
         <StatusText $disabled>강의 상태 확인 불가</StatusText>
@@ -81,11 +64,8 @@ const LectureActionButtons: React.FC<ActionButtonsProps> = ({
 
   // 1. RECRUITING (모집 중)
   if (normalizedStatus === "RECRUITING") {
-    console.log("🟢 분기: RECRUITING");
-
     // 신청하지 않은 경우
     if (normalizedMyStatus === null) {
-      console.log('  → myStatus가 null → "신청하기" 버튼');
       return (
         <>
           <ActionButtonsContainer>
@@ -108,7 +88,6 @@ const LectureActionButtons: React.FC<ActionButtonsProps> = ({
 
     // pending: 신청 완료, 배정 대기 중
     if (normalizedMyStatus === "pending") {
-      console.log('  → myStatus가 pending → "취소하기" 버튼');
       return (
         <ActionButtonsContainer>
           <ActionButton onClick={onCancel} disabled={isLoading}>
@@ -120,7 +99,6 @@ const LectureActionButtons: React.FC<ActionButtonsProps> = ({
 
     // assigned: 배정 완료
     if (normalizedMyStatus === "assigned") {
-      console.log('  → myStatus가 assigned → "배정됨" 상태');
       return (
         <ActionButtonsContainer>
           <StatusText $complete>배정됨</StatusText>
@@ -130,24 +108,18 @@ const LectureActionButtons: React.FC<ActionButtonsProps> = ({
 
     // rejected: 거절됨
     if (normalizedMyStatus === "rejected") {
-      console.log('  → myStatus가 rejected → "거절됨" 상태');
       return (
         <ActionButtonsContainer>
           <StatusText $rejected>거절됨</StatusText>
         </ActionButtonsContainer>
       );
     }
-
-    console.log("  → myStatus가 알 수 없는 값:", normalizedMyStatus);
   }
 
   // 2. ALLOCATING / COMPLETED (배정 중 / 배정 완료)
   if (normalizedStatus === "ALLOCATING" || normalizedStatus === "COMPLETED") {
-    console.log("🟡 분기: ALLOCATING or COMPLETED");
-
     // 신청하지 않은 경우
     if (normalizedMyStatus === null) {
-      console.log('  → myStatus가 null → "마감" 상태');
       return (
         <ActionButtonsContainer>
           <StatusText $disabled>마감</StatusText>
@@ -157,7 +129,6 @@ const LectureActionButtons: React.FC<ActionButtonsProps> = ({
 
     // pending: 신청 완료 (배정 대기)
     if (normalizedMyStatus === "pending") {
-      console.log('  → myStatus가 pending → "신청 완료" 상태');
       return (
         <ActionButtonsContainer>
           <StatusText $complete>신청 완료</StatusText>
@@ -167,7 +138,6 @@ const LectureActionButtons: React.FC<ActionButtonsProps> = ({
 
     // assigned: 배정 완료
     if (normalizedMyStatus === "assigned") {
-      console.log('  → myStatus가 assigned → "배정됨" 상태');
       return (
         <ActionButtonsContainer>
           <StatusText $complete>배정됨</StatusText>
@@ -177,19 +147,16 @@ const LectureActionButtons: React.FC<ActionButtonsProps> = ({
 
     // rejected: 거절됨
     if (normalizedMyStatus === "rejected") {
-      console.log('  → myStatus가 rejected → "거절됨" 상태');
       return (
         <ActionButtonsContainer>
           <StatusText $rejected>거절됨</StatusText>
         </ActionButtonsContainer>
       );
     }
-
-    console.log("  → myStatus가 알 수 없는 값:", normalizedMyStatus);
   }
 
   // 3. 그 외 이상한 값
-  console.log('🔴 분기: 알 수 없는 status → "상태 확인 불가"');
+
   return (
     <ActionButtonsContainer>
       <StatusText $disabled>상태 확인 불가</StatusText>

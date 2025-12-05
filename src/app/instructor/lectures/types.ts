@@ -24,18 +24,6 @@ export interface Schedule {
   end_time: string;
 }
 
-// // 리스트뷰에서 사용하는 테이블 행 타입
-// export interface LectureListRow {
-//   id: number;
-//   no: number;
-//   type: string;
-//   division: string;
-//   title: string;
-//   applicationPeriod: string;
-//   applicationLabel: string;
-//   statusLabel: string;
-// }
-
 // 강의 상세 정보 (API 응답)
 export interface LectureDetail {
   id: number;

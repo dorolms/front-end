@@ -4,7 +4,58 @@ import { LectureDetail } from "../types";
 import LectureActionButtons from "./LectureActionButtons";
 
 // =========================================================================
-// 🧩 확인 모달 컴포넌트
+// 🔧 Constants & Utils
+// =========================================================================
+const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
+
+const TYPE_LABELS: Record<string, string> = {
+  general: "일반",
+  competition: "대회",
+  camp: "캠프",
+  doroland: "도로랜드",
+  booth: "부스",
+  etc: "기타",
+};
+
+const STATUS_LABELS: Record<string, string> = {
+  RECRUITING: "모집 중",
+  ALLOCATING: "배정 중",
+  COMPLETED: "배정 완료",
+  COMPETITION: "배정 완료",
+};
+
+// JWT 토큰에서 user_id 추출
+const getUserIdFromToken = (): string | null => {
+  if (typeof window === "undefined") return null;
+
+  const accessToken = localStorage.getItem("accessToken");
+  if (!accessToken) return null;
+
+  try {
+    const payload = accessToken.split(".")[1];
+    const decodedPayload = JSON.parse(atob(payload));
+    return String(
+      decodedPayload.user_id || decodedPayload.id || decodedPayload.sub || ""
+    );
+  } catch (error) {
+    console.error("JWT 디코딩 실패:", error);
+    return null;
+  }
+};
+
+// Access Token 가져오기
+const getAccessToken = (): string | null => {
+  return typeof window !== "undefined"
+    ? localStorage.getItem("accessToken")
+    : null;
+};
+
+// 라벨 변환 함수
+const getTypeLabel = (type: string) => TYPE_LABELS[type] || type;
+const getStatusLabel = (status: string) => STATUS_LABELS[status] || status;
+
+// =========================================================================
+// 🧩 ConfirmModal Component
 // =========================================================================
 interface ConfirmModalProps {
   isOpen: boolean;
@@ -51,7 +102,7 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
 };
 
 // =========================================================================
-// 🎬 메인 모달 컴포넌트
+// 🎬 Main Modal Component
 // =========================================================================
 interface InstructorEventDetailModalProps {
   lectureId: number | null;
@@ -59,78 +110,70 @@ interface InstructorEventDetailModalProps {
   onClose: () => void;
 }
 
-const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
-
-// 🔹 JWT 토큰에서 user_id 추출 함수
-const getUserIdFromToken = (): string | null => {
-  if (typeof window === "undefined") return null;
-
-  const accessToken = localStorage.getItem("accessToken");
-  if (!accessToken) return null;
-
-  try {
-    // JWT는 header.payload.signature 형식
-    const payload = accessToken.split(".")[1];
-    const decodedPayload = JSON.parse(atob(payload));
-    console.log("🔓 디코딩된 JWT payload:", decodedPayload);
-
-    // user_id 또는 id 필드 찾기
-    const userId =
-      decodedPayload.user_id || decodedPayload.id || decodedPayload.sub;
-    console.log("👤 추출된 userId:", userId);
-
-    return userId ? String(userId) : null;
-  } catch (error) {
-    console.error("JWT 디코딩 실패:", error);
-    return null;
-  }
-};
-
 const InstructorEventDetailModal: React.FC<InstructorEventDetailModalProps> = ({
   lectureId,
   isOpen,
   onClose,
 }) => {
+  // ===== State =====
   const [lectureDetail, setLectureDetail] = useState<LectureDetail | null>(
     null
   );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  // 🔹 신청/취소 API 호출 로딩 상태
   const [isActionLoading, setIsActionLoading] = useState(false);
-
-  // 🔹 확인 모달 상태 (취소만 사용)
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
-
-  // 🔹 신청 완료 상태 추가
   const [applicationSuccess, setApplicationSuccess] = useState(false);
 
+  // ===== Effects =====
   useEffect(() => {
     if (isOpen && lectureId) {
       fetchLectureDetail(lectureId);
     }
 
     if (!isOpen) {
-      setLectureDetail(null);
-      setError(null);
-      setIsCancelModalOpen(false);
-      setIsActionLoading(false);
-      setApplicationSuccess(false);
+      resetState();
     }
   }, [isOpen, lectureId]);
 
+  // ===== Helper Functions =====
+  const resetState = () => {
+    setLectureDetail(null);
+    setError(null);
+    setIsCancelModalOpen(false);
+    setIsActionLoading(false);
+    setApplicationSuccess(false);
+  };
+
+  const findMyApplication = () => {
+    if (!lectureDetail?.applications) return null;
+
+    const currentUserId = getUserIdFromToken();
+    if (!currentUserId) return null;
+
+    return lectureDetail.applications.find(
+      (app: any) => app.user.id === parseInt(currentUserId)
+    );
+  };
+
+  const getMyApplicationId = (): number | null => {
+    const myApp = findMyApplication();
+    return myApp ? myApp.id : null;
+  };
+
+  const getMyApplicationStatus = (): string | null => {
+    const myApp = findMyApplication();
+    return myApp ? myApp.assignment_status : null;
+  };
+
+  // ===== API Calls =====
   const fetchLectureDetail = async (id: number) => {
-    if (!baseUrl) {
+    if (!BASE_URL) {
       setError("API 서버 주소(.env)가 설정되어 있지 않습니다.");
       return;
     }
 
-    const accessToken =
-      typeof window !== "undefined"
-        ? localStorage.getItem("accessToken")
-        : null;
-
+    const accessToken = getAccessToken();
     if (!accessToken) {
       setError("로그인이 필요합니다. 다시 로그인 후 이용해주세요.");
       return;
@@ -140,7 +183,7 @@ const InstructorEventDetailModal: React.FC<InstructorEventDetailModalProps> = ({
     setError(null);
 
     try {
-      const response = await fetch(`${baseUrl}/api/lectures/lectures/${id}`, {
+      const response = await fetch(`${BASE_URL}/api/lectures/lectures/${id}`, {
         method: "GET",
         headers: {
           Authorization: `Bearer ${accessToken}`,
@@ -154,13 +197,6 @@ const InstructorEventDetailModal: React.FC<InstructorEventDetailModalProps> = ({
       }
 
       const data: LectureDetail = await response.json();
-      console.log("--- API 응답 원본 데이터 ---");
-      console.log(data);
-      console.log("--- applications 배열 ---");
-      console.log(data.applications);
-      console.log("--- 현재 userId ---");
-      console.log(localStorage.getItem("userId"));
-      console.log("------------------------------");
       setLectureDetail(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : "오류가 발생했습니다.");
@@ -170,15 +206,10 @@ const InstructorEventDetailModal: React.FC<InstructorEventDetailModalProps> = ({
     }
   };
 
-  // 🔹 강의 신청 API 호출 (역할 포함)
   const handleApplyLecture = async (appliedRole: "main" | "assist") => {
     if (!lectureDetail || !lectureId) return;
 
-    const accessToken =
-      typeof window !== "undefined"
-        ? localStorage.getItem("accessToken")
-        : null;
-
+    const accessToken = getAccessToken();
     if (!accessToken) {
       alert("로그인이 필요합니다.");
       return;
@@ -187,69 +218,37 @@ const InstructorEventDetailModal: React.FC<InstructorEventDetailModalProps> = ({
     setIsActionLoading(true);
 
     try {
-      const requestBody = {
-        lecture: lectureId,
-        applied_role: appliedRole,
-      };
-
-      console.log("=== 강의 신청 요청 ===");
-      console.log("URL:", `${baseUrl}/api/lectures/applications/`);
-      console.log("Body:", requestBody);
-      console.log("=====================");
-
-      const response = await fetch(`${baseUrl}/api/lectures/applications/`, {
+      const response = await fetch(`${BASE_URL}/api/lectures/applications/`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${accessToken}`,
           "Content-Type": "application/json",
         },
         credentials: "include",
-        body: JSON.stringify(requestBody),
+        body: JSON.stringify({
+          lecture: lectureId,
+          applied_role: appliedRole,
+        }),
       });
 
-      console.log("Response status:", response.status);
-
       if (!response.ok) {
-        let errorMessage = "강의 신청에 실패했습니다.";
-
         const responseText = await response.text();
-        console.error("Server response:", responseText);
+        let errorMessage = "강의 신청에 실패했습니다.";
 
         try {
           const errorData = JSON.parse(responseText);
-
-          if (errorData.lecture_id) {
-            errorMessage = `lecture_id 오류: ${errorData.lecture_id.join(
-              ", "
-            )}`;
-          } else if (errorData.lecture) {
-            errorMessage = `lecture 오류: ${errorData.lecture.join(", ")}`;
-          } else if (errorData.applied_role) {
-            errorMessage = `applied_role 오류: ${errorData.applied_role.join(
-              ", "
-            )}`;
-          } else if (errorData.detail) {
-            errorMessage = errorData.detail;
-          } else if (errorData.message) {
-            errorMessage = errorData.message;
-          } else if (errorData.error) {
-            errorMessage = errorData.error;
-          } else {
-            errorMessage = JSON.stringify(errorData);
-          }
+          errorMessage =
+            errorData.detail ||
+            errorData.message ||
+            errorData.error ||
+            errorMessage;
         } catch {
-          errorMessage = `서버 오류 (${
-            response.status
-          }): ${responseText.substring(0, 100)}`;
+          errorMessage = `서버 오류 (${response.status})`;
         }
 
         throw new Error(errorMessage);
       }
 
-      const result = await response.json();
-      console.log("Success response:", result);
-
-      // ✅ 신청 성공! 성공 플래그만 설정하고 새로고침은 나중에
       setApplicationSuccess(true);
     } catch (err) {
       alert(err instanceof Error ? err.message : "오류가 발생했습니다.");
@@ -260,75 +259,16 @@ const InstructorEventDetailModal: React.FC<InstructorEventDetailModalProps> = ({
     }
   };
 
-  // 🔹 신청 모달이 완전히 닫힐 때 호출되는 콜백
-  const handleApplicationModalClose = async () => {
-    // 신청이 성공했다면 강의 정보를 새로고침
-    // if (applicationSuccess && lectureId) {
-    //   await fetchLectureDetail(lectureId);
-    //   setApplicationSuccess(false);
-    // }
-    if (applicationSuccess) {
-      window.location.reload(); // ✅ 페이지 전체를 새로고침
-    }
-  };
-
-  // 🔹 현재 사용자의 신청 ID 찾기 함수 추가
-  const getMyApplicationId = (): number | null => {
-    console.log("🔍 getMyApplicationId 호출");
-
-    if (!lectureDetail || !lectureDetail.applications) {
-      console.log("❌ lectureDetail 또는 applications 없음");
-      return null;
-    }
-
-    console.log("📋 applications 배열:", lectureDetail.applications);
-
-    // 🔍 JWT 토큰에서 userId 추출
-    const currentUserId = getUserIdFromToken();
-    console.log("👤 현재 userId (JWT에서 추출):", currentUserId);
-
-    if (!currentUserId) {
-      console.log("❌ userId 추출 실패");
-      return null;
-    }
-
-    // applications 배열에서 현재 사용자의 신청 찾기
-    const myApplication = lectureDetail.applications.find((app: any) => {
-      console.log(
-        `비교 중: app.user.id=${app.user.id} (타입: ${typeof app.user
-          .id}) vs currentUserId=${currentUserId} (타입: ${typeof currentUserId})`
-      );
-      // 둘 다 숫자로 비교
-      return app.user.id === parseInt(currentUserId);
-    });
-
-    console.log("🎯 찾은 신청:", myApplication);
-
-    // 신청이 있으면 application id 반환
-    const applicationId = myApplication ? myApplication.id : null;
-    console.log("✅ 반환할 applicationId:", applicationId);
-
-    return applicationId;
-  };
-
-  // 🔹 강의 신청 취소 API 호출
   const handleCancelLecture = async () => {
     if (!lectureDetail) return;
 
-    // ✅ 내 신청 ID 찾기
     const myApplicationId = getMyApplicationId();
-
     if (!myApplicationId) {
       alert("신청 정보를 찾을 수 없습니다.");
-      console.error("❌ applicationId를 찾을 수 없습니다.");
       return;
     }
 
-    const accessToken =
-      typeof window !== "undefined"
-        ? localStorage.getItem("accessToken")
-        : null;
-
+    const accessToken = getAccessToken();
     if (!accessToken) {
       alert("로그인이 필요합니다.");
       return;
@@ -337,12 +277,8 @@ const InstructorEventDetailModal: React.FC<InstructorEventDetailModalProps> = ({
     setIsActionLoading(true);
 
     try {
-      console.log("=== 신청 취소 시도 ===");
-      console.log("Application ID:", myApplicationId);
-      console.log("Lecture ID:", lectureId);
-
       const response = await fetch(
-        `${baseUrl}/api/lectures/applications/${myApplicationId}/`,
+        `${BASE_URL}/api/lectures/applications/${myApplicationId}/`,
         {
           method: "DELETE",
           headers: {
@@ -353,26 +289,19 @@ const InstructorEventDetailModal: React.FC<InstructorEventDetailModalProps> = ({
         }
       );
 
-      console.log("Response status:", response.status);
-
       if (!response.ok) {
-        let errorMessage = "강의 신청 취소에 실패했습니다.";
-
         const responseText = await response.text();
-        console.error("Server response:", responseText);
+        let errorMessage = "강의 신청 취소에 실패했습니다.";
 
         try {
           const errorData = JSON.parse(responseText);
-
-          if (errorData.detail === "No Application matches the given query.") {
-            errorMessage = "신청 내역을 찾을 수 없습니다.";
-          } else {
-            errorMessage =
-              errorData.message ||
-              errorData.error ||
-              errorData.detail ||
-              errorMessage;
-          }
+          errorMessage =
+            errorData.detail === "No Application matches the given query."
+              ? "신청 내역을 찾을 수 없습니다."
+              : errorData.message ||
+                errorData.error ||
+                errorData.detail ||
+                errorMessage;
         } catch {
           errorMessage = `서버 오류 (${response.status})`;
         }
@@ -380,14 +309,7 @@ const InstructorEventDetailModal: React.FC<InstructorEventDetailModalProps> = ({
         throw new Error(errorMessage);
       }
 
-      console.log("✅ 신청 취소 성공");
-
-      if (lectureId) {
-        await fetchLectureDetail(lectureId);
-      }
-
       setIsCancelModalOpen(false);
-
       window.location.reload();
     } catch (err) {
       alert(err instanceof Error ? err.message : "오류가 발생했습니다.");
@@ -397,70 +319,16 @@ const InstructorEventDetailModal: React.FC<InstructorEventDetailModalProps> = ({
     }
   };
 
+  const handleApplicationModalClose = async () => {
+    if (applicationSuccess) {
+      window.location.reload();
+    }
+  };
+
+  // ===== Render Guards =====
   if (!isOpen) return null;
 
-  const getTypeLabel = (type: string) => {
-    const map: Record<string, string> = {
-      general: "일반",
-      competition: "대회",
-      camp: "캠프",
-      doroland: "도로랜드",
-      booth: "부스",
-      etc: "기타",
-    };
-    return map[type] || type;
-  };
-
-  const getStatusLabel = (status: string) => {
-    const map: Record<string, string> = {
-      RECRUITING: "모집 중",
-      ALLOCATING: "배정 중",
-      COMPLETED: "배정 완료",
-      COMPETITION: "배정 완료",
-    };
-    return map[status] || status;
-  };
-
-  // 🔹 현재 로그인한 사용자의 신청 상태 찾기
-  const getMyApplicationStatus = (): string | null => {
-    console.log("🔍 getMyApplicationStatus 호출");
-
-    if (!lectureDetail || !lectureDetail.applications) {
-      console.log("❌ lectureDetail 또는 applications 없음");
-      return null;
-    }
-
-    console.log("📋 applications 배열:", lectureDetail.applications);
-
-    // 🔍 JWT 토큰에서 userId 추출
-    const currentUserId = getUserIdFromToken();
-
-    console.log("👤 현재 userId (JWT에서 추출):", currentUserId);
-
-    if (!currentUserId) {
-      console.log("❌ userId 추출 실패");
-      return null;
-    }
-
-    // applications 배열에서 현재 사용자의 신청 찾기
-    const myApplication = lectureDetail.applications.find((app: any) => {
-      console.log(
-        `비교 중: app.user.id=${app.user.id} (타입: ${typeof app.user
-          .id}) vs currentUserId=${currentUserId} (타입: ${typeof currentUserId})`
-      );
-      // 둘 다 숫자로 비교
-      return app.user.id === parseInt(currentUserId);
-    });
-
-    console.log("🎯 찾은 신청:", myApplication);
-
-    // 신청이 있으면 assignment_status 반환
-    const status = myApplication ? myApplication.assignment_status : null;
-    console.log("✅ 반환할 status:", status);
-
-    return status;
-  };
-
+  // ===== Render =====
   return (
     <>
       <Overlay onClick={onClose}>
@@ -490,6 +358,7 @@ const InstructorEventDetailModal: React.FC<InstructorEventDetailModalProps> = ({
 
             {!loading && !error && lectureDetail && (
               <>
+                {/* 기본 정보 */}
                 <Section>
                   <SectionTitle>기본 정보</SectionTitle>
                   <InfoRow>
@@ -528,35 +397,25 @@ const InstructorEventDetailModal: React.FC<InstructorEventDetailModalProps> = ({
                 </Section>
 
                 <Divider />
+
+                {/* 강사 액션 */}
                 <Section>
                   <SectionTitle>강사 액션</SectionTitle>
-                  {(() => {
-                    const myStatus = getMyApplicationStatus();
-                    console.log(
-                      "🎬 렌더링 시점 - status:",
-                      lectureDetail.status
-                    );
-                    console.log(
-                      "🎬 렌더링 시점 - myApplicationStatus:",
-                      myStatus
-                    );
-
-                    return (
-                      <LectureActionButtons
-                        status={lectureDetail.status}
-                        myApplicationStatus={myStatus}
-                        isLoading={isActionLoading}
-                        onApply={handleApplyLecture}
-                        onCancel={() => setIsCancelModalOpen(true)}
-                        onApplicationModalClose={handleApplicationModalClose}
-                        lectureTitle={lectureDetail.title}
-                        lectureId={lectureDetail.id}
-                      />
-                    );
-                  })()}
+                  <LectureActionButtons
+                    status={lectureDetail.status}
+                    myApplicationStatus={getMyApplicationStatus()}
+                    isLoading={isActionLoading}
+                    onApply={handleApplyLecture}
+                    onCancel={() => setIsCancelModalOpen(true)}
+                    onApplicationModalClose={handleApplicationModalClose}
+                    lectureTitle={lectureDetail.title}
+                    lectureId={lectureDetail.id}
+                  />
                 </Section>
+
                 <Divider />
 
+                {/* 강의 일정 */}
                 <Section>
                   <SectionTitle>강의 일정</SectionTitle>
                   {lectureDetail.schedules.map((sch) => (
@@ -572,6 +431,7 @@ const InstructorEventDetailModal: React.FC<InstructorEventDetailModalProps> = ({
 
                 <Divider />
 
+                {/* 모집 정보 */}
                 <Section>
                   <SectionTitle>모집 정보</SectionTitle>
                   <InfoRow>
@@ -593,6 +453,7 @@ const InstructorEventDetailModal: React.FC<InstructorEventDetailModalProps> = ({
                   </InfoRow>
                 </Section>
 
+                {/* 강의 내용 */}
                 {lectureDetail.content && (
                   <>
                     <Divider />
@@ -603,6 +464,7 @@ const InstructorEventDetailModal: React.FC<InstructorEventDetailModalProps> = ({
                   </>
                 )}
 
+                {/* 특이사항 */}
                 {lectureDetail.note && (
                   <>
                     <Divider />
@@ -613,6 +475,7 @@ const InstructorEventDetailModal: React.FC<InstructorEventDetailModalProps> = ({
                   </>
                 )}
 
+                {/* 첨부파일 */}
                 {lectureDetail.attachment_url && (
                   <>
                     <Divider />
@@ -628,6 +491,7 @@ const InstructorEventDetailModal: React.FC<InstructorEventDetailModalProps> = ({
                   </>
                 )}
 
+                {/* 확정 강사 */}
                 {lectureDetail.confirmed_instructors.length > 0 && (
                   <>
                     <Divider />
@@ -647,7 +511,7 @@ const InstructorEventDetailModal: React.FC<InstructorEventDetailModalProps> = ({
         </ModalContainer>
       </Overlay>
 
-      {/* 🔹 취소 확인 모달 */}
+      {/* 취소 확인 모달 */}
       <ConfirmModal
         isOpen={isCancelModalOpen}
         onClose={() => setIsCancelModalOpen(false)}
@@ -662,19 +526,15 @@ const InstructorEventDetailModal: React.FC<InstructorEventDetailModalProps> = ({
 };
 
 // =========================================================================
-// 💅 스타일 컴포넌트
+// 💅 Styled Components
 // =========================================================================
-
 const spin = keyframes`
   to { transform: rotate(360deg); }
 `;
 
 const Overlay = styled.div`
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  inset: 0;
   background-color: rgba(0, 0, 0, 0.5);
   display: flex;
   justify-content: center;
