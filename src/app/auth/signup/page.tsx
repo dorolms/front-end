@@ -213,7 +213,7 @@ export default function SignupPage() {
 
     try {
       const baseUrl =
-        process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api";
+        process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000";
 
       const payload: any = {
         username: userId, // 로그인용 ID
