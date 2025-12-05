@@ -47,7 +47,6 @@ export default function ManagerClientPage() {
 
   return (
     <Wrap>
-      <BreadCrumb>홈 &gt; 대시보드</BreadCrumb>
       <Title>대시보드</Title>
 
       <Grid>

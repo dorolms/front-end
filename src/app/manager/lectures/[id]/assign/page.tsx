@@ -13,7 +13,7 @@ import {
   Section, SectionTitle, DetailRow, DetailLabel, DetailValue,
   AttachmentLink, FilterTabs, FilterButton, TableContainer,
   Table, Thead, Tbody, RoleBadge, ApplicantName, ApplicantMeta,
-  StatusSelect, FixedBottomBar, Button, LoadingState,
+  StatusSelect, FixedBottomBar, Button, LoadingState, SidebarToggleButton, TitleArea,
 } from './styles';
 
 // --- 타입 정의 (UI 전용) ---
@@ -28,9 +28,27 @@ interface MergedApplication {
   
   user: UserInfo;
   created_at: string;
-  is_notification_read: boolean;
+  ui_read_status_text: string;
 };
 
+
+// [추가] 날짜 문자열(YYYY-MM-DD)을 받아 요일(월, 화..)을 반환하는 함수
+const getWeekday = (dateString: string) => {
+  const days = ['일', '월', '화', '수', '목', '금', '토'];
+  const date = new Date(dateString);
+  return days[date.getDay()];
+};
+
+const getLecType = (type: string) => {
+  const map: Record<string, string> = {
+    "general": "일반",
+    "doroland": "도로랜드",
+    "booth": "부스",
+    "competition": "대회",
+    "camp": "캠프"
+  }
+  return map[type];
+}
 export default function LectureDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
 
@@ -42,6 +60,7 @@ export default function LectureDetailPage({ params }: { params: Promise<{ id: st
   const [activeSection, setActiveSection] = useState<SectionKey>('info');
   const [activeFilter, setActiveFilter] = useState<'all' | 'main' | 'assist'>('all');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   const [isAuthChecked, setIsAuthChecked] = useState(false);
   
@@ -98,10 +117,21 @@ export default function LectureDetailPage({ params }: { params: Promise<{ id: st
   }, [id, isAuthChecked]);
 
   const mergedList = useMemo(() => {
+    
+    const readStatusMap = new Map<number, string>();
+    
+    // 원본 데이터를 순회하며 '배정됨(assigned)' 상태인 건만 체크
+    initapplications.forEach(app => {
+      if (app.assignment_status === 'assigned') {
+        // 배정된 상태라면 읽음 여부에 따라 텍스트 결정
+        readStatusMap.set(app.user.id, app.is_notification_read ? '읽음' : '대기');
+      }
+    });
+    
     const map = new Map<number, MergedApplication>();
-
     applications.forEach(app => {
       const uid = app.user.id;
+      const readText = readStatusMap.get(uid) || '-';
       
       if (!map.has(uid)) {
         map.set(uid, {
@@ -111,7 +141,7 @@ export default function LectureDetailPage({ params }: { params: Promise<{ id: st
           created_at: app.created_at,
           status: 'pending',
           applied_role: [],
-          is_notification_read: false
+          ui_read_status_text: readText
         });
       }
 
@@ -130,7 +160,7 @@ export default function LectureDetailPage({ params }: { params: Promise<{ id: st
     });
     
     return Array.from(map.values());
-  }, [applications]);
+  }, [applications, initapplications]);
 
   const filteredList = useMemo(() => {
     if (activeFilter === 'all') return mergedList;
@@ -164,12 +194,9 @@ export default function LectureDetailPage({ params }: { params: Promise<{ id: st
     }
   };
 
-  // const getUiStatusValue = (status: AssignmentStatus, role: LectureRole | null): UiAssignmentStatus => {
-  //   if (status === 'assigned') {
-  //     return role === 'main' ? 'assigned_main' : 'assigned_assist';
-  //   }
-  //   return status === 'rejected' ? 'rejected' : 'pending';
-  // };
+  const toggleSidebar = () => {
+    setIsSidebarOpen(!isSidebarOpen);
+  };
 
   const handleStatusChange = (mrg: MergedApplication, uiValue: UiAssignmentStatus) => {
     let mainStatus: AssignmentStatus = 'pending';
@@ -212,8 +239,7 @@ export default function LectureDetailPage({ params }: { params: Promise<{ id: st
 
       // 상태나 배정된 역할이 하나라도 다르면 '변경된 데이터'로 간주
       return (
-        curApp.assignment_status !== originalApp.assignment_status ||
-        curApp.applied_role !== originalApp.applied_role
+        curApp.assignment_status !== originalApp.assignment_status
       );
     });
 
@@ -240,12 +266,21 @@ export default function LectureDetailPage({ params }: { params: Promise<{ id: st
     try {
       // TODO: 실제 API 호출 (예: await axios.patch('/api/lectures/applications/bulk', payload))
       
-      payload.forEach(patchApplications);
+      await Promise.all(payload.map(item => patchApplications(item)));
       
       alert('저장되었습니다.');
       
       // [중요] 저장이 성공했으므로, 현재 상태를 다시 '원본'으로 갱신 (기준점 재설정)
-      setInitApplications(JSON.parse(JSON.stringify(applications)));
+      const newAppsState = applications.map(app => {
+        const isChanged = changedItems.some(item => item.id === app.id);
+        if (isChanged) {
+          // 변경된 항목은 최신 배정 상태 유지 + 읽음 상태 초기화
+          return { ...app, is_notification_read: false };
+        }
+        return app; // 변경 안 된 항목은 그대로 유지
+      });
+      setApplications(newAppsState);
+      setInitApplications(JSON.parse(JSON.stringify(newAppsState)));
       
     } catch (error) {
       console.error(error);
@@ -262,12 +297,20 @@ export default function LectureDetailPage({ params }: { params: Promise<{ id: st
   return (
     <PageContainer>
       <Header>
-        <PageTitle>강의 상세 및 배정<StatusBadge>모집중</StatusBadge></PageTitle>
+        <TitleArea>
+          {/* [신규] 토글 버튼 추가 (패널 아이콘) */}
+          <SidebarToggleButton onClick={toggleSidebar} title="사이드바 토글">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </SidebarToggleButton>
+          <PageTitle>강의 상세 및 배정{/* <StatusBadge>모집중</StatusBadge> */}</PageTitle>
+        </TitleArea>
         <BackButton onClick={() => router.back()}>목록으로</BackButton>
       </Header>
 
       <ContentWrapper>
-        <SectionMenu>
+        <SectionMenu $isOpen={isSidebarOpen}>
           <MenuItem $isActive={activeSection === 'info'} onClick={() => scrollToSection('info')}>강의 상세 정보</MenuItem>
           <MenuItem $isActive={activeSection === 'applications'} onClick={() => scrollToSection('applications')}>지원자 관리 ({stats.total})</MenuItem>
         </SectionMenu>
@@ -279,18 +322,31 @@ export default function LectureDetailPage({ params }: { params: Promise<{ id: st
             <Section ref={sectionRefs.info}>
               <SectionTitle>강의 상세 정보</SectionTitle>
               <DetailRow><DetailLabel>강의 제목</DetailLabel><DetailValue style={{ fontSize: '18px', fontWeight: 700 }}>{lecture.title}</DetailValue></DetailRow>
-              <DetailRow><DetailLabel>강의 유형</DetailLabel><DetailValue>{lecture.type} / {lecture.category}</DetailValue></DetailRow>
-              <DetailRow><DetailLabel>교육 대상</DetailLabel><DetailValue>{lecture.target}</DetailValue></DetailRow>
-              <DetailRow><DetailLabel>인원</DetailLabel><DetailValue>{lecture.capacity}</DetailValue></DetailRow>
-              <DetailRow><DetailLabel>일시</DetailLabel><DetailValue></DetailValue></DetailRow>
+              <DetailRow><DetailLabel>강의 유형</DetailLabel><DetailValue>{getLecType(lecture.type)}</DetailValue></DetailRow>
+              <DetailRow><DetailLabel>강의 구분</DetailLabel><DetailValue>{lecture.category}</DetailValue></DetailRow>
+              <DetailRow><DetailLabel>일시</DetailLabel><DetailValue>
+                {lecture.schedules && lecture.schedules.length > 0 ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                      {lecture.schedules.map((sch, idx) => (
+                        <div key={idx}>
+                          {/* 날짜 (요일 포함하면 좋음) + 시간 (초 제외) */}
+                          •  {sch.date}({getWeekday(sch.date)}) {sch.start_time.slice(0, 5)} ~ {sch.end_time.slice(0, 5)}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <span style={{ color: '#999' }}>일정 정보 없음</span>
+                  )}</DetailValue></DetailRow>
               <DetailRow><DetailLabel>장소</DetailLabel><DetailValue>{lecture.location}</DetailValue></DetailRow>
               <DetailRow><DetailLabel>담당자</DetailLabel><DetailValue>{lecture.manager_name} ({lecture.manager_phone})</DetailValue></DetailRow>
-              <DetailRow><DetailLabel>콘텐츠</DetailLabel><DetailValue>{lecture.content}</DetailValue></DetailRow>
-              <DetailRow><DetailLabel>첨부파일</DetailLabel><DetailValue>{lecture.attachment_url ? <AttachmentLink href="#">📎 {lecture.attachment_url}</AttachmentLink> : <span style={{color:'#999'}}>없음</span>}</DetailValue></DetailRow>
-              <DetailRow><DetailLabel>모집</DetailLabel><DetailValue>주 {lecture.recruitment_main}명 / 보조 {lecture.recruitment_assist}명</DetailValue></DetailRow>
+              <DetailRow><DetailLabel>교육 대상</DetailLabel><DetailValue>{lecture.target}</DetailValue></DetailRow>
+              <DetailRow><DetailLabel>인원</DetailLabel><DetailValue>{lecture.capacity}</DetailValue></DetailRow>
+              <DetailRow><DetailLabel>콘텐츠</DetailLabel><DetailValue>{lecture.content || <span style={{ color: '#999' }}>상세 정보 없음</span>}</DetailValue></DetailRow>
+              <DetailRow><DetailLabel>첨부파일</DetailLabel><DetailValue>{lecture.attachment_url ? <AttachmentLink href={lecture.attachment_url} target="_blank">📎 {lecture.attachment_url}</AttachmentLink> : <span style={{color:'#999'}}>없음</span>}</DetailValue></DetailRow>
+              <DetailRow><DetailLabel>모집 인원</DetailLabel><DetailValue>주 {lecture.recruitment_main}명 / 보조 {lecture.recruitment_assist}명</DetailValue></DetailRow>
               <DetailRow><DetailLabel>강의료</DetailLabel><DetailValue>{lecture.fee}</DetailValue></DetailRow>
-              <DetailRow><DetailLabel>마감일</DetailLabel><DetailValue className="highlight">{lecture.end_date} 까지</DetailValue></DetailRow>
-              <DetailRow><DetailLabel>특이사항</DetailLabel><DetailValue className="highlight">{lecture.note}</DetailValue></DetailRow>
+              <DetailRow><DetailLabel>모집 마감일</DetailLabel><DetailValue className="highlight">{lecture.end_date} 까지</DetailValue></DetailRow>
+              <DetailRow><DetailLabel>특이사항</DetailLabel><DetailValue className="highlight">{lecture.note || <span style={{ color: '#999' }}>특이 사항 없음</span>}</DetailValue></DetailRow>
             </Section>
 
             <hr style={{ border: 'none', borderTop: '1px solid #eee', margin: '40px 0' }} />
@@ -317,7 +373,10 @@ export default function LectureDetailPage({ params }: { params: Promise<{ id: st
                   </Thead>
                   <Tbody>
                     {filteredList.map((app) => (
-                      <tr key={app.user.id}>
+                      <tr
+                        key={app.user.id}
+                        onClick={() => window.open(`/manager/instructors?id=${app.user.id}`, '_blank')}
+                      >
                         <td>
                           <ApplicantName>{app.user.name}</ApplicantName>
                           <ApplicantMeta>{app.user.major}</ApplicantMeta>
@@ -327,7 +386,7 @@ export default function LectureDetailPage({ params }: { params: Promise<{ id: st
                           {app.applied_role.includes("assist") ? <RoleBadge key={'assist'} $role={'assist'}>보조</RoleBadge> : null}
                         </td>
                         <td><ApplicantMeta>{new Date(app.created_at).toLocaleDateString()}</ApplicantMeta></td>
-                        <td>
+                        <td onClick={(e) => e.stopPropagation()}>
                           <StatusSelect 
                             value={app.status}
                             $status={app.status}
@@ -340,7 +399,7 @@ export default function LectureDetailPage({ params }: { params: Promise<{ id: st
                           </StatusSelect>
                         </td>
                         <td>
-                          <ApplicantMeta>{app.is_notification_read ? '읽음' : '-'}</ApplicantMeta>
+                          <ApplicantMeta>{app.ui_read_status_text}</ApplicantMeta>
                         </td>
                       </tr>
                     ))}

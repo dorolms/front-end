@@ -2,9 +2,10 @@
 
 import axios from 'axios';
 import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 // import { getInstructors, type Instructor } from './api-mock';
 import { getInstructorList, getInstructorDetail, type InstructorBasic, type InstructorDetail } from './api';
+import { isTokenValid, getUserRole } from './jwt';
 
 import {
 PageContainer,
@@ -19,34 +20,21 @@ PageContainer,
   ProfileImage,
   ProfileInfo,
   NameTag,
-  ContactInfo,
-  BioBox,
+  // ContactInfo,
   PortfolioSection,
   PortfolioHeader,
   PortfolioScrollArea,
   SectionTitle,
   PortfolioContent,
-  EmptyState
+  EmptyState,
+  MajorWrapper, MajorBadge
 } from './styles';
-
-const parseJwt = (token: string) => {
-  try {
-    const base64Url = token.split('.')[1];
-    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-    const jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function(c) {
-        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-    }).join(''));
-
-    return JSON.parse(jsonPayload);
-  } catch (e) {
-    return null;
-  }
-};
 
 // --- Main Component ---
 
 export default function InstructorLookupPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [instructors, setInstructors] = useState<InstructorBasic[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [showDropdown, setShowDropdown] = useState(false);
@@ -57,38 +45,31 @@ export default function InstructorLookupPage() {
   const [isAuthChecked, setIsAuthChecked] = useState(false);
   
   useEffect(() => {
-    const token = localStorage.getItem('accessToken');
-
-    // 1) 토큰 자체가 없으면 -> 로그인으로
-    if (!token) {
-      alert('로그인이 필요한 페이지입니다.');
-      router.replace('/');
-      return;
-    }
-
-    const decoded = parseJwt(token);
-    // 2) [추가] 토큰 형식이 잘못되어 파싱 실패 (null) -> 로그인으로
-    if (!decoded) {
-      alert('인증 정보가 올바르지 않습니다. 다시 로그인해주세요.');
-      localStorage.removeItem('accessToken'); // 잘못된 토큰 삭제
-      localStorage.removeItem('refreshToken'); // 잘못된 토큰 삭제
-      localStorage.removeItem('userRole'); // 잘못된 토큰 삭제
-      localStorage.removeItem('userName'); // 잘못된 토큰 삭제
-      router.replace('/'); // 또는 '/login'
-      return;
-    }
-    
-    // 2) [핵심] 토큰은 있는데, 역할이 'manager'가 아니면 -> 튕겨내기
-    // (주의: 백엔드 토큰 구조에 따라 decoded.role 또는 decoded.payload.role 일 수 있습니다)
-    if (decoded?.role !== 'manager') { 
-      alert('관리자만 접근할 수 있는 페이지입니다.');
-      router.replace('/instructor/dashboard'); // 강사 대시보드(또는 홈)로 이동
-      return;
-    }
-
-    setIsAuthChecked(true);
-    
-  }, [router]);
+      const token = localStorage.getItem('accessToken');
+  
+      // 1. 토큰 유효성 검사 (존재 여부 + 만료 여부)
+      if (!isTokenValid(token)) {
+        alert('세션이 만료되었습니다. 다시 로그인해주세요.');
+        localStorage.removeItem('accessToken'); // 잘못된 토큰 삭제
+        localStorage.removeItem('refreshToken'); // 잘못된 토큰 삭제
+        localStorage.removeItem('userRole'); // 잘못된 토큰 삭제
+        localStorage.removeItem('userName'); // 잘못된 토큰 삭제
+        router.replace('/');
+        return;
+      }
+  
+      // 2. 권한(Role) 검사 (필요한 경우)
+      const role = getUserRole(token!); // 위에서 valid 체크 했으므로 ! 사용 가능
+      if (role !== 'manager') {
+        alert('접근 권한이 없습니다.');
+        router.replace('/instructor/dashboard');
+        return;
+      }
+      
+      // 통과! -> 데이터 로딩 시작...
+      setIsAuthChecked(true);
+  
+    }, [router]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -98,6 +79,34 @@ export default function InstructorLookupPage() {
         setIsLoadingList(true);
         const data = await getInstructorList();
         setInstructors(data);
+
+        // 2) [추가] URL에 'id' 파라미터가 있는지 확인
+        const paramId = searchParams.get('id');
+        if (paramId) {
+          const targetId = Number(paramId);
+          // 목록에서 해당 강사가 존재하는지 확인 (유효성 체크)
+          const targetInstructor = data.find(inst => inst.id === targetId);
+
+          if (targetInstructor) {
+            setSearchTerm(targetInstructor.name); // 검색창 이름 채우기
+            
+            // 상세 정보 가져오기
+            setIsLoadingDetail(true);
+            try {
+              const detailData = await getInstructorDetail(targetId);
+              setSelectedInstructor(detailData);
+            } catch (err) {
+              console.error("상세 정보 로딩 실패", err);
+              // 실패 시 URL 파라미터 제거하거나 에러 표시 (선택 사항)
+            } finally {
+              setIsLoadingDetail(false);
+            }
+          }
+          else {
+            router.push("?", { scroll: false });
+          }
+        }
+
       } catch (error: any) { 
         console.error(error);
         
@@ -131,6 +140,7 @@ export default function InstructorLookupPage() {
       // ID로 상세 정보 조회
       const detailData = await getInstructorDetail(inst.id);
       setSelectedInstructor(detailData);
+      router.push(`?id=${inst.id}`, { scroll: false });
     } catch (error) {
       console.error("상세 정보 로딩 실패", error);
       alert("강사 정보를 불러오지 못했습니다.");
@@ -217,13 +227,22 @@ export default function InstructorLookupPage() {
               <NameTag>
                 <h2>{selectedInstructor.name}</h2>
               </NameTag>
+              <MajorWrapper>
+              <MajorBadge>
+                {/* 학사모 아이콘 */}
+                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 14l9-5-9-5-9 5 9 5z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
+                </svg>
+                {selectedInstructor.major}
+              </MajorBadge>
               
-              <ContactInfo>
-                <div>📞 {selectedInstructor.phone_number ? selectedInstructor.phone_number : "xxx-xxxx-xxxx"}</div>
-                <div>📧 {selectedInstructor.email ? selectedInstructor.email : "xxxxx@xxx.com"}</div>
-              </ContactInfo>
-
-              <BioBox>{selectedInstructor.major}</BioBox>
+              {/* 필요시 학교나 다른 태그도 여기에 추가 가능 */}
+              {/* <MajorBadge>🏫 한양대학교</MajorBadge> */}
+            </MajorWrapper>
+              {/* <ContactInfo>
+                <div>📧 {selectedInstructor.email  || "xxxxx@xxx.com"}</div>
+              </ContactInfo> */}
             </ProfileInfo>
           </ProfileCard>
         )}
