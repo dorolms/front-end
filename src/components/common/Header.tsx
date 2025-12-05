@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import Link from "next/link";
 import styled from "styled-components";
 import NotificationList from "@/components/instructor/NotificationList";
 import { getNotificationsAPI } from "@/components/instructor/NotificationList/api";
+import ManagerNotificationList from "@/components/manager/NotificationList";
 
 type HeaderProps = {
   isAuth: boolean;
@@ -13,7 +14,7 @@ type HeaderProps = {
   onLogout?: () => void;
 };
 
-// ... (스타일 컴포넌트들: Bar, Inner, Left, Right, Badge, NotiWrapper, IconBtn, Logout, Name 등은 기존과 동일) ...
+// --- Styled Components ---
 const Bar = styled.header`
   position: sticky;
   top: 0;
@@ -21,6 +22,7 @@ const Bar = styled.header`
   background: #fff;
   border: 1px solid #ccc;
 `;
+
 const Inner = styled.div`
   height: 56px;
   display: flex;
@@ -30,6 +32,7 @@ const Inner = styled.div`
   margin: 0 auto;
   padding: 0 32px;
 `;
+
 const Left = styled.div`
   display: flex;
   align-items: center;
@@ -37,11 +40,13 @@ const Left = styled.div`
   font-weight: 700;
   color: #2f4f75;
 `;
+
 const Right = styled.div`
   display: flex;
   align-items: center;
   gap: 12px;
 `;
+
 const Badge = styled.span`
   position: absolute;
   top: -2px;
@@ -53,9 +58,11 @@ const Badge = styled.span`
   border: 1px solid #fff;
   z-index: 10;
 `;
+
 const NotiWrapper = styled.div`
   position: relative;
 `;
+
 const IconBtn = styled.button`
   position: relative;
   width: 32px;
@@ -66,10 +73,12 @@ const IconBtn = styled.button`
   border-radius: 6px;
   background: #fff;
   cursor: pointer;
+
   &:active {
     background: #f5f5f5;
   }
 `;
+
 const Logout = styled.button`
   padding: 8px 14px;
   border-radius: 6px;
@@ -78,6 +87,7 @@ const Logout = styled.button`
   cursor: pointer;
   font-weight: 600;
 `;
+
 const Name = styled.span`
   font-weight: 700;
   margin-right: 4px;
@@ -93,6 +103,7 @@ function BellIcon() {
     </svg>
   );
 }
+
 function MailIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden>
@@ -111,9 +122,10 @@ export default function Header({
   onLogout,
 }: HeaderProps) {
   const [isNotiOpen, setIsNotiOpen] = useState(false);
-  const [hasUnread, setHasUnread] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0); // ⬅ 안 읽은 개수
   const notiRef = useRef<HTMLDivElement>(null);
 
+  // 외부 클릭 시 알림창 닫기
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (notiRef.current && !notiRef.current.contains(event.target as Node)) {
@@ -126,20 +138,27 @@ export default function Header({
     };
   }, []);
 
-  // [수정 1] 강사(instructor)일 때만 배지 상태 확인 API 호출
-  useEffect(() => {
+  /**
+   * 페이지 최초 로드 시, 강사의 현재 안 읽은 알림 개수 조회
+   * (NotificationList 열기 전에도 배지 표시되도록)
+   */
+  const checkBadgeStatus = useCallback(() => {
     if (isAuth && userRole === "instructor") {
       getNotificationsAPI()
         .then((data) => {
-          const unreadExists = data.some((item: any) => !item.is_read);
-          setHasUnread(unreadExists);
+          const unread = data.filter((item: any) => !item.is_read).length;
+          setUnreadCount(unread);
         })
         .catch((err) => console.error("Badge Check Fail:", err));
     }
-  }, [isAuth, userRole]); // userRole 의존성 추가
+  }, [isAuth, userRole]);
+
+  useEffect(() => {
+    checkBadgeStatus();
+  }, [checkBadgeStatus]);
 
   const toggleNoti = () => {
-    setIsNotiOpen(!isNotiOpen);
+    setIsNotiOpen((prev) => !prev);
   };
 
   const roleLabel =
@@ -164,18 +183,25 @@ export default function Header({
               {userName} {roleLabel}{" "}
             </Name>
 
-            {/* [수정 2] userRole이 instructor일 때만 알림 영역 렌더링 */}
-            {userRole === "instructor" && (
+            {/* 강사 또는 매니저일 때 알림 영역 표시 */}
+            {(userRole === "instructor" || userRole === "manager") && (
               <NotiWrapper ref={notiRef}>
-                <IconBtn
-                  aria-label="알림"
-                  onClick={toggleNoti}
-                >
+                <IconBtn aria-label="알림" onClick={toggleNoti}>
                   <BellIcon />
-                  {hasUnread && <Badge />}
+                  {/* 강사용 배지: unreadCount가 1개 이상일 때 표시 */}
+                  {userRole === "instructor" && unreadCount > 0 && <Badge />}
                 </IconBtn>
 
-                {isNotiOpen && <NotificationList />}
+                {isNotiOpen && (
+                  <>
+                    {userRole === "instructor" ? (
+                      // ⬇ NotificationList 에서 상태가 바뀔 때마다 unreadCount를 올려줌
+                      <NotificationList onUpdateBadge={setUnreadCount} />
+                    ) : (
+                      <ManagerNotificationList />
+                    )}
+                  </>
+                )}
               </NotiWrapper>
             )}
 
