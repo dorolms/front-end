@@ -13,7 +13,7 @@ import {
   Section, SectionTitle, DetailRow, DetailLabel, DetailValue,
   AttachmentLink, FilterTabs, FilterButton, TableContainer,
   Table, Thead, Tbody, RoleBadge, ApplicantName, ApplicantMeta,
-  StatusSelect, FixedBottomBar, Button, LoadingState,
+  StatusSelect, FixedBottomBar, Button, LoadingState, SidebarToggleButton, TitleArea,
 } from './styles';
 
 // --- 타입 정의 (UI 전용) ---
@@ -60,6 +60,7 @@ export default function LectureDetailPage({ params }: { params: Promise<{ id: st
   const [activeSection, setActiveSection] = useState<SectionKey>('info');
   const [activeFilter, setActiveFilter] = useState<'all' | 'main' | 'assist'>('all');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   const [isAuthChecked, setIsAuthChecked] = useState(false);
   
@@ -193,6 +194,10 @@ export default function LectureDetailPage({ params }: { params: Promise<{ id: st
     }
   };
 
+  const toggleSidebar = () => {
+    setIsSidebarOpen(!isSidebarOpen);
+  };
+
   const handleStatusChange = (mrg: MergedApplication, uiValue: UiAssignmentStatus) => {
     let mainStatus: AssignmentStatus = 'pending';
     let assistStatus: AssignmentStatus = 'pending';
@@ -292,12 +297,20 @@ export default function LectureDetailPage({ params }: { params: Promise<{ id: st
   return (
     <PageContainer>
       <Header>
-        <PageTitle>강의 상세 및 배정{/* <StatusBadge>모집중</StatusBadge> */}</PageTitle>
+        <TitleArea>
+          {/* [신규] 토글 버튼 추가 (패널 아이콘) */}
+          <SidebarToggleButton onClick={toggleSidebar} title="사이드바 토글">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </SidebarToggleButton>
+          <PageTitle>강의 상세 및 배정{/* <StatusBadge>모집중</StatusBadge> */}</PageTitle>
+        </TitleArea>
         <BackButton onClick={() => router.back()}>목록으로</BackButton>
       </Header>
 
       <ContentWrapper>
-        <SectionMenu>
+        <SectionMenu $isOpen={isSidebarOpen}>
           <MenuItem $isActive={activeSection === 'info'} onClick={() => scrollToSection('info')}>강의 상세 정보</MenuItem>
           <MenuItem $isActive={activeSection === 'applications'} onClick={() => scrollToSection('applications')}>지원자 관리 ({stats.total})</MenuItem>
         </SectionMenu>

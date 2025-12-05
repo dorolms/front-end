@@ -57,11 +57,24 @@ export const BackButton = styled.button`
 `;
 
 export const ContentWrapper = styled.div`
-  display: flex; gap: 40px; flex: 1; min-height: 0;
+  display: flex; gap: 10px; flex: 1; min-height: 0;
 `;
 
-export const SectionMenu = styled.nav`
-  display: flex; flex-direction: column; gap: 8px; width: 220px; flex-shrink: 0; padding-top: 10px;
+// [수정] 사이드바 ($isOpen prop 추가)
+export const SectionMenu = styled.nav<{ $isOpen: boolean }>`
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex-shrink: 0;
+  padding-top: 10px;
+  
+  /* 애니메이션 핵심 */
+  width: ${({ $isOpen }) => ($isOpen ? '200px' : '0px')};
+  opacity: ${({ $isOpen }) => ($isOpen ? 1 : 0)};
+  margin-right: ${({ $isOpen }) => ($isOpen ? '20px' : '0px')}; /* 닫히면 간격 제거 */
+  overflow: hidden; /* 내용 숨김 */
+  transition: all 0.3s ease-in-out;
+  white-space: nowrap; /* 텍스트 줄바꿈 방지 */
 `;
 
 export const MenuItem = styled.button<{ $isActive: boolean }>`
@@ -187,9 +200,34 @@ export const Button = styled.button<{ $variant?: 'primary' | 'secondary' }>`
 
 export const LoadingState = styled.div` display: flex; justify-content: center; align-items: center; height: 100%; font-size: 16px; color: #666; `;
 
-// --- 팝업 모달 ---
-export const ModalBackground = styled.div` position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0, 0, 0, 0.5); display: flex; justify-content: center; align-items: center; z-index: 1000; `;
-export const ModalContainer = styled.div` width: 100%; max-width: 700px; background-color: white; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); display: flex; flex-direction: column; `;
-export const ModalHeader = styled.div` display: flex; justify-content: space-between; align-items: center; padding: 20px 24px; border-bottom: 1px solid #e5e7eb; h3 { font-size: 18px; font-weight: 700; color: #111; margin: 0; } `;
-export const CloseButton = styled.button` background: none; border: none; font-size: 24px; color: #9ca3af; cursor: pointer; line-height: 1; &:hover { color: #111; } `;
-export const ModalBody = styled.pre` padding: 24px; font-size: 15px; line-height: 1.7; color: #374151; max-height: 60vh; overflow-y: auto; white-space: pre-wrap; font-family: inherit; margin: 0; `;
+// [신규] 사이드바 토글 버튼 (아이콘)
+export const SidebarToggleButton = styled.button`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    background-color: #f3f4f6;
+    color: #111;
+  }
+  
+  svg {
+    width: 20px;
+    height: 20px;
+  }
+`;
+
+// [신규] 제목 영역 (버튼 + 텍스트)
+export const TitleArea = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 16px;
+`;
