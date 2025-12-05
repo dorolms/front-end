@@ -11,7 +11,7 @@ import { getLectureDetail, updateLecture } from './api';
 
 import LectureForm from '../../components/form/LectureForm';
 
-export default function InstructorLectureEditPage({ params }: { params: Promise<{ id: string }> }) {
+export default function LectureEditPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = use(params);
     const router = useRouter();
     const [isSubmitting, setIsSubmitting] = useState(false);

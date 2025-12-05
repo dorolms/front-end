@@ -7,16 +7,6 @@ import { useRouter } from 'next/navigation';
 import { isTokenValid, getUserRole } from './jwt';
 import { createLecture } from './api';
 
-// [수정] 스타일 파일에서 import
-// import {
-//   PageContainer, Header, PageTitle, BackButton,
-//   ScrollArea, FormLayout, FormRow, FormLabel, InputArea,
-//   Input, TextArea, Select, Row, InputWrapper,
-//   // FileLabel,
-//   FixedBottomBar, Button,
-//   AddScheduleButton, ScheduleRow, DeleteButton
-// } from './styles';
-
 // --- Main Component ---
 
 import LectureForm from '../components/form/LectureForm';
@@ -52,63 +42,6 @@ export default function InstructorLectureNewPage() {
     setIsAuthChecked(true);
 
   }, [router]);
-
-  /*
-  // [유지] 원본의 폼 상태
-  const [formData, setFormData] = useState({
-    title: '', type: 'general', category: '',
-    location: '', target: '', capacity: '',
-    content: '',
-    note: '',
-    // manager_id: 0,
-    attachment_url: '',
-    end_date: '',
-    recruitment_main: '', recruitment_assist: '',
-    fee: '',
-
-    // [핵심] 다건 일정 관리
-    schedules: [
-      { date: '', start_time: '', end_time: '' } // 기본 1개 행
-    ],
-  });
-
-
-  // [신규] 스케줄 개별 변경 핸들러
-  const handleScheduleChange = (index: number, field: string, value: string) => {
-    const newSchedules = [...formData.schedules];
-    newSchedules[index] = { ...newSchedules[index], [field]: value };
-    setFormData(prev => ({ ...prev, schedules: newSchedules }));
-  };
-
-  // [신규] 스케줄 추가
-  const addSchedule = () => {
-    setFormData(prev => ({
-      ...prev,
-      schedules: [...prev.schedules, { date: '', start_time: '', end_time: '' }]
-    }));
-  };
-
-  // [신규] 스케줄 삭제
-  const removeSchedule = (index: number) => {
-    if (formData.schedules.length === 1) {
-      alert('일정은 1개 이상이어야 합니다.');
-      return;
-    }
-    const newSchedules = formData.schedules.filter((_, i) => i !== index);
-    setFormData(prev => ({ ...prev, schedules: newSchedules }));
-  };
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
-  // const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-  //   if (e.target.files && e.target.files[0]) {
-  //     setFormData((prev) => ({ ...prev, file: e.target.files![0] }));
-  //   }
-  // };
-  */
 
   const handleSubmit = async (formData: any) => {
     // e.preventDefault();

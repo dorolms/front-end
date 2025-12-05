@@ -50,6 +50,14 @@ const getLecType = (type: string) => {
   }
   return map[type];
 }
+const getLecStatus = (type: string) => {
+  const map: Record<string, string> = {
+    'RECRUITING': "모집 중",
+    'ALLOCATING': "배정 중",
+    'COMPLETED': "배정 완료",
+  }
+  return map[type];
+}
 export default function LectureDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
 
@@ -328,6 +336,7 @@ export default function LectureDetailPage({ params }: { params: Promise<{ id: st
               <DetailRow><DetailLabel>강의 제목</DetailLabel><DetailValue style={{ fontSize: '18px', fontWeight: 700 }}>{lecture.title}</DetailValue></DetailRow>
               <DetailRow><DetailLabel>강의 유형</DetailLabel><DetailValue>{getLecType(lecture.type)}</DetailValue></DetailRow>
               <DetailRow><DetailLabel>강의 구분</DetailLabel><DetailValue>{lecture.category}</DetailValue></DetailRow>
+              <DetailRow><DetailLabel>상태</DetailLabel><DetailValue>{getLecStatus(lecture.status)}</DetailValue></DetailRow>
               <DetailRow><DetailLabel>일시</DetailLabel><DetailValue>
                 {lecture.schedules && lecture.schedules.length > 0 ? (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
