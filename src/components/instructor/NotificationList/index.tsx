@@ -68,7 +68,7 @@ function timeAgo(dateString: string) {
 const normalizeMessage = (msg: string) => {
   if (!msg) return "";
   return msg
-    .replace(/^\[재(발송|전송)\]\s*(\([^)]*\))?\s*/u, "") // [재발송] (~~) 제거
+    .replace(/^\[재(공지)\]\s*(\([^)]*\))?\s*/u, "") // [재공지] (~~) 제거
     .trim();
 };
 
