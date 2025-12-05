@@ -12,17 +12,13 @@ type Props = {
 export default function LectureTabs({ value, onChange }: Props) {
   return (
     <TabBar>
-      <TabButton
-        $active={value === "list"}
-        onClick={() => onChange("list")}
-      >
+      <TabButton $active={value === "list"} onClick={() => onChange("list")}>
         목록 보기
       </TabButton>
 
       <TabButton
         $active={value === "calender"}
-        onClick={() => onChange("calender")}
-      >
+        onClick={() => onChange("calender")}>
         캘린더 보기
       </TabButton>
     </TabBar>

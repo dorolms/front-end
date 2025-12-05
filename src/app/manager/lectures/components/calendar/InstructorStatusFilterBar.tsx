@@ -1,8 +1,8 @@
 // InstructorStatusFilterBar.tsx
-import React from 'react';
-import styled from 'styled-components';
+import React from "react";
+import styled from "styled-components";
 
-export type InstructorFilter = 'ALL' | 'RECRUITING' | 'COMPLETED';
+export type InstructorFilter = "ALL" | "RECRUITING" | "COMPLETED";
 
 interface InstructorStatusFilterBarProps {
   activeFilter: InstructorFilter;
@@ -18,21 +18,18 @@ const InstructorStatusFilterBar: React.FC<InstructorStatusFilterBarProps> = ({
       <FilterLabel>필터:</FilterLabel>
       <FilterButtonGroup>
         <FilterButton
-          active={activeFilter === 'ALL'}
-          onClick={() => onChangeFilter('ALL')}
-        >
+          $active={activeFilter === "ALL"}
+          onClick={() => onChangeFilter("ALL")}>
           전체
         </FilterButton>
         <FilterButton
-          active={activeFilter === 'RECRUITING'}
-          onClick={() => onChangeFilter('RECRUITING')}
-        >
+          $active={activeFilter === "RECRUITING"}
+          onClick={() => onChangeFilter("RECRUITING")}>
           모집 중
         </FilterButton>
         <FilterButton
-          active={activeFilter === 'COMPLETED'}
-          onClick={() => onChangeFilter('COMPLETED')}
-        >
+          $active={activeFilter === "COMPLETED"}
+          onClick={() => onChangeFilter("COMPLETED")}>
           모집 완료
         </FilterButton>
       </FilterButtonGroup>
@@ -58,20 +55,20 @@ const FilterButtonGroup = styled.div`
   gap: 8px;
 `;
 
-const FilterButton = styled.button<{ active: boolean }>`
+const FilterButton = styled.button<{ $active: boolean }>`
   padding: 8px 16px;
   border-radius: 8px;
-  border: 2px solid ${(props) => (props.active ? '#3B82F6' : '#E5E7EB')};
-  background-color: ${(props) => (props.active ? '#EFF6FF' : 'white')};
-  color: ${(props) => (props.active ? '#3B82F6' : '#6B7280')};
+  border: 2px solid ${(props) => (props.$active ? "#3B82F6" : "#E5E7EB")};
+  background-color: ${(props) => (props.$active ? "#EFF6FF" : "white")};
+  color: ${(props) => (props.$active ? "#3B82F6" : "#6B7280")};
   font-weight: 500;
   font-size: 14px;
   cursor: pointer;
   transition: all 0.2s;
 
   &:hover {
-    border-color: #3B82F6;
-    color: #3B82F6;
+    border-color: #3b82f6;
+    color: #3b82f6;
   }
 `;
 

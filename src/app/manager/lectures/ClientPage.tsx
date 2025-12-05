@@ -17,51 +17,58 @@ export default function ClientPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-  const load = async () => {
-    try {
-      setLoading(true);
-      setError(null);
+    const load = async () => {
+      try {
+        setLoading(true);
+        setError(null);
 
-      // 🔑 localStorage에서 토큰 꺼내기
-      const accessToken =
-        typeof window !== "undefined"
-          ? localStorage.getItem("accessToken")
-          : "";
+        // 🔑 localStorage에서 토큰 꺼내기
+        const accessToken =
+          typeof window !== "undefined"
+            ? localStorage.getItem("accessToken")
+            : "";
 
-      const res = await fetch(`${baseUrl}/api/lectures/lectures/`, {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${accessToken}`, // 💥 핵심!
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-      });
+        const res = await fetch(`${baseUrl}/api/lectures/lectures/`, {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${accessToken}`, // 💥 핵심!
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+        });
 
-      if (!res.ok) {
-        throw new Error(`API 호출 실패 (status: ${res.status})`);
+        if (!res.ok) {
+          throw new Error(`API 호출 실패 (status: ${res.status})`);
+        }
+
+        const data = (await res.json()) as Lecture[];
+        setLectures(data);
+      } catch (e: any) {
+        console.error(e);
+        setError(e?.message ?? "알 수 없는 에러");
+      } finally {
+        setLoading(false);
       }
+    };
 
-      const data = (await res.json()) as Lecture[];
-      setLectures(data);
-
-    } catch (e: any) {
-      console.error(e);
-      setError(e?.message ?? "알 수 없는 에러");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  load();
-}, []);
+    load();
+  }, []);
 
   if (loading) return <div>로딩 중...</div>;
   if (error) return <div>에러: {error}</div>;
 
   return (
     <div>
-      <NewLectureButton />
-      <LectureTabs value={tab} onChange={setTab} />
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: "20px",
+        }}>
+        <NewLectureButton />
+        <LectureTabs value={tab} onChange={setTab} />
+      </div>
       {tab === "list" ? (
         <LectureListView lectures={lectures} />
       ) : (

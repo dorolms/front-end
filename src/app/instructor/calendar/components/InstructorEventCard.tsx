@@ -1,13 +1,17 @@
 // src/app/instructor/dashboard/components/InstructorEventCard.tsx
-'use client';
+"use client";
 
-import styled from 'styled-components';
-import type { InstructorEventItem } from '../types';
-import { INSTRUCTOR_THEME, INSTRUCTOR_BORDER, STATUS_COLOR } from '../constants';
+import styled from "styled-components";
+import type { InstructorEventItem } from "../types";
+import {
+  INSTRUCTOR_THEME,
+  INSTRUCTOR_BORDER,
+  STATUS_COLOR,
+} from "../constants";
 
 // ───────────────── 이벤트 카드 스타일 (기존 코드 그대로) ─────────────────
 const EventCard = styled.div<{
-  $variant: 'solid' | 'applied' | 'pending';
+  $variant: "solid" | "applied" | "pending";
   $bg: string;
   $borderColor: string;
 }>`
@@ -23,13 +27,13 @@ const EventCard = styled.div<{
   overflow: hidden;
 
   ${(p) =>
-    p.$variant === 'solid'
+    p.$variant === "solid"
       ? `
     background-color: ${p.$bg};
     border-left: 4px solid ${p.$borderColor};
     box-shadow: 0 2px 5px rgba(0,0,0,0.03);
   `
-      : p.$variant === 'applied'
+      : p.$variant === "applied"
       ? `
     background-color: #ffffff;
     border: 1px solid ${p.$borderColor};
@@ -91,29 +95,31 @@ export type InstructorEventCardProps = {
   item: InstructorEventItem;
 };
 
-export default function InstructorEventCard({ item }: InstructorEventCardProps) {
+export default function InstructorEventCard({
+  item,
+}: InstructorEventCardProps) {
   // @ts-ignore
   const bg = INSTRUCTOR_THEME[item.category] || INSTRUCTOR_THEME.ETC;
   // @ts-ignore
   const borderColor = INSTRUCTOR_BORDER[item.category] || INSTRUCTOR_BORDER.ETC;
 
   const start = new Date(item.start);
-  const timeStr = `${start.getHours().toString().padStart(2, '0')}:${start
+  const timeStr = `${start.getHours().toString().padStart(2, "0")}:${start
     .getMinutes()
     .toString()
-    .padStart(2, '0')}`;
+    .padStart(2, "0")}`;
 
-  let variant: 'solid' | 'applied' | 'pending' = 'solid';
-  let statusLabel = '배정됨';
-  let statusColor : string= STATUS_COLOR.CONFIRMED;
+  let variant: "solid" | "applied" | "pending" = "solid";
+  let statusLabel = "배정됨";
+  let statusColor: string = STATUS_COLOR.CONFIRMED;
 
-  if (item.instructorStatus === 'APPLIED') {
-    variant = 'applied';
-    statusLabel = '신청됨';
+  if (item.instructorStatus === "APPLIED") {
+    variant = "applied";
+    statusLabel = "신청됨";
     statusColor = STATUS_COLOR.APPLIED;
-  } else if (item.instructorStatus === 'PENDING') {
-    variant = 'pending';
-    statusLabel = '확정대기';
+  } else if (item.instructorStatus === "PENDING") {
+    variant = "pending";
+    statusLabel = "확정대기";
     statusColor = STATUS_COLOR.PENDING;
   }
 

@@ -1,47 +1,124 @@
-import React, { useState } from 'react';
-import styled from 'styled-components';
+// src/app/instructor/lectures/components/LectureApplicationModal.tsx
+import React, { useState, useEffect } from "react";
+import styled from "styled-components";
+import type { LectureDetail } from "../types";
 
 interface LectureApplicationModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (appliedRole: 'main' | 'assist') => Promise<void>;
-  lectureTitle?: string;
+  // role 하나씩 넘기면, 모달이 필요할 때 여러 번 호출해줌
+  onSubmit: (appliedRole: "main" | "assist") => Promise<void>;
+  lectureId: number | null;
 }
+
+const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
 
 const LectureApplicationModal: React.FC<LectureApplicationModalProps> = ({
   isOpen,
   onClose,
   onSubmit,
-  lectureTitle,
+  lectureId,
 }) => {
-  const [selectedRole, setSelectedRole] = useState<'main' | 'assist' | null>(null);
+  // ─── State들 (항상 최상단에서 고정 순서로 호출) ─────────────────
+  const [lectureDetail, setLectureDetail] = useState<LectureDetail | null>(
+    null
+  );
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [detailError, setDetailError] = useState<string | null>(null);
+
+  const [selectedMain, setSelectedMain] = useState(false);
+  const [selectedAssist, setSelectedAssist] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
 
-  if (!isOpen && !showSuccessModal) return null;
+  // ─── 강의 상세 조회 ─────────────────────────────────────────────
+  useEffect(() => {
+    if (!isOpen || !lectureId) return;
 
+    const fetchDetail = async () => {
+      try {
+        setDetailLoading(true);
+        setDetailError(null);
+
+        const accessToken =
+          typeof window !== "undefined"
+            ? localStorage.getItem("accessToken")
+            : "";
+
+        const res = await fetch(
+          `${baseUrl}/api/lectures/lectures/${lectureId}/`,
+          {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+              "Content-Type": "application/json",
+            },
+            credentials: "include",
+          }
+        );
+
+        if (!res.ok) {
+          throw new Error(`강의 상세 조회 실패 (status: ${res.status})`);
+        }
+
+        const data = (await res.json()) as LectureDetail;
+        setLectureDetail(data);
+      } catch (e: any) {
+        console.error(e);
+        setDetailError(e?.message ?? "강의 정보를 불러오지 못했습니다.");
+      } finally {
+        setDetailLoading(false);
+      }
+    };
+
+    fetchDetail();
+  }, [isOpen, lectureId]);
+
+  // ─── 내부 상태 초기화 ───────────────────────────────────────────
+  const resetState = () => {
+    setSelectedMain(false);
+    setSelectedAssist(false);
+    setLectureDetail(null);
+    setDetailError(null);
+    setDetailLoading(false);
+  };
+
+  // ─── 신청 버튼 클릭 ─────────────────────────────────────────────
   const handleSubmit = async () => {
-    if (!selectedRole) return;
+    const roles: ("main" | "assist")[] = [];
+    if (selectedMain) roles.push("main");
+    if (selectedAssist) roles.push("assist");
+
+    if (roles.length === 0) return; // 아무것도 선택 안 되어 있으면 무시
 
     setIsSubmitting(true);
     try {
-      await onSubmit(selectedRole);
+      // 선택된 역할들만 순서대로 POST
+      for (const role of roles) {
+        await onSubmit(role);
+      }
       setShowSuccessModal(true);
     } catch (error) {
-      console.error('신청 중 오류 발생:', error);
-      alert('신청 중 오류가 발생했습니다. 다시 시도해주세요.');
+      console.error("신청 중 오류 발생:", error);
+      alert("신청 중 오류가 발생했습니다. 다시 시도해주세요.");
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  // ─── 성공 모달 닫기 ─────────────────────────────────────────────
   const handleSuccessClose = () => {
     setShowSuccessModal(false);
-    setSelectedRole(null);
+    resetState();
     onClose();
   };
 
-  // 신청 완료 모달
+  // 🔒 isOpen=false & 성공 모달도 아닐 때는 렌더 X
+  if (!isOpen && !showSuccessModal) {
+    return null;
+  }
+
+  // ─── 신청 완료 모달 ─────────────────────────────────────────────
   if (showSuccessModal) {
     return (
       <ModalOverlay onClick={handleSuccessClose}>
@@ -54,68 +131,57 @@ const LectureApplicationModal: React.FC<LectureApplicationModalProps> = ({
     );
   }
 
-  // 역할 선택 모달
+  // ─── 역할 선택 모달 ─────────────────────────────────────────────
   return (
-    <ModalOverlay onClick={onClose}>
+    <ModalOverlay
+      onClick={() => {
+        resetState();
+        onClose();
+      }}>
       <ModalContent onClick={(e) => e.stopPropagation()}>
         <ModalTitle>강의 신청</ModalTitle>
 
         <LectureInfo>
-          {lectureTitle && (
-            <>
-              <InfoLabel>강의명</InfoLabel>
-              <InfoText>{lectureTitle}</InfoText>
-            </>
+          {detailLoading && <InfoText>강의 정보를 불러오는 중...</InfoText>}
+          {detailError && (
+            <InfoText style={{ color: "#DC2626" }}>{detailError}</InfoText>
           )}
-          <InfoLabel>강의명 슬기초등학교 대학생 멘토와 함께하는 AI로봇 토요 캠프</InfoLabel>
-          <InfoText>일시 9월 13일, 20일(토요일) (2달 운영, 총 7h)</InfoText>
         </LectureInfo>
-
-        <Divider />
 
         <SectionTitle>신청 분야(중복 신청 가능)</SectionTitle>
 
         <RoleOptions>
           <RoleOption
-            selected={selectedRole === 'main'}
-            onClick={() => setSelectedRole('main')}
-          >
-            <Checkbox checked={selectedRole === 'main'}>
-              {selectedRole === 'main' && <CheckIcon>✓</CheckIcon>}
+            selected={selectedMain}
+            onClick={() => setSelectedMain((prev) => !prev)}>
+            <Checkbox checked={selectedMain}>
+              {selectedMain && <CheckIcon>✓</CheckIcon>}
             </Checkbox>
             <RoleLabel>주 도로 쌤</RoleLabel>
           </RoleOption>
 
           <RoleOption
-            selected={selectedRole === 'assist'}
-            onClick={() => setSelectedRole('assist')}
-          >
-            <Checkbox checked={selectedRole === 'assist'}>
-              {selectedRole === 'assist' && <CheckIcon>✓</CheckIcon>}
+            selected={selectedAssist}
+            onClick={() => setSelectedAssist((prev) => !prev)}>
+            <Checkbox checked={selectedAssist}>
+              {selectedAssist && <CheckIcon>✓</CheckIcon>}
             </Checkbox>
             <RoleLabel>보조 도로 쌤</RoleLabel>
           </RoleOption>
         </RoleOptions>
 
-        <NoteSection>
-          <NoteTitle>비고</NoteTitle>
-          <NoteText>문의: DORO 운영팀 (010-1234-5678)</NoteText>
-        </NoteSection>
-
-        <Divider />
-
         <SubmitButton
           onClick={handleSubmit}
-          disabled={!selectedRole || isSubmitting}
-        >
-          {isSubmitting ? '신청 중...' : '신청하기'}
+          disabled={(!selectedMain && !selectedAssist) || isSubmitting}>
+          {isSubmitting ? "신청 중..." : "신청하기"}
         </SubmitButton>
       </ModalContent>
     </ModalOverlay>
   );
 };
 
-// Styled Components
+// ─── Styled Components ─────────────────────────────────────────────
+
 const ModalOverlay = styled.div`
   position: fixed;
   top: 0;
@@ -126,7 +192,7 @@ const ModalOverlay = styled.div`
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 1100;  /* ✅ 1000 → 1100으로 변경! */
+  z-index: 1100;
 `;
 
 const ModalContent = styled.div`
@@ -191,23 +257,23 @@ const RoleOption = styled.div<{ selected: boolean }>`
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s;
-  background-color: ${(props) => (props.selected ? '#EFF6FF' : 'transparent')};
-  border: 2px solid ${(props) => (props.selected ? '#3B82F6' : 'transparent')};
+  background-color: ${(props) => (props.selected ? "#EFF6FF" : "transparent")};
+  border: 2px solid ${(props) => (props.selected ? "#3B82F6" : "transparent")};
 
   &:hover {
-    background-color: ${(props) => (props.selected ? '#EFF6FF' : '#F9FAFB')};
+    background-color: ${(props) => (props.selected ? "#EFF6FF" : "#F9FAFB")};
   }
 `;
 
 const Checkbox = styled.div<{ checked: boolean }>`
   width: 20px;
   height: 20px;
-  border: 2px solid ${(props) => (props.checked ? '#3B82F6' : '#D1D5DB')};
+  border: 2px solid ${(props) => (props.checked ? "#3B82F6" : "#D1D5DB")};
   border-radius: 4px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: ${(props) => (props.checked ? '#3B82F6' : 'white')};
+  background-color: ${(props) => (props.checked ? "#3B82F6" : "white")};
   transition: all 0.2s;
 `;
 
@@ -241,17 +307,17 @@ const NoteText = styled.div`
 const SubmitButton = styled.button<{ disabled?: boolean }>`
   width: 100%;
   padding: 14px;
-  background-color: ${(props) => (props.disabled ? '#93C5FD' : '#10B981')};
+  background-color: ${(props) => (props.disabled ? "#93C5FD" : "#10B981")};
   color: white;
   border: none;
   border-radius: 8px;
   font-size: 16px;
   font-weight: 600;
-  cursor: ${(props) => (props.disabled ? 'not-allowed' : 'pointer')};
+  cursor: ${(props) => (props.disabled ? "not-allowed" : "pointer")};
   transition: all 0.2s;
 
   &:hover {
-    background-color: ${(props) => (props.disabled ? '#93C5FD' : '#059669')};
+    background-color: ${(props) => (props.disabled ? "#93C5FD" : "#059669")};
   }
 `;
 
