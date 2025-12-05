@@ -82,6 +82,31 @@ export interface patchData {
   assignment_status: AssignmentStatus;
 }
 
+export interface UpdateLecturePayload {
+  id: number;
+  title: string;
+  type: string;
+  category: string;
+  capacity: string;
+  status: string;
+  end_date: string;
+  
+  recruitment_main: number;
+  recruitment_assist: number;
+  
+  schedules: Schedule[];
+
+  location: string;
+  target: string;
+  content: string;
+  note: string;
+  
+  fee: string;
+  attachment_url: string | null;
+}
+
+
+
 export const getLectureDetail = async (id: number): Promise<LectureDetail> => {
   try {
     const response = await axios.get<LectureDetail>(`${API_BASE_URL}/api/lectures/lectures/${id}/`, {
@@ -110,6 +135,25 @@ export const patchApplications = async (payload: patchData) => {
     return response.data;
   } catch (error) {
     console.error('정보 갱신 실패:', error);
+    throw error; // 에러를 던져서 페이지에서 alert 등을 띄울 수 있게 함
+  }
+};
+
+export const updateLecture = async (payload: UpdateLecturePayload) => {
+  try {
+    const response = await axios.put(
+      `${API_BASE_URL}/api/lectures/lectures/${payload.id}/`,
+      payload,
+      {
+        headers: {
+          ...getAuthHeaders(),
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error('강의 수정 실패:', error);
     throw error; // 에러를 던져서 페이지에서 alert 등을 띄울 수 있게 함
   }
 };

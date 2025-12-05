@@ -3,12 +3,13 @@
 import React, { useState, useRef, useCallback, useMemo, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 // import { getLectureDetail, type LectureDetail, type Applicant, type LectureRole, type DbAssignmentStatus } from './api-mock';
-import { getLectureDetail, patchApplications, type LectureDetail, type Application, type LectureRole, type AssignmentStatus, type UserInfo, type patchData } from './api';
+import { getLectureDetail, patchApplications, updateLecture, type LectureDetail, type Application, type LectureRole, type AssignmentStatus, type UserInfo, type patchData } from './api';
 
 import { isTokenValid, getUserRole } from './jwt';
 
 import {
-  PageContainer, Header, PageTitle, StatusBadge, BackButton,
+  PageContainer, Header, PageTitle,  BackButton,
+  // StatusBadge,
   ContentWrapper, SectionMenu, MenuItem, RightPanel, ScrollArea,
   Section, SectionTitle, DetailRow, DetailLabel, DetailValue,
   AttachmentLink, FilterTabs, FilterButton, TableContainer,
@@ -16,6 +17,7 @@ import {
   StatusSelect, FixedBottomBar, Button, LoadingState, SidebarToggleButton, TitleArea,
   EditButton,
 } from './styles';
+import LectureForm from '../../components/form/LectureForm';
 
 // --- 타입 정의 (UI 전용) ---
 type UiAssignmentStatus = 'pending' | 'assigned_main' | 'assigned_assist' | 'rejected';
@@ -70,6 +72,7 @@ export default function LectureDetailPage({ params }: { params: Promise<{ id: st
   const [activeFilter, setActiveFilter] = useState<'all' | 'main' | 'assist'>('all');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isEditing, setIsEditing] = useState(false);
 
   const [isAuthChecked, setIsAuthChecked] = useState(false);
   
@@ -221,20 +224,19 @@ export default function LectureDetailPage({ params }: { params: Promise<{ id: st
       mainStatus = assistStatus = 'rejected';
     }
 
-    if (mrg.main_app) {
-      setApplications((prev: Application[]) => prev.map((app: Application) => 
-        app.id === mrg.main_app!.id 
-          ? { ...app, assignment_status: mainStatus } 
-          : app
-      ));
-    }
-    if (mrg.assist_app) {
-      setApplications((prev: Application[]) => prev.map((app: Application) => 
-        app.id === mrg.assist_app!.id 
-          ? { ...app, assignment_status: assistStatus } 
-          : app
-      ));
-    }
+    setApplications((prev) => 
+      prev.map((app) => {
+        // 주강사 지원 내역 업데이트
+        if (mrg.main_app && app.id === mrg.main_app.id) {
+          return { ...app, assignment_status: mainStatus };
+        }
+        // 보조강사 지원 내역 업데이트
+        if (mrg.assist_app && app.id === mrg.assist_app.id) {
+          return { ...app, assignment_status: assistStatus };
+        }
+        return app;
+      })
+    );
   };
 
   // [수정] 저장 버튼 핸들러: 변경된 것만 필터링
@@ -254,28 +256,27 @@ export default function LectureDetailPage({ params }: { params: Promise<{ id: st
 
     // 2. 변경사항이 없으면 알림 후 중단
     if (changedItems.length === 0) {
-      alert('변경된 내용이 없습니다.');
+      alert('강사 배정 변경사항이 없습니다.');
       return;
     }
 
-    if (!confirm(`변경사항을 저장하시겠습니까?`)) return;
+    if (!confirm(`강사 배정 변경사항을 저장하시겠습니까?`)) return;
     
     setIsSubmitting(true);
     
     // 3. 변경된 항목만 Payload 구성
-    const payload = changedItems.map((app: Application) => ({ 
+    const appPayload = changedItems.map((app: Application) => ({ 
       id: app.id, // API 스펙에 맞춘 ID
       lecture: app.lecture,
       assignment_status: app.assignment_status,
       applied_role: app.applied_role
     }));
     
-    console.log('🚀 [API Payload - Changed Only]', payload);
+    console.log('🚀 [API Payload - Changed Only]', appPayload);
 
     try {
-      // TODO: 실제 API 호출 (예: await axios.patch('/api/lectures/applications/bulk', payload))
       
-      await Promise.all(payload.map(item => patchApplications(item)));
+      await Promise.all(appPayload.map(item => patchApplications(item)));
       
       alert('저장되었습니다.');
       
@@ -299,6 +300,65 @@ export default function LectureDetailPage({ params }: { params: Promise<{ id: st
     }
   };
 
+  const handleSubmit = async (formData: any) => {
+      // e.preventDefault();
+      if (isSubmitting) return;
+      setIsSubmitting(true);
+      
+      try {
+  
+        // const attachmentUrl = formData.file ? `` : null;
+        // 2. API Payload 구성
+        const payload = {
+          id: parseInt(id),
+          title: formData.title,
+          type: formData.type,
+          category: formData.category,
+          status: formData.status,
+          end_date: formData.end_date,
+          capacity: formData.capacity,
+          
+          recruitment_main: parseInt(formData.recruitment_main) || 0,
+          recruitment_assist: parseInt(formData.recruitment_assist) || 0,
+          
+          schedules: formData.schedules,
+  
+          location: formData.location,
+          target: formData.target,
+          content: formData.content,
+          note: formData.note,
+          
+          fee: formData.fee,
+          attachment_url: formData.attachment_url,
+        };
+  
+        console.log('🚀 [Sending Payload]', payload);
+  
+        await updateLecture(payload);
+  
+        // 성공 시
+        alert('저장되었습니다.');
+        // 1. 최신 데이터를 서버에서 다시 가져와서 state 업데이트 (가장 안전함)
+      //    (formData를 직접 setLecture에 넣으면 타입 불일치나 누락된 필드 문제가 생길 수 있음)
+      const updatedData = await getLectureDetail(parseInt(id));
+      setLecture(updatedData);
+
+      // 2. 수정 모드 종료
+      setIsEditing(false);
+
+      // 3. (선택사항) Next.js 캐시 갱신 (서버 컴포넌트 데이터 싱크)
+      router.refresh();
+  
+      } catch (error: any) {
+        // 실패 시
+        console.error('강의 수정 실패:', error);
+        const errorMessage = error.response?.data?.detail || '정보 전송 중 오류가 발생했습니다.';
+        alert(errorMessage);
+      } finally {
+        setIsSubmitting(false);
+      }
+    };
+
   if (isLoading || !lecture || !isAuthChecked) {
     return <PageContainer><LoadingState>로딩중...</LoadingState></PageContainer>;
   }
@@ -315,7 +375,17 @@ export default function LectureDetailPage({ params }: { params: Promise<{ id: st
           </SidebarToggleButton>
           <PageTitle>강의 상세 및 배정{/* <StatusBadge>모집중</StatusBadge> */}</PageTitle>
         </TitleArea>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+    {!isEditing && (
+      <EditButton onClick={() => setIsEditing(true)}>
+        <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+        </svg>
+        강의 정보 수정
+      </EditButton>
+    )}
         <BackButton onClick={() => router.push('/manager/lectures')}>목록으로</BackButton>
+      </div>
       </Header>
 
       <ContentWrapper>
@@ -331,9 +401,14 @@ export default function LectureDetailPage({ params }: { params: Promise<{ id: st
             <Section ref={sectionRefs.info}>
               <SectionTitle>
                 강의 상세 정보
-                <EditButton onClick={() => router.push(`/manager/lectures/${id}/edit`)}>✎ 수정하기</EditButton>
+                
               </SectionTitle>
-              <DetailRow><DetailLabel>강의 제목</DetailLabel><DetailValue style={{ fontSize: '18px', fontWeight: 700 }}>{lecture.title}</DetailValue></DetailRow>
+              
+              {isEditing ? <LectureForm
+                where='edit'
+                initialData={lecture}
+                onSubmit={handleSubmit}
+              /> : <><DetailRow><DetailLabel>강의 제목</DetailLabel><DetailValue style={{ fontSize: '18px', fontWeight: 700 }}>{lecture.title}</DetailValue></DetailRow>
               <DetailRow><DetailLabel>강의 유형</DetailLabel><DetailValue>{getLecType(lecture.type)}</DetailValue></DetailRow>
               <DetailRow><DetailLabel>강의 구분</DetailLabel><DetailValue>{lecture.category}</DetailValue></DetailRow>
               <DetailRow><DetailLabel>상태</DetailLabel><DetailValue>{getLecStatus(lecture.status)}</DetailValue></DetailRow>
@@ -342,7 +417,6 @@ export default function LectureDetailPage({ params }: { params: Promise<{ id: st
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
                       {lecture.schedules.map((sch, idx) => (
                         <div key={idx}>
-                          {/* 날짜 (요일 포함하면 좋음) + 시간 (초 제외) */}
                           •  {sch.date}({getWeekday(sch.date)}) {sch.start_time.slice(0, 5)} ~ {sch.end_time.slice(0, 5)}
                         </div>
                       ))}
@@ -359,13 +433,24 @@ export default function LectureDetailPage({ params }: { params: Promise<{ id: st
               <DetailRow><DetailLabel>모집 인원</DetailLabel><DetailValue>주 {lecture.recruitment_main}명 / 보조 {lecture.recruitment_assist}명</DetailValue></DetailRow>
               <DetailRow><DetailLabel>강의료</DetailLabel><DetailValue>{lecture.fee}</DetailValue></DetailRow>
               <DetailRow><DetailLabel>모집 마감일</DetailLabel><DetailValue className="highlight">{lecture.end_date} 까지</DetailValue></DetailRow>
-              <DetailRow><DetailLabel>특이사항</DetailLabel><DetailValue className="highlight">{lecture.note || <span style={{ color: '#999' }}>특이 사항 없음</span>}</DetailValue></DetailRow>
+              <DetailRow><DetailLabel>특이사항</DetailLabel><DetailValue className="highlight">{lecture.note || <span style={{ color: '#999' }}>특이 사항 없음</span>}</DetailValue></DetailRow></>
+              }
             </Section>
 
             <hr style={{ border: 'none', borderTop: '1px solid #eee', margin: '40px 0' }} />
 
             {/* 2. 지원자 관리 */}
-            <Section ref={sectionRefs.applications}>
+            {/* [수정] style 속성을 추가하여 수정 모드일 때 흐리게(Opacity) + 클릭 방지(pointer-events) 처리 */}
+            <Section 
+              ref={sectionRefs.applications}
+              style={{
+                opacity: isEditing ? 0.4 : 1,             // 수정 중이면 40% 불투명도로 흐리게
+                pointerEvents: isEditing ? 'none' : 'auto', // 수정 중이면 클릭 아예 안 되게 막음
+                // filter: isEditing ? 'blur(1px)' : 'none',   // (선택) 살짝 블러 처리해서 더 비활성화 느낌 내기
+                transition: 'all 0.3s ease',              // 부드럽게 전환
+                userSelect: isEditing ? 'none' : 'auto'     // 텍스트 드래그도 방지
+              }}
+            >
               <SectionTitle>지원자 관리</SectionTitle>
               <FilterTabs>
                 <FilterButton $active={activeFilter === 'all'} onClick={() => setActiveFilter('all')}>전체 ({stats.total})</FilterButton>
@@ -403,6 +488,7 @@ export default function LectureDetailPage({ params }: { params: Promise<{ id: st
                           <StatusSelect 
                             value={app.status}
                             $status={app.status}
+                            disabled={isEditing}
                             onChange={(e) => handleStatusChange(app, e.target.value as UiAssignmentStatus)}
                             >
                             <option value="pending">대기중</option>
@@ -425,13 +511,22 @@ export default function LectureDetailPage({ params }: { params: Promise<{ id: st
             </Section>
 
           </ScrollArea>
-
+          
+          {isEditing ?
           <FixedBottomBar>
-            <Button type="button" onClick={() => router.push('/manager/lectures')} $variant="secondary">취소</Button>
-            <Button type="button" onClick={handleSaveChanges} $variant="primary" disabled={isSubmitting}>
-              {isSubmitting ? '저장 중...' : '변경사항 저장'}
+            <Button type="button" onClick={() => setIsEditing(false)} $variant="secondary" disabled={isSubmitting}>수정 취소</Button>
+            <Button type="submit" form='lecture-form' $variant="primary" disabled={isSubmitting}>
+              {isSubmitting ? '저장 중...' : '강의 수정사항 저장'}
             </Button>
           </FixedBottomBar>
+          :
+            <FixedBottomBar>
+            <Button type="button" onClick={() => router.push('/manager/lectures')} $variant="secondary" disabled={isSubmitting}>취소</Button>
+            <Button type="button" onClick={handleSaveChanges} $variant="primary" disabled={isSubmitting}>
+              {isSubmitting ? '저장 중...' : '배정 변경사항 저장'}
+            </Button>
+          </FixedBottomBar>
+          }
         </RightPanel>
       </ContentWrapper>
 

@@ -4,11 +4,9 @@ import { useRouter } from 'next/navigation';
 
 // [수정] 스타일 파일에서 import
 import {
-  PageContainer, Header, PageTitle, BackButton,
-  ScrollArea, FormLayout, FormRow, FormLabel, InputArea,
+  FormLayout, FormRow, FormLabel, InputArea,
   Input, TextArea, Select, Row, InputWrapper,
   // FileLabel,
-  FixedBottomBar, Button,
   AddScheduleButton, ScheduleRow, DeleteButton
 } from './styles';
 
@@ -18,16 +16,12 @@ interface LectureFormProps {
     where: 'new' | 'edit';
     initialData?: any;           // 수정일 경우 채워넣을 초기 데이터
     onSubmit: (data: any) => void; // 저장 버튼 눌렀을 때 실행할 부모 함수
-    onBack: () => void; // 저장 버튼 눌렀을 때 실행할 부모 함수
-    isSubmitting: boolean;       // 로딩 상태
 }
 
 export default function LectureForm({ 
     where,
     initialData,
-    onBack, 
     onSubmit, 
-    isSubmitting 
 }: LectureFormProps) {
   const router = useRouter();
 
@@ -41,6 +35,8 @@ export default function LectureForm({
     end_date: '',
     recruitment_main: '', recruitment_assist: '',
     fee: '',
+
+    manager_name: '', manager_phone: '',
 
     schedules: [
       { date: '', start_time: '', end_time: '' }
@@ -97,13 +93,6 @@ export default function LectureForm({
   };
 
   return (
-    <PageContainer>
-      <Header>
-        <PageTitle>{where === 'new' ? '새 강의 등록' : '강의 수정'}</PageTitle>
-        <BackButton onClick={onBack}>{where === 'new' ? '목록으로' : '돌아가기'}</BackButton>
-      </Header>
-
-      <ScrollArea>
         <FormLayout id="lecture-form" onSubmit={handleSubmit}>
           
           <FormRow>
@@ -143,7 +132,7 @@ export default function LectureForm({
             </InputArea>
           </FormRow>
 
-          {where === "edit" ? <FormRow>
+          {where === "edit" && <FormRow>
             <FormLabel>상태 <span className="required">*</span></FormLabel>
             <InputArea>
               <Row>
@@ -154,7 +143,7 @@ export default function LectureForm({
                 </Select>
               </Row>
             </InputArea>
-          </FormRow> : null}
+          </FormRow>}
 
           <FormRow>
             <FormLabel>
@@ -207,6 +196,16 @@ export default function LectureForm({
               </InputWrapper>
             </InputArea>
           </FormRow>
+
+          {where === "edit" && <FormRow>
+            <FormLabel>담당자 </FormLabel>
+            <InputArea>
+            <Row>
+                <div><InputWrapper><Input type="text" name="manager_name" value={formData.manager_name} disabled/></InputWrapper></div>
+                <div><InputWrapper><Input type="text" name="manager_phone" value={formData.manager_phone} disabled/></InputWrapper></div>
+            </Row>
+            </InputArea>
+          </FormRow>}
 
           <FormRow>
             <FormLabel>교육 대상 <span className="required">*</span></FormLabel>
@@ -312,16 +311,5 @@ export default function LectureForm({
           </FormRow>
 
         </FormLayout>
-      </ScrollArea>
-
-      <FixedBottomBar>
-        <Button type="button" onClick={onBack} $variant="secondary" disabled={isSubmitting}>
-          취소
-        </Button>
-        <Button type="submit" form="lecture-form" $variant="primary" disabled={isSubmitting}>
-          {where === 'new' ? isSubmitting ? '등록 중...' : '강의 등록' : isSubmitting ? '저장 중...' : '저장하기'}
-        </Button>
-      </FixedBottomBar>
-    </PageContainer>
   );
 }

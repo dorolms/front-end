@@ -106,23 +106,21 @@ export const SectionTitle = styled.h2`
 
 export const EditButton = styled.button`
   margin-left: auto; /* 핵심: Flex 컨테이너에서 우측 끝으로 밈 */
-  font-size: 13px;
-  font-weight: 500;
-  color: #6b7280;
-  background-color: white;
-  border: 1px solid #e5e7eb;
-  padding: 6px 12px;
+  background-color: #3b82f6; /* 파란색 (원하는 테마 컬러로 변경) */
+  color: white;
+  border: none;
   border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 0.9rem;
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: background-color 0.2s;
   display: flex;
   align-items: center;
   gap: 4px;
 
   &:hover {
-    background-color: #f9fafb;
-    color: #3478F6;
-    border-color: #3478F6;
+    background-color: #2563eb; /* 호버 시 진한 파란색 */
   }
 `;
 

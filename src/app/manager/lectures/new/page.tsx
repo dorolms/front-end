@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 
 import { isTokenValid, getUserRole } from './jwt';
 import { createLecture } from './api';
-
+import { PageContainer, Header, ScrollArea, PageTitle, BackButton, FixedBottomBar, Button } from './styles';
 // --- Main Component ---
 
 import LectureForm from '../components/form/LectureForm';
@@ -97,11 +97,26 @@ export default function InstructorLectureNewPage() {
   }
 
   return (
-    <LectureForm 
-      where='new'
-      onBack={() => router.push('/manager/lectures')}
-      onSubmit={handleSubmit}
-      isSubmitting={isSubmitting}
-    />
+    <PageContainer>
+          <Header>
+            <PageTitle>새 강의 등록</PageTitle>
+            <BackButton onClick={() => router.push('/manager/lectures')}>목록으로</BackButton>
+          </Header>
+          <ScrollArea>
+        <LectureForm
+        where='new'
+        onSubmit={handleSubmit}
+        />
+      </ScrollArea>
+
+      <FixedBottomBar>
+        <Button type="button" onClick={() => router.push('/manager/lectures')} $variant="secondary" disabled={isSubmitting}>
+          취소
+        </Button>
+        <Button type="submit" form="lecture-form" $variant="primary" disabled={isSubmitting}>
+          {isSubmitting ? '등록 중...' : '강의 등록'}
+        </Button>
+      </FixedBottomBar>
+    </PageContainer>
   );
 } 
