@@ -18,12 +18,14 @@ interface LectureFormProps {
     where: 'new' | 'edit';
     initialData?: any;           // 수정일 경우 채워넣을 초기 데이터
     onSubmit: (data: any) => void; // 저장 버튼 눌렀을 때 실행할 부모 함수
+    onBack: () => void; // 저장 버튼 눌렀을 때 실행할 부모 함수
     isSubmitting: boolean;       // 로딩 상태
 }
 
 export default function LectureForm({ 
     where,
-    initialData, 
+    initialData,
+    onBack, 
     onSubmit, 
     isSubmitting 
 }: LectureFormProps) {
@@ -98,7 +100,7 @@ export default function LectureForm({
     <PageContainer>
       <Header>
         <PageTitle>{where === 'new' ? '새 강의 등록' : '강의 수정'}</PageTitle>
-        <BackButton onClick={() => router.back()}>{where === 'new' ? '목록으로' : '돌아가기'}</BackButton>
+        <BackButton onClick={onBack}>{where === 'new' ? '목록으로' : '돌아가기'}</BackButton>
       </Header>
 
       <ScrollArea>
@@ -313,7 +315,7 @@ export default function LectureForm({
       </ScrollArea>
 
       <FixedBottomBar>
-        <Button type="button" onClick={() => router.back()} $variant="secondary" disabled={isSubmitting}>
+        <Button type="button" onClick={onBack} $variant="secondary" disabled={isSubmitting}>
           취소
         </Button>
         <Button type="submit" form="lecture-form" $variant="primary" disabled={isSubmitting}>

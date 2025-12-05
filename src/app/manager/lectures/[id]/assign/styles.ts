@@ -104,6 +104,28 @@ export const SectionTitle = styled.h2`
   }
 `;
 
+export const EditButton = styled.button`
+  margin-left: auto; /* 핵심: Flex 컨테이너에서 우측 끝으로 밈 */
+  font-size: 13px;
+  font-weight: 500;
+  color: #6b7280;
+  background-color: white;
+  border: 1px solid #e5e7eb;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+
+  &:hover {
+    background-color: #f9fafb;
+    color: #3478F6;
+    border-color: #3478F6;
+  }
+`;
+
 export const DetailRow = styled.div`
   display: grid; grid-template-columns: 220px 1fr; align-items: stretch; border-bottom: 1px solid #e5e7eb;
   &:first-of-type { border-top: 1px solid #e5e7eb; }

@@ -14,6 +14,7 @@ import {
   AttachmentLink, FilterTabs, FilterButton, TableContainer,
   Table, Thead, Tbody, RoleBadge, ApplicantName, ApplicantMeta,
   StatusSelect, FixedBottomBar, Button, LoadingState, SidebarToggleButton, TitleArea,
+  EditButton,
 } from './styles';
 
 // --- 타입 정의 (UI 전용) ---
@@ -306,7 +307,7 @@ export default function LectureDetailPage({ params }: { params: Promise<{ id: st
           </SidebarToggleButton>
           <PageTitle>강의 상세 및 배정{/* <StatusBadge>모집중</StatusBadge> */}</PageTitle>
         </TitleArea>
-        <BackButton onClick={() => router.back()}>목록으로</BackButton>
+        <BackButton onClick={() => router.push('/manager/lectures')}>목록으로</BackButton>
       </Header>
 
       <ContentWrapper>
@@ -320,7 +321,10 @@ export default function LectureDetailPage({ params }: { params: Promise<{ id: st
             
             {/* 1. 강의 상세 정보 */}
             <Section ref={sectionRefs.info}>
-              <SectionTitle>강의 상세 정보</SectionTitle>
+              <SectionTitle>
+                강의 상세 정보
+                <EditButton onClick={() => router.push(`/manager/lectures/${id}/edit`)}>✎ 수정하기</EditButton>
+              </SectionTitle>
               <DetailRow><DetailLabel>강의 제목</DetailLabel><DetailValue style={{ fontSize: '18px', fontWeight: 700 }}>{lecture.title}</DetailValue></DetailRow>
               <DetailRow><DetailLabel>강의 유형</DetailLabel><DetailValue>{getLecType(lecture.type)}</DetailValue></DetailRow>
               <DetailRow><DetailLabel>강의 구분</DetailLabel><DetailValue>{lecture.category}</DetailValue></DetailRow>
@@ -414,7 +418,7 @@ export default function LectureDetailPage({ params }: { params: Promise<{ id: st
           </ScrollArea>
 
           <FixedBottomBar>
-            <Button type="button" onClick={() => router.back()} $variant="secondary">취소</Button>
+            <Button type="button" onClick={() => router.push('/manager/lectures')} $variant="secondary">취소</Button>
             <Button type="button" onClick={handleSaveChanges} $variant="primary" disabled={isSubmitting}>
               {isSubmitting ? '저장 중...' : '변경사항 저장'}
             </Button>

@@ -166,6 +166,7 @@ export default function InstructorLectureNewPage() {
   return (
     <LectureForm 
       where='new'
+      onBack={() => router.push('/manager/lectures')}
       onSubmit={handleSubmit}
       isSubmitting={isSubmitting}
     />
