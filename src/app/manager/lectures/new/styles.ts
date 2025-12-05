@@ -2,8 +2,6 @@
 
 import styled from 'styled-components';
 
-// --- 1. Styled Components (설정 페이지 레이아웃) ---
-
 export const PageContainer = styled.div`
   width: 100%;
   height: calc(100vh - 80px); /* 상단 네비바 높이(80px 가정) 제외 */
@@ -54,103 +52,6 @@ export const ScrollArea = styled.div`
   padding: 0 40px;
 `;
 
-// [수정] 폼 레이아웃 (중앙 정렬 제거, 꽉 채우기)
-export const FormLayout = styled.form`
-  /* max-width: 1000px; // 제거 */
-  /* margin: 0 auto; // 제거 */
-  
-  /* 하단 스크롤 여유 공간 */
-  padding-bottom: 60px; 
-`;
-
-// [핵심] 좌우 분리 Row
-// [수정] 좌우 분리 Row
-// [수정] 좌우 분리 Row
-export const FormRow = styled.div`
-  display: grid;
-  /* [수정] 좌측 라벨 너비를 220px에서 180px로 줄여 더 넓은 입력창 확보 */
-  grid-template-columns: 180px 1fr; 
-  align-items: stretch;
-  border-bottom: 1px solid #e5e7eb;
-
-  &:first-of-type {
-    border-top: 1px solid #e5e7eb;
-  }
-`;
-
-// [핵심] 좌측 라벨
-// [수정] 좌측 라벨
-export const FormLabel = styled.div`
-  font-size: 15px;
-  font-weight: 700;
-  color: #374151;
-  
-  /* 1. 요청하신 배경색 추가 */
-  background-color: #f9fafb; 
-  /* 2. 내부 여백 추가 */
-  padding: 24px;
-  /* 3. 우측 구분선 추가 */
-  border-right: 1px solid #e5e7eb;
-
-  span.required { color: #e11d48; margin-left: 2px; }
-  p { font-size: 13px; color: #6b7280; font-weight: 400; margin-top: 6px; }
-`;
-
-// [핵심] 우측 입력창 영역
-// [수정] 우측 입력창 영역
-export const InputArea = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  width: 100%;
-  
-  /* 1. 라벨과 동일한 패딩 적용 */
-  padding: 24px;
-`;
-
-// 입력 필드 (스타일 정리)
-// [색상 변경] Focus #3478F6
-export const Input = styled.input`
-  padding: 12px 14px; font-size: 15px; border: 1px solid #d1d5db; border-radius: 8px;
-  width: 100%; transition: all 0.2s;
-  &:focus { outline: none; border-color: #3478F6; box-shadow: 0 0 0 3px rgba(52, 120, 246, 0.1); }
-`;
-
-// [색상 변경] Focus #3478F6
-export const TextArea = styled.textarea`
-  padding: 12px 14px; font-size: 15px; border: 1px solid #d1d5db; border-radius: 8px;
-  min-height: 200px; resize: vertical; line-height: 1.6; font-family: inherit;
-  &:focus { outline: none; border-color: #3478F6; box-shadow: 0 0 0 3px rgba(52, 120, 246, 0.1); }
-`;
-
-// [색상 변경] Focus #3478F6
-export const Select = styled.select`
-  padding: 12px 14px; font-size: 15px; border: 1px solid #d1d5db; border-radius: 8px;
-  background-color: #fff; width: 100%;
-  &:focus { outline: none; border-color: #3478F6; }
-`;
-
-export const Row = styled.div`
-  display: flex; gap: 12px; align-items: center;
-  > div { flex: 1; } 
-  > span { color: #9ca3af; margin: 0 4px; }
-`;
-
-export const InputWrapper = styled.div`
-  position: relative; display: flex; align-items: center; width: 100%;
-  .unit { position: absolute; right: 12px; color: #6b7280; font-size: 13px; }
-  input[data-has-unit="true"] { padding-right: 40px; }
-`;
-
-// [색상 변경] #3478F6, #EFF6FF
-export const FileLabel = styled.label`
-  display: flex; align-items: center; justify-content: center; gap: 8px;
-  padding: 16px; background-color: #f9fafb; border: 2px dashed #d1d5db;
-  border-radius: 8px; cursor: pointer; color: #6b7280; font-size: 13px; transition: all 0.2s;
-  &:hover { border-color: #3478F6; color: #3478F6; background-color: #EFF6FF; }
-  .icon { font-size: 20px; }
-`;
-
 // 하단 고정 버튼바
 export const FixedBottomBar = styled.div`
   flex-shrink: 0;
@@ -171,64 +72,3 @@ export const Button = styled.button<{ $variant?: 'primary' | 'secondary' }>`
   `}
   &:disabled { opacity: 0.6; cursor: not-allowed; }
 `;
-
-// ... (기존 코드 유지)
-
-// [신규] 스케줄 입력 행 (날짜 - 시작 - 종료 - 삭제버튼)
-export const ScheduleRow = styled.div`
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  margin-bottom: 12px;
-  
-  /* 모바일 등 좁은 화면 대응 */
-  @media (max-width: 768px) {
-    flex-wrap: wrap;
-  }
-`;
-
-// [신규] 스케줄 추가 버튼 (Dashed Border)
-export const AddScheduleButton = styled.button`
-  width: 100%;
-  padding: 12px;
-  border: 1px dashed #d1d5db;
-  border-radius: 8px;
-  background-color: #f9fafb;
-  color: #6b7280;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-
-  &:hover {
-    background-color: #EFF6FF;
-    border-color: #3478F6;
-    color: #3478F6;
-  }
-`;
-
-// [신규] 삭제 버튼 (X 아이콘 등)
-export const DeleteButton = styled.button`
-  width: 36px;
-  height: 36px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: white;
-  border: 1px solid #e5e7eb;
-  border-radius: 6px;
-  color: #ef4444; /* Red */
-  cursor: pointer;
-  flex-shrink: 0;
-  
-  &:hover {
-    background-color: #fef2f2;
-    border-color: #fca5a5;
-  }
-`;
-
-// ... (나머지 기존 코드 유지)
