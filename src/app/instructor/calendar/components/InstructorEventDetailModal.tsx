@@ -1,52 +1,88 @@
 // src/app/instructor/dashboard/components/InstructorEventDetailModal.tsx
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { createPortal } from 'react-dom';
-import styled, { keyframes } from 'styled-components';
-import type { InstructorEventItem } from '../types';
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
+import styled, { keyframes } from "styled-components";
+import type { InstructorEventItem } from "../types";
 
 // --- Icons ---
 const CloseIcon = () => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <line x1="18" y1="6" x2="6" y2="18"></line>
-    <line x1="6" y1="6" x2="18" y2="18"></line>
+  <svg
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2">
+    <line x1="18" y1="6" x2="6" y2="18" />
+    <line x1="6" y1="6" x2="18" y2="18" />
   </svg>
 );
+
 const MapPinIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
-    <circle cx="12" cy="10" r="3"></circle>
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2">
+    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+    <circle cx="12" cy="10" r="3" />
   </svg>
 );
+
 const FileTextIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-    <polyline points="14 2 14 8 20 8"></polyline>
-    <line x1="16" y1="13" x2="8" y2="13"></line>
-    <line x1="16" y1="17" x2="8" y2="17"></line>
-    <polyline points="10 9 9 9 8 9"></polyline>
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2">
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+    <polyline points="14 2 14 8 20 8" />
+    <line x1="16" y1="13" x2="8" y2="13" />
+    <line x1="16" y1="17" x2="8" y2="17" />
+    <polyline points="10 9 9 9 8 9" />
   </svg>
 );
+
 const UsersIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-    <circle cx="9" cy="7" r="4"></circle>
-    <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-    <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2">
+    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+    <circle cx="9" cy="7" r="4" />
+    <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
   </svg>
 );
+
 const ClockIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <circle cx="12" cy="12" r="10"></circle>
-    <polyline points="12 6 12 12 16 14"></polyline>
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2">
+    <circle cx="12" cy="12" r="10" />
+    <polyline points="12 6 12 12 16 14" />
   </svg>
 );
 
 // --- Animations ---
 const fadeIn = keyframes`
-  from { opacity: 0; } to { opacity: 1; }
+  from { opacity: 0; }
+  to { opacity: 1; }
 `;
+
 const slideUp = keyframes`
   from { transform: translateY(20px); opacity: 0; }
   to { transform: translateY(0); opacity: 1; }
@@ -57,7 +93,7 @@ const Backdrop = styled.div`
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(4px); /* 배경 흐림 효과 */
+  backdrop-filter: blur(4px);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -146,6 +182,12 @@ const TimeBadge = styled.div`
   }
 `;
 
+const InfoGrid = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+`;
+
 const Section = styled.div`
   display: flex;
   flex-direction: column;
@@ -190,19 +232,20 @@ const InstructorCard = styled.div<{ $isMain?: boolean }>`
   justify-content: space-between;
   padding: 12px 16px;
   border-radius: 10px;
-  background: ${(props) => (props.$isMain ? '#eff6ff' : '#f8fafc')};
-  border: 1px solid ${(props) => (props.$isMain ? '#dbeafe' : '#f1f5f9')};
+  background: ${(props) => (props.$isMain ? "#eff6ff" : "#f8fafc")};
+  border: 1px solid ${(props) => (props.$isMain ? "#dbeafe" : "#f1f5f9")};
 
   .left {
     display: flex;
     align-items: center;
     gap: 12px;
   }
+
   .avatar {
     width: 32px;
     height: 32px;
     border-radius: 50%;
-    background: ${(props) => (props.$isMain ? '#3b82f6' : '#cbd5e1')};
+    background: ${(props) => (props.$isMain ? "#3b82f6" : "#cbd5e1")};
     color: #fff;
     display: flex;
     align-items: center;
@@ -210,20 +253,24 @@ const InstructorCard = styled.div<{ $isMain?: boolean }>`
     font-size: 0.8rem;
     font-weight: 700;
   }
+
   .info {
     display: flex;
     flex-direction: column;
+
     .name {
       font-weight: 700;
-      color: ${(props) => (props.$isMain ? '#1e293b' : '#475569')};
+      color: ${(props) => (props.$isMain ? "#1e293b" : "#475569")};
       font-size: 0.95rem;
     }
+
     .role {
       font-size: 0.75rem;
-      color: ${(props) => (props.$isMain ? '#3b82f6' : '#94a3b8')};
+      color: ${(props) => (props.$isMain ? "#3b82f6" : "#94a3b8")};
       font-weight: 600;
     }
   }
+
   .phone {
     font-size: 0.85rem;
     color: #64748b;
@@ -231,6 +278,23 @@ const InstructorCard = styled.div<{ $isMain?: boolean }>`
   }
 `;
 
+const EmptyMessage = styled(ContentBox)`
+  text-align: center;
+  color: #999;
+`;
+
+// --- Helper Functions ---
+const formatDate = (date: Date) => {
+  return `${date.getFullYear()}년 ${date.getMonth() + 1}월 ${date.getDate()}일`;
+};
+
+const formatTime = (date: Date) => {
+  return `${String(date.getHours()).padStart(2, "0")}:${String(
+    date.getMinutes()
+  ).padStart(2, "0")}`;
+};
+
+// --- Component ---
 type Props = {
   event: InstructorEventItem;
   onClose: () => void;
@@ -238,6 +302,7 @@ type Props = {
 
 export default function InstructorEventDetailModal({ event, onClose }: Props) {
   const [mounted, setMounted] = useState(false);
+
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -247,29 +312,21 @@ export default function InstructorEventDetailModal({ event, onClose }: Props) {
   const startDate = new Date(event.start);
   const endDate = new Date(event.end);
 
-  const dateStr = `${startDate.getFullYear()}년 ${
-    startDate.getMonth() + 1
-  }월 ${startDate.getDate()}일`;
-  const timeStr = `${String(startDate.getHours()).padStart(2, '0')}:${String(
-    startDate.getMinutes(),
-  ).padStart(2, '0')} ~ ${String(endDate.getHours()).padStart(2, '0')}:${String(
-    endDate.getMinutes(),
-  ).padStart(2, '0')}`;
+  const mainInstructor = event.instructors.find((i) => i.role === "MAIN");
+  const assistInstructors = event.instructors.filter(
+    (i) => i.role === "ASSISTANT"
+  );
 
-  const mainInstructor = event.instructors.find((i) => i.role === 'MAIN');
-  const assistInstructors = event.instructors.filter((i) => i.role === 'ASSISTANT');
-
-  // 확정대기(PENDING), 확정(CONFIRMED) 상태에서만 강사 정보 노출
-  const showInstructorInfo =
-    event.instructorStatus === 'PENDING' || event.instructorStatus === 'CONFIRMED';
+  const canShowInstructorInfo =
+    event.instructorStatus === "PENDING" ||
+    event.instructorStatus === "CONFIRMED";
 
   return createPortal(
     <Backdrop onClick={onClose}>
       <ModalBox onClick={(e) => e.stopPropagation()}>
         <Header>
           <TitleArea>
-            {/* 카테고리 정보가 있다면 표시, 없으면 기본값 */}
-            <Badge>{event.category || '강의'}</Badge>
+            <Badge>{event.category || "강의"}</Badge>
             <h2>{event.title}</h2>
           </TitleArea>
           <CloseBtn onClick={onClose}>
@@ -279,36 +336,37 @@ export default function InstructorEventDetailModal({ event, onClose }: Props) {
 
         <TimeBadge>
           <ClockIcon />
-          {dateStr} &nbsp;|&nbsp; {timeStr}
+          {formatDate(startDate)} &nbsp;|&nbsp; {formatTime(startDate)} ~{" "}
+          {formatTime(endDate)}
         </TimeBadge>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+        <InfoGrid>
           <Section>
             <SectionLabel>
               <MapPinIcon /> 강의 장소
             </SectionLabel>
-            <ContentBox>{event.location || '장소 미정'}</ContentBox>
+            <ContentBox>{event.location || "장소 미정"}</ContentBox>
           </Section>
+
           <Section>
             <SectionLabel>
               <FileTextIcon /> 콘텐츠
             </SectionLabel>
-            <ContentBox>{event.content || '-'}</ContentBox>
+            <ContentBox>{event.content || "-"}</ContentBox>
           </Section>
-        </div>
+        </InfoGrid>
 
         <Section>
           <SectionLabel>
             <UsersIcon /> 담당 강사
           </SectionLabel>
 
-          {showInstructorInfo ? (
+          {canShowInstructorInfo ? (
             <InstructorList>
-              {/* 주강사 */}
               {mainInstructor ? (
                 <InstructorCard $isMain>
                   <div className="left">
-                    <div className="avatar">{mainInstructor.name.slice(0, 1)}</div>
+                    <div className="avatar">{mainInstructor.name[0]}</div>
                     <div className="info">
                       <span className="name">{mainInstructor.name} 강사님</span>
                       <span className="role">주 도로쌤</span>
@@ -317,16 +375,13 @@ export default function InstructorEventDetailModal({ event, onClose }: Props) {
                   <div className="phone">{mainInstructor.phone}</div>
                 </InstructorCard>
               ) : (
-                <ContentBox style={{ textAlign: 'center', color: '#999' }}>
-                  주강사 배정 전
-                </ContentBox>
+                <EmptyMessage>주강사 배정 전</EmptyMessage>
               )}
 
-              {/* 보조강사 */}
               {assistInstructors.map((assist, index) => (
                 <InstructorCard key={index}>
                   <div className="left">
-                    <div className="avatar">{assist.name.slice(0, 1)}</div>
+                    <div className="avatar">{assist.name[0]}</div>
                     <div className="info">
                       <span className="name">{assist.name} 강사님</span>
                       <span className="role">보조 도로쌤</span>
@@ -337,14 +392,13 @@ export default function InstructorEventDetailModal({ event, onClose }: Props) {
               ))}
             </InstructorList>
           ) : (
-            // 신청 상태(APPLIED)에서는 이름/연락처 대신 안내 문구만 표시
-            <ContentBox style={{ textAlign: 'center', color: '#999' }}>
+            <EmptyMessage>
               담당 강사는 배정이 완료된 후 확인할 수 있습니다.
-            </ContentBox>
+            </EmptyMessage>
           )}
         </Section>
       </ModalBox>
     </Backdrop>,
-    document.body,
+    document.body
   );
 }

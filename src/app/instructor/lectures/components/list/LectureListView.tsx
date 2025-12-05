@@ -5,11 +5,7 @@ import Pagination from "./Pagination";
 import LectureListTable, { LectureListRow } from "./LectureListTable";
 import InstructorEventDetailModal from "../InstructorEventDetailModal";
 // 💡 LectureDetail 타입과 사용되는 다른 타입들을 임포트하도록 수정
-import type {
-  LectureDetail,
-  LectureType,
-  LectureApiStatus,
-} from "../../types"; 
+import type { LectureDetail, LectureType, LectureApiStatus } from "../../types";
 
 const PAGE_SIZE = 10;
 
@@ -23,7 +19,9 @@ export default function LectureListView({ lectures }: Props) {
   const [page, setPage] = useState(1);
 
   // 🔹 모달 상태: 이제 id만 관리
-  const [selectedLectureId, setSelectedLectureId] = useState<number | null>(null);
+  const [selectedLectureId, setSelectedLectureId] = useState<number | null>(
+    null
+  );
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   // API 데이터 → 테이블 UI용으로 변환
@@ -35,7 +33,7 @@ export default function LectureListView({ lectures }: Props) {
     division: e.category ?? "", // e.category는 LectureDetail.category
     title: e.title ?? "", // e.title은 LectureDetail.title
     applicationPeriod: "~ " + formatDate(e.end_date), // e.end_date는 LectureDetail.end_date
-    applicationLabel: "-",
+    applicationLabel: convertApplicationStatus(e.my_application_status ?? null),
     statusLabel: convertStatus(e.status), // e.status는 LectureDetail.status (LectureApiStatus)
   }));
 
@@ -70,16 +68,9 @@ export default function LectureListView({ lectures }: Props) {
         />
       </div>
 
-      <LectureListTable
-        rows={pageRows}
-        onRowClick={handleRowClick}
-      />
+      <LectureListTable rows={pageRows} onRowClick={handleRowClick} />
 
-      <Pagination
-        page={page}
-        totalPages={totalPages}
-        onPageChange={setPage}
-      />
+      <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
 
       {/* 🔹 모달: lectureId만 넘김 (디테일은 모달 내부에서 fetch) */}
       <InstructorEventDetailModal
@@ -113,6 +104,14 @@ function convertStatus(status: LectureApiStatus) {
     COMPETITION: "배정 완료",
   };
   return map[status] ?? "상태 없음";
+}
+
+function convertApplicationStatus(status: string | null): string {
+  if (status === null) return "신청 전";
+  if (status === "rejected") return "거절됨";
+  if (status === "assigned") return "배정됨";
+  if (status === "pending") return "배정 대기";
+  return "-";
 }
 
 function formatDate(date: string | null | undefined) {

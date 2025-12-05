@@ -28,7 +28,7 @@ export default function LectureListTable({ rows, onRowClick }: Props) {
             <Th style={{ width: "120px" }}>강의 구분</Th>
             <Th>강의명</Th>
             <Th style={{ width: "140px" }}>신청기간</Th>
-            <Th style={{ width: "100px" }}>신청여부</Th>
+            <Th style={{ width: "100px" }}>신청현황 (주/보조)</Th>
             <Th style={{ width: "100px" }}>상태</Th>
           </tr>
         </thead>
@@ -41,10 +41,7 @@ export default function LectureListTable({ rows, onRowClick }: Props) {
             </tr>
           ) : (
             rows.map((row) => (
-              <TableRow 
-                key={row.id} 
-                onClick={() => onRowClick?.(row)}
-              >
+              <TableRow key={row.id} onClick={() => onRowClick?.(row)}>
                 <Td>{row.no}</Td>
                 <Td>{row.type}</Td>
                 <Td>{row.division}</Td>

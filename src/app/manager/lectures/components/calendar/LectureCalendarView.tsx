@@ -1,20 +1,26 @@
 // LectureCalendarView.tsx
-import React, { useState, useMemo } from 'react';
-import styled from 'styled-components';
+import React, { useState, useMemo } from "react";
+import styled from "styled-components";
 import { useRouter } from "next/navigation";
-import { Lecture, Schedule, CalendarEvent } from '../../types';
-import InstructorStatusFilterBar, { InstructorFilter } from './InstructorStatusFilterBar';
-import InstructorMonthlyCalendar from './InstructorMonthlyCalendar';
+import { Lecture, Schedule, CalendarEvent } from "../../types";
+import InstructorStatusFilterBar, {
+  InstructorFilter,
+} from "./InstructorStatusFilterBar";
+import InstructorMonthlyCalendar from "./InstructorMonthlyCalendar";
 
 interface LectureCalendarViewProps {
   lectures: Lecture[];
 }
 
-const LectureCalendarView: React.FC<LectureCalendarViewProps> = ({ lectures }) => {
+const LectureCalendarView: React.FC<LectureCalendarViewProps> = ({
+  lectures,
+}) => {
   const router = useRouter();
-  const [filter, setFilter] = useState<InstructorFilter>('ALL');
+  const [filter, setFilter] = useState<InstructorFilter>("ALL");
   const [selectedLecture, setSelectedLecture] = useState<Lecture | null>(null);
-  const [selectedSchedule, setSelectedSchedule] = useState<Schedule | null>(null);
+  const [selectedSchedule, setSelectedSchedule] = useState<Schedule | null>(
+    null
+  );
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   // 필터링된 강의를 CalendarEvent 형식으로 변환
@@ -25,11 +31,11 @@ const LectureCalendarView: React.FC<LectureCalendarViewProps> = ({ lectures }) =
       const status = lecture.status; // 'RECRUITING', 'COMPLETED' 등
 
       // 🔎 필터 적용
-      if (filter === 'RECRUITING' && status !== 'RECRUITING') {
+      if (filter === "RECRUITING" && status !== "RECRUITING") {
         return;
       }
       // "모집 완료"는 일단 "RECRUITING이 아닌 강의"로 간주
-      if (filter === 'COMPLETED' && status === 'RECRUITING') {
+      if (filter === "COMPLETED" && status === "RECRUITING") {
         return;
       }
 
@@ -60,7 +66,10 @@ const LectureCalendarView: React.FC<LectureCalendarViewProps> = ({ lectures }) =
         onChangeFilter={setFilter}
       />
 
-      <InstructorMonthlyCalendar events={calendarEvents} onEventClick={handleEventClick} />
+      <InstructorMonthlyCalendar
+        events={calendarEvents}
+        onEventClick={handleEventClick}
+      />
     </Container>
   );
 };
