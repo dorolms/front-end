@@ -43,16 +43,21 @@ export default function InstructorClientPage() {
   };
 
   const handleEventClick = async (event: InstructorEventItem) => {
+    // 1. 모달 즉시 오픈
+    setSelectedEvent(event);
+
+    // 2. 상세 정보 가져오기
     const detail = await API.fetchLectureDetail(event.id);
+
+    // 3. 기존 정보 + 상세 정보 합치기
     if (detail) {
-      setSelectedEvent({
-        ...event,
-        content: detail.content || event.content,
-        location: detail.location || event.location,
-        instructors: detail.instructors || event.instructors,
+      setSelectedEvent((prev) => {
+        if (!prev || prev.id !== event.id) return prev;
+        return {
+          ...prev,
+          ...detail, // schedules, fee, note, target 등이 병합됨
+        };
       });
-    } else {
-      setSelectedEvent(event);
     }
   };
 
@@ -73,6 +78,7 @@ export default function InstructorClientPage() {
             <LatestNoticesPanel notices={notices} />
           </LeftPanel>
           <RightPanel>
+            {/* 다음 강의 위젯 */}
             <NextLectureWidget events={events} />
           </RightPanel>
         </CardRow>

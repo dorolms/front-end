@@ -1,7 +1,7 @@
-// src/app/manager/dashboard/components/RecruitmentStatusWidget.tsx
 'use client';
 
 import styled from 'styled-components';
+import { useRouter } from 'next/navigation';
 import type { RecruitmentItem } from '../types';
 
 // --- Icons ---
@@ -15,7 +15,6 @@ const InboxIcon = () => (
   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>
 );
 
-// --- Styled Components ---
 
 const Widget = styled.div`
   width: 100%;
@@ -177,6 +176,8 @@ type Props = {
 };
 
 export default function RecruitmentStatusWidget({ items }: Props) {
+  const router = useRouter(); // 라우터
+
   return (
     <Widget>
       <Header>
@@ -193,7 +194,11 @@ export default function RecruitmentStatusWidget({ items }: Props) {
           </EmptyState>
         ) : (
           items.map((item) => (
-            <ListRow key={item.id}>
+            <ListRow
+              key={item.id}
+              // 클릭 시 해당 강의 배정 페이지로 이동
+              onClick={() => router.push(`/manager/lectures/${item.id}/assign`)}
+            >
               <Info>
                 <div className="title" title={item.title}>{item.title}</div>
                 <div className="meta">
