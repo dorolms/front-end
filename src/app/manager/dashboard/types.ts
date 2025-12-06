@@ -25,12 +25,29 @@ export type ManagerEventItem = {
   end: string;   // ISO String
   category: Category;
   status: LectureStatus;
+
+  // [기존 필드]
   location?: string;
-  content?: string; // 강의 내용
-  instructors: InstructorProfile[]; // 배정된 강사 목록
+  content?: string;
+  instructors: InstructorProfile[];
+
+  // [NEW] 상세 정보 필드 추가
+  target?: string;         // 대상
+  capacity?: string;       // 정원
+  fee?: string;            // 강사료
+  note?: string;           // 참고사항
+  attachment_url?: string; // 참고자료
+
+  // 다중 일정
+  schedules?: Array<{
+    id: number;
+    date: string;
+    start_time: string;
+    end_time: string;
+  }>;
 };
 
-// ... 나머지 RecruitmentItem, DashboardNotice 등은 기존과 동일
+// ... 나머지 RecruitmentItem, DashboardNotice 등은 기존 유지
 export type RecruitmentItem = {
   id: number;
   title: string;
@@ -44,4 +61,6 @@ export type DashboardNotice = {
   id: number;
   title: string;
   createdAt: string;
+  author: string;
+  content: string;
 };
