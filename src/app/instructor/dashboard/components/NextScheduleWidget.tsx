@@ -1,8 +1,10 @@
 // src/app/instructor/dashboard/components/NextLectureWidget.tsx
 'use client';
 
+import { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import type { InstructorEventItem } from '../types';
+import { fetchLectureDetail } from '../api';
 
 // --- Icons (기존 동일) ---
 const CalendarIcon = () => (
@@ -22,24 +24,21 @@ const BookIcon = () => (
 );
 
 // --- Styled Components ---
-
 const Panel = styled.div`
   width: 100%;
   height: 100%;
   border-radius: 16px;
   background: #ffffff;
-  /* 그림자를 조금 더 고급스럽게 퍼지게 수정 */
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
   border: 1px solid #f1f3f5;
   box-sizing: border-box;
-  padding: 22px; /* 패딩 살짝 여유 */
+  padding: 22px;
   display: flex;
   flex-direction: column;
-  gap: 16px; /* 간격 조정 */
+  gap: 16px;
   overflow: hidden;
   position: relative;
 
-  /* 상단에 얇은 컬러 바 포인트 (선택 사항 - 브랜드 컬러) */
   &::before {
     content: '';
     position: absolute;
@@ -55,7 +54,7 @@ const Header = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-top: 4px; /* 상단 컬러 바 때문에 살짝 띄움 */
+  margin-top: 4px;
 `;
 
 const TitleArea = styled.div`
@@ -85,14 +84,11 @@ const DdayBadge = styled.div<{ $type?: 'today' | 'future' | 'past' }>`
   `}
 `;
 
-// [꾸밈] 왼쪽 테두리 포인트 추가 + 배경색 미세 조정
 const DateHighlight = styled.div`
   background: #f8fafc;
   border-radius: 8px;
   padding: 14px 16px;
   border: 1px solid #e2e8f0;
-
-  /* 왼쪽 포인트 컬러 라인 */
   border-left: 4px solid #3b82f6;
 
   display: flex;
@@ -108,8 +104,6 @@ const DateText = styled.div`
   display: flex;
   align-items: center;
   gap: 8px;
-
-  /* 날짜 아이콘 색상 포인트 */
   svg { color: #3b82f6; }
 `;
 
@@ -124,7 +118,6 @@ const TimeText = styled.div`
   padding: 4px 8px;
   border-radius: 6px;
   border: 1px solid #f1f5f9;
-
   svg { color: #94a3b8; }
 `;
 
@@ -143,28 +136,21 @@ const InfoItem = styled.div`
   align-items: center;
   gap: 12px;
 
-  /* [꾸밈] 아이콘 박스를 브랜드 컬러(블루) 틴트로 변경 */
   .icon-box {
-    width: 36px; /* 아이콘 박스 살짝 키움 */
+    width: 36px;
     height: 36px;
-    border-radius: 10px; /* 더 둥글게 */
-
-    /* 블루 계열의 아주 연한 배경 */
+    border-radius: 10px;
     background: #eff6ff;
-
     display: flex;
     align-items: center;
     justify-content: center;
-
-    /* 아이콘 색상을 진한 블루로 */
     color: #3b82f6;
-
     flex-shrink: 0;
     transition: background 0.2s;
   }
 
   &:hover .icon-box {
-    background: #dbeafe; /* 호버 시 조금 더 진하게 */
+    background: #dbeafe;
   }
 
   .content {
@@ -200,41 +186,73 @@ const EmptyState = styled.div`
   font-size: 0.9rem;
   background: #f9fafb;
   border-radius: 12px;
-  border: 1px dashed #e5e7eb; /* 빈 상태 점선 테두리 */
+  border: 1px dashed #e5e7eb;
 `;
-
 
 type Props = {
   events: InstructorEventItem[];
 };
 
 export default function NextLectureWidget({ events }: Props) {
+  // [수정 3] 담당자 이름을 저장할 state 추가
+  const [managerName, setManagerName] = useState<string>('-');
   const now = new Date();
 
+  // 기존 로직: 가장 빠른 확정 강의 찾기
   const confirmed = events
     .filter((e) => e.instructorStatus === 'CONFIRMED')
     .map((e) => ({ event: e, start: new Date(e.start), end: new Date(e.end) }))
     .filter(({ start }) => start.getTime() >= now.getTime())
     .sort((a, b) => a.start.getTime() - b.start.getTime());
 
-  if (confirmed.length === 0) {
+  // 강의가 없을 때 early return 처리 (Hook 호출 규칙을 지키기 위해 조건부 렌더링 위치 조정 필요하나,
+  // 여기서는 간단히 null 체크로 해결하거나, useEffect 내부에서 처리해야 함)
+  const main = confirmed.length > 0 ? confirmed[0] : null;
+
+  // main 강의가 바뀔 때마다 상세 정보를 조회하여 담당자 업데이트
+  useEffect(() => {
+    if (!main) {
+      setManagerName('-');
+      return;
+    }
+
+    const loadManagerInfo = async () => {
+      try {
+        // 이미 데이터가 있다면(혹시 나중에 캐싱된다면) 사용하고, 없다면 API 호출
+        // 현재 구조상 무조건 API 호출 필요
+        const detail = await fetchLectureDetail(main.event.id);
+        if (detail && detail.instructors) {
+          // 역할이 MANAGER인 사람 찾기
+          const manager = detail.instructors.find((i: any) => i.role === 'MANAGER');
+          setManagerName(manager ? manager.name : '-');
+        } else {
+          setManagerName('-');
+        }
+      } catch (e) {
+        setManagerName('-');
+      }
+    };
+
+    loadManagerInfo();
+  }, [main?.event.id]); // event ID가 바뀔 때만 실행
+
+  // 강의가 없을 경우 렌더링
+  if (!main) {
     return (
       <Panel>
         <Header>
           <TitleArea>
-             {/* 서브텍스트 제거됨 */}
             <h3>다음 강의</h3>
           </TitleArea>
         </Header>
         <EmptyState>
-          <CalendarIcon /> {/* 빈 상태 아이콘 추가 */}
+          <CalendarIcon />
           <span>예정된 확정 강의가 없습니다.</span>
         </EmptyState>
       </Panel>
     );
   }
 
-  const main = confirmed[0];
   const start = main.start;
   const end = main.end;
 
@@ -252,8 +270,6 @@ export default function NextLectureWidget({ events }: Props) {
   const weekdays = ['일', '월', '화', '수', '목', '금', '토'];
   const datePretty = `${start.getMonth() + 1}/${start.getDate()}(${weekdays[start.getDay()]})`;
   const timeText = `${String(start.getHours()).padStart(2, '0')}:${String(start.getMinutes()).padStart(2, '0')}~${String(end.getHours()).padStart(2, '0')}:${String(end.getMinutes()).padStart(2, '0')}`;
-
-  const mainInstructor = main.event.instructors[0];
 
   return (
     <Panel>
@@ -296,9 +312,7 @@ export default function NextLectureWidget({ events }: Props) {
           <div className="icon-box"><UserIcon /></div>
           <div className="content">
             <span>담당자</span>
-            <strong>
-              {mainInstructor ? mainInstructor.name : '-'}
-            </strong>
+            <strong>{managerName}</strong>
           </div>
         </InfoItem>
       </InfoList>
