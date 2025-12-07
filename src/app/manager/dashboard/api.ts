@@ -1,7 +1,12 @@
 // src/app/manager/dashboard/api.ts
 
 import type { Notice } from '../../manager/notices/types';
-import type { ManagerEventItem, Category, LectureStatus, RecruitmentItem } from './types';
+import type {
+  ManagerEventItem,
+  Category,
+  LectureStatus,
+  RecruitmentItem,
+} from './types';
 
 const BASE_URL = 'http://127.0.0.1:8000';
 
@@ -14,6 +19,7 @@ type BackendLectureList = {
   type: string;
   category: string;
   status: string;
+  // 목록에 있는 지원자 수 정보
   applicant_count_main?: number;
   applicant_count_assist?: number;
   schedules: { id: number; date: string; start_time: string; end_time: string }[];
@@ -26,8 +32,6 @@ type BackendLectureDetail = BackendLectureList & {
   location: string;
   content: string;
   confirmed_instructors: string[];
-
-  // 추가된 상세 필드
   target: string;
   capacity: string;
   fee: string;
@@ -39,9 +43,10 @@ type BackendLectureDetail = BackendLectureList & {
   applicant_count_main: number;
   applicant_count_assist: number;
 
+  // 상세 정보 내 지원 현황 (배정 확인용)
   applications?: {
     id: number;
-    assignment_status: string;
+    assignment_status: string; // 'assigned', 'pending' ...
     is_notification_read: boolean;
   }[];
 };
@@ -55,6 +60,14 @@ const mapCategory = (type: string): Category => {
     return t as Category;
   }
   return 'GENERAL';
+};
+
+const mapStatus = (status: string): LectureStatus => {
+  const s = status?.toUpperCase();
+  if (['RECRUITING', 'ALLOCATING', 'CONFIRMED', 'COMPLETED'].includes(s)) {
+    return s as LectureStatus;
+  }
+  return 'RECRUITING';
 };
 
 const combineDateTime = (date: string, time: string) => {
@@ -81,43 +94,67 @@ const unwrapResponse = (json: any) => {
 };
 
 /* ─────────────────────────────────────────────────────────────
-   [API] 내가 담당하는 강의 목록 조회 (캘린더용)
+   [API 1] 내가 담당하는 강의 목록 조회 (캘린더용)
    ───────────────────────────────────────────────────────────── */
 export async function fetchMyManagedLectures(): Promise<ManagerEventItem[]> {
-  const url = `${BASE_URL}/api/lectures/lectures/`; // 매니저 필터링 적용된 엔드포인트라 가정
+  const url = `${BASE_URL}/api/lectures/lectures/`;
+
+  // 내 이름 가져오기
+  let myName = '';
+  if (typeof window !== 'undefined') {
+    myName = localStorage.getItem('userName') || '';
+  }
+  if (!myName) return [];
+
   try {
     const res = await fetch(url, { cache: 'no-store', headers: getHeaders() });
     if (!res.ok) return [];
 
     const json = await res.json();
-    let list: BackendLectureList[] = unwrapResponse(json);
+    let list: BackendLectureList[] = unwrapResponse(json) || [];
     if (!Array.isArray(list)) list = [];
 
-    // 목록에는 장소 정보가 없으므로 상세 조회를 통해 채워넣기 (Enrichment)
-    const enrichedList = await Promise.all(
+    // 상세 조회 + 내 담당 강의만 필터링 + 장소/내용/강사 정보 enrichment
+    const myLectures = await Promise.all(
       list.map(async (lecture) => {
         try {
-          // 상세 API 호출
-          const detailRes = await fetch(`${BASE_URL}/api/lectures/lectures/${lecture.id}/`, {
-            cache: 'no-store',
-            headers: getHeaders(),
-          });
-          if (detailRes.ok) {
-            const detailJson = await detailRes.json();
-            const detailData = unwrapResponse(detailJson);
-            // location, content, confirmed_instructors 등을 미리 확보
-            return {
-              ...lecture,
-              location: detailData.location || '',
-              content: detailData.content || '',
-              confirmed_instructors: detailData.confirmed_instructors || [],
-            };
+          const detailRes = await fetch(
+            `${BASE_URL}/api/lectures/lectures/${lecture.id}/`,
+            {
+              cache: 'no-store',
+              headers: getHeaders(),
+            }
+          );
+          if (!detailRes.ok) return null;
+
+          const detailJson = await detailRes.json();
+          const detailData: BackendLectureDetail = unwrapResponse(detailJson);
+
+          // 내 담당 강의인지 확인 (manager_name 기준)
+          if (detailData.manager_name?.trim() !== myName.trim()) {
+            return null;
           }
-          return lecture;
+
+          // location, content, confirmed_instructors 등을 미리 확보
+          return {
+            ...lecture,
+            location: detailData.location || '',
+            content: detailData.content || '',
+            confirmed_instructors: detailData.confirmed_instructors || [],
+            status: detailData.status || lecture.status,
+          };
         } catch {
-          return lecture;
+          return null;
         }
       })
+    );
+
+    const enrichedList = myLectures.filter(
+      (item): item is BackendLectureList & {
+        location: string;
+        content: string;
+        confirmed_instructors: string[];
+      } => item !== null
     );
 
     const events = enrichedList.flatMap((lecture: any) => {
@@ -142,12 +179,12 @@ export async function fetchMyManagedLectures(): Promise<ManagerEventItem[]> {
         id: `${lecture.id}-${schedule.id}`,
         title: lecture.title,
         content: lecture.content || '',
-        location: lecture.location || '장소 미정', // 상세 조회로 채워진 값
+        location: lecture.location || '장소 미정',
         start: combineDateTime(schedule.date, schedule.start_time),
         end: combineDateTime(schedule.date, schedule.end_time),
         category: mapCategory(lecture.type),
-        status: (lecture.status || 'RECRUITING') as LectureStatus,
-        instructors: instructors,
+        status: mapStatus(lecture.status),
+        instructors,
       }));
     });
 
@@ -159,7 +196,7 @@ export async function fetchMyManagedLectures(): Promise<ManagerEventItem[]> {
 }
 
 /* ─────────────────────────────────────────────────────────────
-   [API] 강의 상세 조회 (모달용)
+   [API 2] 강의 상세 조회 (모달용)
    ───────────────────────────────────────────────────────────── */
 export async function fetchLectureDetail(id: string) {
   const realId = id.split('-')[0];
@@ -181,7 +218,7 @@ export async function fetchLectureDetail(id: string) {
           instructors.push({
             name: match[1],
             phone: '', // 상세 API에서 전화번호를 주는지 확인 필요 (없으면 공란)
-            role: match[2].toUpperCase().includes('MAIN') ? 'MAIN' : 'ASSISTANT'
+            role: match[2].toUpperCase().includes('MAIN') ? 'MAIN' : 'ASSISTANT',
           });
         } else {
           instructors.push({ name: str, phone: '', role: 'ASSISTANT' });
@@ -189,15 +226,14 @@ export async function fetchLectureDetail(id: string) {
       });
     }
 
-    // [중요] 모달에 필요한 모든 상세 필드 반환
+    // 모달에 필요한 모든 상세 필드 반환
     return {
       title: data.title,
       content: data.content,
       location: data.location,
-      instructors: instructors,
+      instructors,
       status: data.status,
 
-      // 추가된 필드들
       target: data.target,
       capacity: data.capacity,
       fee: data.fee,
@@ -211,54 +247,159 @@ export async function fetchLectureDetail(id: string) {
 }
 
 /* ─────────────────────────────────────────────────────────────
-   [API] 모집 현황 (우측 하단 위젯용)
+   [API 3] 모집 현황 (우측 하단 위젯용)
    ───────────────────────────────────────────────────────────── */
 export async function fetchRecruitmentStatus(): Promise<RecruitmentItem[]> {
   const url = `${BASE_URL}/api/lectures/lectures/`;
+
+  // 내 이름 가져오기
+  let myName = '';
+  if (typeof window !== 'undefined') {
+    myName = localStorage.getItem('userName') || '';
+  }
+  if (!myName) return [];
+
   try {
     const res = await fetch(url, { cache: 'no-store', headers: getHeaders() });
     if (!res.ok) return [];
 
     const json = await res.json();
-    const list: BackendLectureList[] = unwrapResponse(json) || [];
+    let list: BackendLectureList[] = unwrapResponse(json) || [];
+    if (!Array.isArray(list)) list = [];
 
-    // 필터링: 모집중(RECRUITING) or 배정중(ALLOCATING)
-    const activeLectures = list.filter(l =>
-      l.status === 'RECRUITING' || l.status === 'ALLOCATING'
+    // 1. 내 강의 필터링 + 데이터 병합 (목록의 지원자 수를 상세에 덮어쓰기)
+    const myLectures = await Promise.all(
+      list.map(async (listLecture) => {
+        try {
+          const detailRes = await fetch(
+            `${BASE_URL}/api/lectures/lectures/${listLecture.id}/`,
+            {
+              cache: 'no-store',
+              headers: getHeaders(),
+            }
+          );
+          if (detailRes.ok) {
+            const detailJson = await detailRes.json();
+            const detail: BackendLectureDetail = unwrapResponse(detailJson);
+
+            // 내 담당 강의인지 확인
+            if (detail.manager_name?.trim() === myName.trim()) {
+              // 목록의 applicant_count 정보를 상세 객체에 병합
+              return {
+                ...detail,
+                applicant_count_main:
+                  listLecture.applicant_count_main ??
+                  detail.applicant_count_main ??
+                  0,
+                applicant_count_assist:
+                  listLecture.applicant_count_assist ??
+                  detail.applicant_count_assist ??
+                  0,
+              } as BackendLectureDetail;
+            }
+          }
+          return null;
+        } catch {
+          return null;
+        }
+      })
     );
 
-    // 날짜순 정렬 -> 상위 5개 등
-    activeLectures.sort((a, b) => {
-      const dateA = a.schedules?.[0]?.date || '9999-99-99';
-      const dateB = b.schedules?.[0]?.date || '9999-99-99';
-      return dateA.localeCompare(dateB);
-    });
+    const validLectures = myLectures.filter(
+      (item): item is BackendLectureDetail => item !== null
+    );
 
-    return activeLectures.map(l => {
-      const current = (l.applicant_count_main || 0) + (l.applicant_count_assist || 0);
-      // 목표 인원은 API에 없으면 임의값 or 추후 추가 필요 (여기선 0으로 처리)
-      const target = 0;
+    // 2. 전체 아이템 1차 가공 (상태별 데이터 생성)
+    const allProcessedItems = validLectures
+      .map((lecture) => {
+        const status = lecture.status?.toUpperCase();
+        if (!['RECRUITING', 'ALLOCATING'].includes(status)) return null;
 
-      // 날짜 포맷 (MM.DD)
-      const firstDate = l.schedules?.[0]?.date || '';
-      const dateStr = firstDate ? `${firstDate.substring(5, 7)}.${firstDate.substring(8, 10)}` : '미정';
+        // 날짜
+        let dateStr = '-';
+        let sortTime = 0;
+        if (lecture.schedules && lecture.schedules.length > 0) {
+          const d = new Date(lecture.schedules[0].date);
+          sortTime = d.getTime();
+          const mm = d.getMonth() + 1;
+          const dd = d.getDate();
+          const week = ['일', '월', '화', '수', '목', '금', '토'][d.getDay()];
+          dateStr = `${mm}.${dd}(${week})`;
+        }
 
-      return {
-        id: l.id,
-        title: l.title,
-        date: dateStr,
-        status: l.status as 'RECRUITING' | 'ALLOCATING',
-        currentCount: current,
-        targetCount: target,
-      };
-    });
-  } catch {
+        // 정원
+        const targetCount =
+          (lecture.recruitment_main || 0) + (lecture.recruitment_assist || 0);
+        let currentCount = 0;
+        let displayStatus: 'RECRUITING' | 'ALLOCATING' = 'RECRUITING';
+
+        if (status === 'RECRUITING') {
+          // [모집 중] 지원자 수 합계 (위에서 병합된 값 사용)
+          displayStatus = 'RECRUITING';
+          currentCount =
+            (lecture.applicant_count_main || 0) +
+            (lecture.applicant_count_assist || 0);
+        } else if (status === 'ALLOCATING') {
+          // [배정 중] 배정된 사람 중 '읽음' 수
+          displayStatus = 'ALLOCATING';
+          if (lecture.applications && Array.isArray(lecture.applications)) {
+            const confirmedAndRead = lecture.applications.filter(
+              (app) =>
+                app.assignment_status === 'assigned' &&
+                app.is_notification_read === true
+            );
+            currentCount = confirmedAndRead.length;
+          }
+
+          // 완료된 건(모두 읽음) 제외
+          if (currentCount >= targetCount && targetCount > 0) {
+            return null;
+          }
+        }
+
+        return {
+          id: lecture.id,
+          title: lecture.title,
+          date: dateStr,
+          status: displayStatus,
+          currentCount,
+          targetCount,
+          _sortTime: sortTime, // 정렬용 임시 필드
+        };
+      })
+      .filter(
+        (item): item is RecruitmentItem & { _sortTime: number } =>
+          item !== null
+      );
+
+    // 3. 날짜순 정렬
+    allProcessedItems.sort((a, b) => a._sortTime - b._sortTime);
+
+    // 모집 중인 것 3개
+    const recruitingItems = allProcessedItems
+      .filter((item) => item.status === 'RECRUITING')
+      .slice(0, 3);
+
+    // 배정 중인 것 3개
+    const allocatingItems = allProcessedItems
+      .filter((item) => item.status === 'ALLOCATING')
+      .slice(0, 3);
+
+    // 두 리스트 합쳐서 반환 (총 최대 6개), _sortTime 제거
+    const finalItems: RecruitmentItem[] = [
+      ...recruitingItems,
+      ...allocatingItems,
+    ].map(({ _sortTime, ...rest }) => rest);
+
+    return finalItems;
+  } catch (error) {
+    console.error(error);
     return [];
   }
 }
 
 /* ─────────────────────────────────────────────────────────────
-   [API] 최근 공지사항 조회
+   [API 4] 최근 공지사항 조회
    ───────────────────────────────────────────────────────────── */
 export async function fetchLatestNotices(): Promise<Notice[]> {
   const url = `${BASE_URL}/api/announcements/`;
@@ -267,7 +408,8 @@ export async function fetchLatestNotices(): Promise<Notice[]> {
     if (!res.ok) return [];
     const json = await res.json();
     let realData = unwrapResponse(json);
-    const formatDate = (d: string) => d?.replace('T', ' ').substring(0, 16) || '-';
+    const formatDate = (d: string) =>
+      d?.replace('T', ' ').substring(0, 16) || '-';
 
     if (Array.isArray(realData)) {
       return realData.map((data: any) => ({
@@ -279,5 +421,7 @@ export async function fetchLatestNotices(): Promise<Notice[]> {
       }));
     }
     return [];
-  } catch { return []; }
+  } catch {
+    return [];
+  }
 }
