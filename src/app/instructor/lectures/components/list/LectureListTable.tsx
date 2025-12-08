@@ -41,10 +41,7 @@ export default function LectureListTable({ rows, onRowClick }: Props) {
             </tr>
           ) : (
             rows.map((row) => (
-              <TableRow 
-                key={row.id} 
-                onClick={() => onRowClick?.(row)}
-              >
+              <TableRow key={row.id} onClick={() => onRowClick?.(row)}>
                 <Td>{row.no}</Td>
                 <Td>{row.type}</Td>
                 <Td>{row.division}</Td>
@@ -116,6 +113,7 @@ const StatusBadge = styled.span<{ status: string }>`
   border-radius: 12px;
   font-size: 13px;
   font-weight: 500;
+  white-space: nowrap;
   background-color: ${(props) => {
     if (props.status === "모집 중") return "#DBEAFE";
     if (props.status === "배정 중") return "#FEF3C7";

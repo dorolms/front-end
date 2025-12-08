@@ -113,6 +113,7 @@ const StatusBadge = styled.span<{ status: string }>`
   border-radius: 12px;
   font-size: 13px;
   font-weight: 500;
+  white-space: nowrap;
   background-color: ${(props) => {
     if (props.status === "모집 중") return "#DBEAFE";
     if (props.status === "배정 중") return "#FEF3C7";
