@@ -41,7 +41,7 @@ const FilterContainer = styled.div`
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 16px 0;
+  margin-bottom: 16px;
 `;
 
 const FilterLabel = styled.div`
