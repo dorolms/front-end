@@ -1,12 +1,7 @@
-import type { Notice } from "../../instructor/notices/types";
-import type {
-  InstructorEventItem,
-  Category,
-  InstructorEventStatus,
-  LectureStatus,
-} from "./types";
+import type { Notice } from '../../instructor/notices/types';
+import type { InstructorEventItem, Category, InstructorEventStatus, LectureStatus } from './types';
 
-const BASE_URL = "http://127.0.0.1:8000";
+const BASE_URL = 'http://127.0.0.1:8000';
 
 // 1. 강의 목록 조회 응답
 type BackendLecture = {
@@ -16,12 +11,7 @@ type BackendLecture = {
   category: string;
   status: string;
   my_application_status: string | null;
-  schedules: {
-    id: number;
-    date: string;
-    start_time: string;
-    end_time: string;
-  }[];
+  schedules: { id: number; date: string; start_time: string; end_time: string }[];
   // 목록 API에서 location이 올 수도 있고 안 올 수도 있음
   location?: string;
   content?: string;
@@ -51,35 +41,29 @@ type BackendLectureDetail = {
   attachment_url: string;
   manager_name: string;
   manager_phone: string;
-  schedules: Array<{
-    id: number;
-    date: string;
-    start_time: string;
-    end_time: string;
-  }>;
+  schedules: Array<{ id: number; date: string; start_time: string; end_time: string }>;
   confirmed_instructors: string[];
 };
 
 // 유틸 함수
 const mapCategory = (type: string): Category => {
   const t = type?.toUpperCase();
-  if (["GENERAL", "COMPETITION", "CAMP", "DOROLAND", "BOOTH"].includes(t))
-    return t as Category;
-  return "GENERAL";
+  if (['GENERAL', 'COMPETITION', 'CAMP', 'DOROLAND', 'BOOTH'].includes(t)) return t as Category;
+  return 'GENERAL';
 };
 
 const combineDateTime = (date: string, time: string) => {
-  const safeDate = date || new Date().toISOString().split("T")[0];
-  let safeTime = time || "00:00:00";
+  const safeDate = date || new Date().toISOString().split('T')[0];
+  let safeTime = time || '00:00:00';
   if (safeTime.length === 7) safeTime = `0${safeTime}`;
   return `${safeDate}T${safeTime}`;
 };
 
 const getHeaders = (): HeadersInit => {
-  const headers: HeadersInit = { "Content-Type": "application/json" };
-  if (typeof window !== "undefined") {
-    const token = localStorage.getItem("accessToken");
-    if (token) headers["Authorization"] = `Bearer ${token}`;
+  const headers: HeadersInit = { 'Content-Type': 'application/json' };
+  if (typeof window !== 'undefined') {
+    const token = localStorage.getItem('accessToken');
+    if (token) headers['Authorization'] = `Bearer ${token}`;
   }
   return headers;
 };
@@ -100,8 +84,8 @@ export async function fetchMyLectures(): Promise<InstructorEventItem[]> {
 
   try {
     const [lecturesRes, appsRes] = await Promise.all([
-      fetch(lectureUrl, { cache: "no-store", headers: getHeaders() }),
-      fetch(appUrl, { cache: "no-store", headers: getHeaders() }),
+      fetch(lectureUrl, { cache: 'no-store', headers: getHeaders() }),
+      fetch(appUrl, { cache: 'no-store', headers: getHeaders() }),
     ]);
 
     if (!lecturesRes.ok) return [];
@@ -118,9 +102,7 @@ export async function fetchMyLectures(): Promise<InstructorEventItem[]> {
     }
 
     // 1. 내가 신청한 강의만 필터링
-    const myLectures = lectureList.filter(
-      (l) => l.my_application_status !== null
-    );
+    const myLectures = lectureList.filter(l => l.my_application_status !== null);
 
     // 2. 목록에 '장소' 정보가 없을 수 있으므로, 각 강의마다 상세 정보를 가져와 채워넣습니다.
     const enrichedLectures = await Promise.all(
@@ -129,20 +111,17 @@ export async function fetchMyLectures(): Promise<InstructorEventItem[]> {
         if (lecture.location) return lecture;
 
         try {
-          const detailRes = await fetch(
-            `${BASE_URL}/api/lectures/lectures/${lecture.id}/`,
-            {
-              cache: "no-store",
-              headers: getHeaders(),
-            }
-          );
+          const detailRes = await fetch(`${BASE_URL}/api/lectures/lectures/${lecture.id}/`, {
+            cache: 'no-store',
+            headers: getHeaders(),
+          });
           if (detailRes.ok) {
             const detailJson = await detailRes.json();
             const detailData = unwrapResponse(detailJson);
             // 상세 정보에서 location 등을 가져와 덮어씌움
             return {
               ...lecture,
-              location: detailData.location || "장소 미정",
+              location: detailData.location || '장소 미정',
               content: detailData.content || lecture.content,
             };
           }
@@ -155,17 +134,15 @@ export async function fetchMyLectures(): Promise<InstructorEventItem[]> {
 
     // 3. 캘린더 이벤트 포맷으로 변환
     const events = enrichedLectures.flatMap((lecture) => {
-      const myApp = appList.find((app) => app.lecture === lecture.id);
-      let statusStr = myApp
-        ? myApp.assignment_status.toLowerCase()
-        : lecture.my_application_status?.toLowerCase() || "";
+      const myApp = appList.find(app => app.lecture === lecture.id);
+      let statusStr = myApp ? myApp.assignment_status.toLowerCase() : (lecture.my_application_status?.toLowerCase() || '');
       let isRead = myApp ? myApp.is_notification_read : false;
 
-      if (statusStr === "rejected") return [];
+      if (statusStr === 'rejected') return [];
 
-      let myStatus: InstructorEventStatus = "APPLIED";
-      if (statusStr === "assigned") {
-        myStatus = isRead ? "CONFIRMED" : "PENDING";
+      let myStatus: InstructorEventStatus = 'APPLIED';
+      if (statusStr === 'assigned') {
+        myStatus = isRead ? 'CONFIRMED' : 'PENDING';
       }
 
       // 기본 목록에서는 상세 강사 정보가 없을 수 있음 (빈 배열로 시작)
@@ -174,13 +151,13 @@ export async function fetchMyLectures(): Promise<InstructorEventItem[]> {
       return lecture.schedules.map((schedule) => ({
         id: `${lecture.id}-${schedule.id}`, // composite ID
         title: lecture.title,
-        content: lecture.content || "",
+        content: lecture.content || '',
         // [중요] 여기서 채워진 location을 사용
-        location: lecture.location || "장소 미정",
+        location: lecture.location || '장소 미정',
         start: combineDateTime(schedule.date, schedule.start_time),
         end: combineDateTime(schedule.date, schedule.end_time),
         category: mapCategory(lecture.type),
-        status: (lecture.status || "RECRUITING") as LectureStatus,
+        status: (lecture.status || 'RECRUITING') as LectureStatus,
         instructorStatus: myStatus,
         instructors: instructorsList,
       }));
@@ -188,7 +165,7 @@ export async function fetchMyLectures(): Promise<InstructorEventItem[]> {
 
     return events;
   } catch (error) {
-    console.error("[일정 조회 실패]", error);
+    console.error('[일정 조회 실패]', error);
     return [];
   }
 }
@@ -198,11 +175,11 @@ export async function fetchMyLectures(): Promise<InstructorEventItem[]> {
    ───────────────────────────────────────────────────────────── */
 export async function fetchLectureDetail(lectureId: string | number) {
   // ID가 "10-12" 형태일 수 있으므로 앞부분(강의ID)만 추출
-  const realId = String(lectureId).split("-")[0];
+  const realId = String(lectureId).split('-')[0];
   const url = `${BASE_URL}/api/lectures/lectures/${realId}/`;
 
   try {
-    const res = await fetch(url, { cache: "no-store", headers: getHeaders() });
+    const res = await fetch(url, { cache: 'no-store', headers: getHeaders() });
     if (!res.ok) return null;
 
     const json = await res.json();
@@ -215,8 +192,8 @@ export async function fetchLectureDetail(lectureId: string | number) {
     if (data.manager_name) {
       instructors.push({
         name: data.manager_name,
-        phone: data.manager_phone || "",
-        role: "MANAGER",
+        phone: data.manager_phone || '',
+        role: 'MANAGER'
       });
     }
 
@@ -227,13 +204,11 @@ export async function fetchLectureDetail(lectureId: string | number) {
         if (match) {
           instructors.push({
             name: match[1],
-            phone: "",
-            role: match[2].toUpperCase().includes("MAIN")
-              ? "MAIN"
-              : "ASSISTANT",
+            phone: '',
+            role: match[2].toUpperCase().includes('MAIN') ? 'MAIN' : 'ASSISTANT'
           });
         } else {
-          instructors.push({ name: str, phone: "", role: "ASSISTANT" });
+          instructors.push({ name: str, phone: '', role: 'ASSISTANT' });
         }
       });
     }
@@ -260,20 +235,19 @@ export async function fetchLectureDetail(lectureId: string | number) {
 export async function fetchLatestNotices(): Promise<Notice[]> {
   const url = `${BASE_URL}/api/announcements/`;
   try {
-    const res = await fetch(url, { cache: "no-store", headers: getHeaders() });
+    const res = await fetch(url, { cache: 'no-store', headers: getHeaders() });
     if (!res.ok) return [];
 
     const json = await res.json();
     let realData = unwrapResponse(json);
-    const formatDate = (d: string) =>
-      d?.replace("T", " ").substring(0, 16) || "-";
+    const formatDate = (d: string) => d?.replace('T', ' ').substring(0, 16) || '-';
 
     if (Array.isArray(realData)) {
       return realData.map((data: any) => ({
         id: data.id || data.announcementId || 0,
         title: data.title,
         content: data.content,
-        author: data.author_name || data.authorName || "관리자",
+        author: data.author_name || data.authorName || '관리자',
         createdAt: formatDate(data.created_at || data.createdAt),
       }));
     }

@@ -218,7 +218,7 @@ export async function fetchLectureDetail(lectureId: string | number) {
       title: data.title,
       content: data.content,
       location: data.location,
-      status: data.status, // 모집중/배정중 등 상태 업데이트
+      status: data.status as LectureStatus, // 모집중/배정중 등 상태 업데이트
       target: data.target,
       capacity: data.capacity,
       fee: data.fee,
