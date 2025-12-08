@@ -55,6 +55,120 @@ const getTypeLabel = (type: string) => TYPE_LABELS[type] || type;
 const getStatusLabel = (status: string) => STATUS_LABELS[status] || status;
 
 // =========================================================================
+// 🎨 Icons
+// =========================================================================
+const CloseIcon = () => (
+  <svg
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2">
+    <line x1="18" y1="6" x2="6" y2="18"></line>
+    <line x1="6" y1="6" x2="18" y2="18"></line>
+  </svg>
+);
+
+const ClockIcon = () => (
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2">
+    <circle cx="12" cy="12" r="10"></circle>
+    <polyline points="12 6 12 12 16 14"></polyline>
+  </svg>
+);
+
+const MapPinIcon = () => (
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2">
+    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+    <circle cx="12" cy="10" r="3"></circle>
+  </svg>
+);
+
+const UsersIcon = () => (
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2">
+    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+    <circle cx="9" cy="7" r="4"></circle>
+    <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+    <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+  </svg>
+);
+
+const DollarIcon = () => (
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2">
+    <line x1="12" y1="1" x2="12" y2="23"></line>
+    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+  </svg>
+);
+
+const FileTextIcon = () => (
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2">
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+    <polyline points="14 2 14 8 20 8"></polyline>
+    <line x1="16" y1="13" x2="8" y2="13"></line>
+    <line x1="16" y1="17" x2="8" y2="17"></line>
+    <polyline points="10 9 9 9 8 9"></polyline>
+  </svg>
+);
+
+const LinkIcon = () => (
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2">
+    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+  </svg>
+);
+
+const CalendarIcon = () => (
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2">
+    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+    <line x1="16" y1="2" x2="16" y2="6"></line>
+    <line x1="8" y1="2" x2="8" y2="6"></line>
+    <line x1="3" y1="10" x2="21" y2="10"></line>
+  </svg>
+);
+
+// =========================================================================
 // 🧩 ConfirmModal Component
 // =========================================================================
 interface ConfirmModalProps {
@@ -79,25 +193,27 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <Overlay onClick={onClose}>
-      <ConfirmModalContainer onClick={(e) => e.stopPropagation()}>
+    <Backdrop onClick={onClose}>
+      <ConfirmModalBox onClick={(e) => e.stopPropagation()}>
         <ModalHeader>
           <ModalTitle>{title}</ModalTitle>
-          <CloseButton onClick={onClose}>×</CloseButton>
+          <CloseBtn onClick={onClose}>
+            <CloseIcon />
+          </CloseBtn>
         </ModalHeader>
         <ConfirmModalBody>
-          <p>{message}</p>
-          <ButtonGroup>
+          <ConfirmMessage>{message}</ConfirmMessage>
+          <ConfirmButtonGroup>
             <CancelButton onClick={onClose} disabled={isLoading}>
               취소
             </CancelButton>
             <ConfirmButton onClick={onConfirm} disabled={isLoading}>
               {isLoading ? "처리 중..." : confirmText}
             </ConfirmButton>
-          </ButtonGroup>
+          </ConfirmButtonGroup>
         </ConfirmModalBody>
-      </ConfirmModalContainer>
-    </Overlay>
+      </ConfirmModalBox>
+    </Backdrop>
   );
 };
 
@@ -328,15 +444,52 @@ const InstructorEventDetailModal: React.FC<InstructorEventDetailModalProps> = ({
   // ===== Render Guards =====
   if (!isOpen) return null;
 
+  // 날짜 포맷 함수
+  const formatTimeRange = (date: string, start: string, end: string) => {
+    const d = new Date(date);
+    const dateStr = `${d.getFullYear()}년 ${
+      d.getMonth() + 1
+    }월 ${d.getDate()}일`;
+    return `${dateStr} | ${start.substring(0, 5)} ~ ${end.substring(0, 5)}`;
+  };
+
   // ===== Render =====
   return (
     <>
-      <Overlay onClick={onClose}>
-        <ModalContainer onClick={(e) => e.stopPropagation()}>
-          <ModalHeader>
-            <ModalTitle>{lectureDetail?.title || "강의 정보"}</ModalTitle>
-            <CloseButton onClick={onClose}>×</CloseButton>
-          </ModalHeader>
+      <Backdrop onClick={onClose}>
+        <ModalBox onClick={(e) => e.stopPropagation()}>
+          <Header>
+            <TitleArea>
+              <Badges>
+                <Badge $bg="#eff6ff" $color="#3b82f6">
+                  {getTypeLabel(lectureDetail?.type || "")}
+                </Badge>
+                {lectureDetail && (
+                  <Badge
+                    $bg={
+                      lectureDetail.status === "RECRUITING"
+                        ? "#eff6ff"
+                        : lectureDetail.status === "ALLOCATING"
+                        ? "#FEF3C7"
+                        : "#f3f4f6"
+                    }
+                    $color={
+                      lectureDetail.status === "RECRUITING"
+                        ? "#3b82f6"
+                        : lectureDetail.status === "ALLOCATING"
+                        ? "#92400E"
+                        : "#4b5563"
+                    }>
+                    {getStatusLabel(lectureDetail.status)}
+                  </Badge>
+                )}
+              </Badges>
+              <h2>{lectureDetail?.title || "강의 정보"}</h2>
+            </TitleArea>
+            <CloseBtn onClick={onClose}>
+              <CloseIcon />
+            </CloseBtn>
+          </Header>
 
           <ModalBody>
             {loading && (
@@ -358,49 +511,8 @@ const InstructorEventDetailModal: React.FC<InstructorEventDetailModalProps> = ({
 
             {!loading && !error && lectureDetail && (
               <>
-                {/* 기본 정보 */}
+                {/* 강사 액션 버튼 */}
                 <Section>
-                  <SectionTitle>기본 정보</SectionTitle>
-                  <InfoRow>
-                    <Label>강의 타입</Label>
-                    <Value>{getTypeLabel(lectureDetail.type)}</Value>
-                  </InfoRow>
-
-                  {lectureDetail.category && (
-                    <InfoRow>
-                      <Label>강의 구분</Label>
-                      <Value>{lectureDetail.category}</Value>
-                    </InfoRow>
-                  )}
-
-                  <InfoRow>
-                    <Label>상태</Label>
-                    <StatusBadge status={lectureDetail.status}>
-                      {getStatusLabel(lectureDetail.status)}
-                    </StatusBadge>
-                  </InfoRow>
-
-                  <InfoRow>
-                    <Label>장소</Label>
-                    <Value>{lectureDetail.location}</Value>
-                  </InfoRow>
-
-                  <InfoRow>
-                    <Label>대상</Label>
-                    <Value>{lectureDetail.target}</Value>
-                  </InfoRow>
-
-                  <InfoRow>
-                    <Label>정원</Label>
-                    <Value>{lectureDetail.capacity}명</Value>
-                  </InfoRow>
-                </Section>
-
-                <Divider />
-
-                {/* 강사 액션 */}
-                <Section>
-                  <SectionTitle>강사 액션</SectionTitle>
                   <LectureActionButtons
                     status={lectureDetail.status}
                     myApplicationStatus={getMyApplicationStatus()}
@@ -413,103 +525,114 @@ const InstructorEventDetailModal: React.FC<InstructorEventDetailModalProps> = ({
                   />
                 </Section>
 
-                <Divider />
-
                 {/* 강의 일정 */}
                 <Section>
-                  <SectionTitle>강의 일정</SectionTitle>
-                  {lectureDetail.schedules.map((sch) => (
-                    <InfoRow key={sch.id}>
-                      <Label>{sch.date}</Label>
-                      <Value>
-                        {sch.start_time.slice(0, 5)} -{" "}
-                        {sch.end_time.slice(0, 5)}
-                      </Value>
-                    </InfoRow>
-                  ))}
+                  <SectionLabel>
+                    <ClockIcon /> 강의 일정
+                  </SectionLabel>
+                  <ScheduleList>
+                    {lectureDetail.schedules.map((sch) => (
+                      <ScheduleItem key={sch.id}>
+                        {formatTimeRange(sch.date, sch.start_time, sch.end_time)}
+                      </ScheduleItem>
+                    ))}
+                  </ScheduleList>
                 </Section>
 
-                <Divider />
+                {/* 장소 & 대상/정원 */}
+                <GridRow>
+                  <Section>
+                    <SectionLabel>
+                      <MapPinIcon /> 강의 장소
+                    </SectionLabel>
+                    <ContentBox>{lectureDetail.location}</ContentBox>
+                  </Section>
+                  <Section>
+                    <SectionLabel>
+                      <UsersIcon /> 대상 / 정원
+                    </SectionLabel>
+                    <ContentBox>
+                      {lectureDetail.target} / {lectureDetail.capacity}
+                    </ContentBox>
+                  </Section>
+                </GridRow>
+
+                {/* 강의료 */}
+                <Section>
+                  <SectionLabel>
+                    <DollarIcon /> 강의료
+                  </SectionLabel>
+                  <ContentBox style={{ fontWeight: 700 }}>
+                    {lectureDetail.fee}
+                  </ContentBox>
+                </Section>
 
                 {/* 모집 정보 */}
                 <Section>
-                  <SectionTitle>모집 정보</SectionTitle>
-                  <InfoRow>
-                    <Label>모집 마감</Label>
-                    <Value>{lectureDetail.end_date}</Value>
-                  </InfoRow>
-
-                  <InfoRow>
-                    <Label>모집 인원</Label>
-                    <Value>
-                      메인 {lectureDetail.recruitment_main}명 / 보조{" "}
-                      {lectureDetail.recruitment_assist}명
-                    </Value>
-                  </InfoRow>
-
-                  <InfoRow>
-                    <Label>강의료</Label>
-                    <Value>{lectureDetail.fee}</Value>
-                  </InfoRow>
+                  <SectionLabel>
+                    <CalendarIcon /> 모집 정보
+                  </SectionLabel>
+                  <ContentBox>
+                    모집 마감: {lectureDetail.end_date}
+                    <br />
+                    모집 인원: 메인 {lectureDetail.recruitment_main}명 / 보조{" "}
+                    {lectureDetail.recruitment_assist}명
+                  </ContentBox>
                 </Section>
 
                 {/* 강의 내용 */}
                 {lectureDetail.content && (
-                  <>
-                    <Divider />
-                    <Section>
-                      <SectionTitle>강의 내용</SectionTitle>
-                      <ContentBox>{lectureDetail.content}</ContentBox>
-                    </Section>
-                  </>
+                  <Section>
+                    <SectionLabel>
+                      <FileTextIcon /> 강의 내용
+                    </SectionLabel>
+                    <ContentBox>{lectureDetail.content}</ContentBox>
+                  </Section>
                 )}
 
                 {/* 특이사항 */}
                 {lectureDetail.note && (
-                  <>
-                    <Divider />
-                    <Section>
-                      <SectionTitle>특이사항</SectionTitle>
-                      <ContentBox>{lectureDetail.note}</ContentBox>
-                    </Section>
-                  </>
+                  <Section>
+                    <SectionLabel>
+                      <FileTextIcon /> 특이 사항
+                    </SectionLabel>
+                    <ContentBox>{lectureDetail.note}</ContentBox>
+                  </Section>
                 )}
 
                 {/* 첨부파일 */}
                 {lectureDetail.attachment_url && (
-                  <>
-                    <Divider />
-                    <Section>
-                      <SectionTitle>첨부파일</SectionTitle>
-                      <AttachmentLink
+                  <Section>
+                    <SectionLabel>
+                      <LinkIcon /> 첨부 파일
+                    </SectionLabel>
+                    <ContentBox>
+                      <LinkText
                         href={lectureDetail.attachment_url}
                         target="_blank"
                         rel="noopener noreferrer">
-                        📎 첨부파일 다운로드
-                      </AttachmentLink>
-                    </Section>
-                  </>
+                        {lectureDetail.attachment_url}
+                      </LinkText>
+                    </ContentBox>
+                  </Section>
                 )}
 
                 {/* 확정 강사 */}
                 {lectureDetail.confirmed_instructors.length > 0 && (
-                  <>
-                    <Divider />
-                    <Section>
-                      <SectionTitle>확정 강사</SectionTitle>
-                      <InfoRow>
-                        <Value>
-                          {lectureDetail.confirmed_instructors.length}명 확정
-                        </Value>
-                      </InfoRow>
-                    </Section>
-                  </>
+                  <Section>
+                    <SectionLabel>
+                      <UsersIcon /> 확정 강사
+                    </SectionLabel>
+                    <ContentBox>
+                      {lectureDetail.confirmed_instructors.length}명 확정
+                    </ContentBox>
+                  </Section>
                 )}
               </>
             )}
           </ModalBody>
-        </ModalContainer>
-      </Overlay>
+        </ModalBox>
+      </Backdrop>
 
       {/* 취소 확인 모달 */}
       <ConfirmModal
@@ -528,40 +651,118 @@ const InstructorEventDetailModal: React.FC<InstructorEventDetailModalProps> = ({
 // =========================================================================
 // 💅 Styled Components
 // =========================================================================
+const fadeIn = keyframes`
+  from { opacity: 0; } to { opacity: 1; }
+`;
+
+const slideUp = keyframes`
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+`;
+
 const spin = keyframes`
   to { transform: rotate(360deg); }
 `;
 
-const Overlay = styled.div`
+const Backdrop = styled.div`
   position: fixed;
   inset: 0;
-  background-color: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 1000;
-  padding: 20px;
+  z-index: 9999;
+  animation: ${fadeIn} 0.2s ease-out;
 `;
 
-const ModalContainer = styled.div`
-  background: white;
-  border-radius: 12px;
-  width: 100%;
-  max-width: 600px;
+const ModalBox = styled.div`
+  background: #fff;
+  border-radius: 20px;
+  width: 500px;
+  max-width: 90vw;
   max-height: 90vh;
-  overflow: hidden;
+  overflow-y: auto;
+  padding: 32px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
   display: flex;
   flex-direction: column;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  gap: 24px;
+  animation: ${slideUp} 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: #e5e5e5;
+    border-radius: 3px;
+  }
 `;
 
-const ConfirmModalContainer = styled.div`
-  background: white;
-  border-radius: 12px;
-  width: 100%;
-  max-width: 400px;
+const ConfirmModalBox = styled.div`
+  background: #fff;
+  border-radius: 20px;
+  width: 400px;
+  max-width: 90vw;
   overflow: hidden;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
+  animation: ${slideUp} 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+`;
+
+const Header = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+`;
+
+const TitleArea = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  
+  h2 {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: #111;
+    line-height: 1.3;
+  }
+`;
+
+const Badges = styled.div`
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+`;
+
+const Badge = styled.span<{ $bg: string; $color: string }>`
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  background-color: ${(props) => props.$bg};
+  color: ${(props) => props.$color};
+`;
+
+const CloseBtn = styled.button`
+  background: #f3f4f6;
+  border: none;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #666;
+  transition: all 0.2s;
+  
+  &:hover {
+    background: #e5e7eb;
+    color: #111;
+  }
 `;
 
 const ModalHeader = styled.div`
@@ -570,100 +771,102 @@ const ModalHeader = styled.div`
   align-items: center;
   padding: 20px 24px;
   border-bottom: 1px solid #e5e7eb;
-  flex-shrink: 0;
 `;
 
-const ModalTitle = styled.h2`
-  font-size: 20px;
-  font-weight: 600;
-  color: #111827;
+const ModalTitle = styled.h3`
+  font-size: 18px;
+  font-weight: 700;
+  color: #111;
   margin: 0;
 `;
 
-const CloseButton = styled.button`
-  background: none;
-  border: none;
-  font-size: 32px;
-  color: #6b7280;
-  cursor: pointer;
-  padding: 0;
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 4px;
-  transition: all 0.2s;
-
-  &:hover {
-    background-color: #f3f4f6;
-    color: #111827;
-  }
-`;
-
 const ModalBody = styled.div`
-  padding: 24px;
-  overflow-y: auto;
-  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
 `;
 
 const ConfirmModalBody = styled.div`
   padding: 24px;
-
-  p {
-    margin: 0 0 24px 0;
-    color: #374151;
-    font-size: 15px;
-    line-height: 1.6;
-  }
 `;
 
-const ButtonGroup = styled.div`
+const ConfirmMessage = styled.p`
+  margin: 0 0 24px 0;
+  color: #374151;
+  font-size: 15px;
+  line-height: 1.6;
+`;
+
+const ConfirmButtonGroup = styled.div`
   display: flex;
   gap: 12px;
   justify-content: flex-end;
 `;
 
-const CancelButton = styled.button`
-  padding: 10px 20px;
-  background-color: #f3f4f6;
-  color: #4b5563;
-  border: none;
-  border-radius: 6px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
+const Section = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+`;
 
-  &:hover {
-    background-color: #e5e7eb;
-  }
-
-  &:disabled {
-    cursor: not-allowed;
-    opacity: 0.5;
+const SectionLabel = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  
+  svg {
+    color: #cbd5e1;
   }
 `;
 
-const ConfirmButton = styled.button`
-  padding: 10px 20px;
-  background-color: #3b82f6;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
+const ContentBox = styled.div`
+  background: #fff;
+  border: 1px solid #f1f5f9;
+  padding: 14px;
+  border-radius: 12px;
+  font-size: 0.95rem;
+  color: #334155;
+  line-height: 1.5;
+  white-space: pre-wrap;
+`;
 
+const ScheduleList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+`;
+
+const ScheduleItem = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #f9fafb;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  color: #374151;
+  font-weight: 600;
+  font-size: 0.9rem;
+`;
+
+const GridRow = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+`;
+
+const LinkText = styled.a`
+  color: #2563eb;
+  text-decoration: underline;
+  word-break: break-all;
+  
   &:hover {
-    background-color: #2563eb;
-  }
-
-  &:disabled {
-    cursor: not-allowed;
-    opacity: 0.5;
-    background-color: #93c5fd;
+    color: #1d4ed8;
   }
 `;
 
@@ -721,89 +924,46 @@ const RetryButton = styled.button`
   }
 `;
 
-const Section = styled.div`
-  margin-bottom: 20px;
-
-  &:last-child {
-    margin-bottom: 0;
-  }
-`;
-
-const SectionTitle = styled.h3`
-  font-size: 16px;
-  font-weight: 600;
-  color: #111827;
-  margin: 0 0 12px 0;
-`;
-
-const InfoRow = styled.div`
-  display: flex;
-  align-items: flex-start;
-  margin-bottom: 12px;
-
-  &:last-child {
-    margin-bottom: 0;
-  }
-`;
-
-const Label = styled.div`
-  font-weight: 600;
-  color: #374151;
-  min-width: 100px;
-  font-size: 14px;
-`;
-
-const Value = styled.div`
-  color: #111827;
-  font-size: 14px;
-  flex: 1;
-`;
-
-const StatusBadge = styled.span<{ status: string }>`
-  padding: 4px 12px;
-  border-radius: 12px;
-  font-size: 13px;
-  font-weight: 500;
-  background-color: ${(props) => {
-    if (props.status === "RECRUITING") return "#DBEAFE";
-    if (props.status === "ALLOCATING") return "#FEF3C7";
-    return "#E5E7EB";
-  }};
-  color: ${(props) => {
-    if (props.status === "RECRUITING") return "#1E40AF";
-    if (props.status === "ALLOCATING") return "#92400E";
-    return "#374151";
-  }};
-`;
-
-const ContentBox = styled.div`
-  background-color: #f9fafb;
-  padding: 12px;
-  border-radius: 8px;
-  font-size: 14px;
-  color: #374151;
-  line-height: 1.6;
-  white-space: pre-wrap;
-`;
-
-const Divider = styled.div`
-  height: 1px;
-  background-color: #e5e7eb;
-  margin: 20px 0;
-`;
-
-const AttachmentLink = styled.a`
-  display: inline-flex;
-  align-items: center;
-  color: #3b82f6;
-  text-decoration: none;
+const CancelButton = styled.button`
+  padding: 10px 20px;
+  background-color: #f3f4f6;
+  color: #4b5563;
+  border: none;
+  border-radius: 6px;
   font-size: 14px;
   font-weight: 500;
-  transition: color 0.2s;
+  cursor: pointer;
+  transition: all 0.2s;
 
   &:hover {
-    color: #2563eb;
-    text-decoration: underline;
+    background-color: #e5e7eb;
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+`;
+
+const ConfirmButton = styled.button`
+  padding: 10px 20px;
+  background-color: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    background-color: #2563eb;
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+    background-color: #93c5fd;
   }
 `;
 
