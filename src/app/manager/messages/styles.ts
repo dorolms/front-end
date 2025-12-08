@@ -22,10 +22,9 @@ export const Wrap = styled.div`
 `;
 
 export const Title = styled.h1`
-  font-size: 1.6rem;
-  font-weight: 800;
-  color: #1e293b;
-  margin-bottom: 16px;
+  font-size: 2rem;
+  font-weight: 700;
+  margin: 8px 0 24px;
 `;
 
 export const ChatContainer = styled.div`

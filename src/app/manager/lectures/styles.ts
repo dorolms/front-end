@@ -1,4 +1,4 @@
-// src/app/instructor/dashboard/styles.ts
+// src/app/manager/dashboard/styles.ts
 'use client';
 
 import styled from 'styled-components';
@@ -7,7 +7,7 @@ export const Wrap = styled.div`
   width: 100%;
   max-width: 1200px;
   margin: 0 auto;
-  // padding: 20px;
+  padding: 20px;
 `;
 
 export const BreadCrumb = styled.div`
@@ -31,7 +31,7 @@ export const Grid = styled.div`
 // 상단 캘린더 영역
 export const CalendarBox = styled.div`
   width: 100%;
-  height: 100%; /* 캘린더 높이 */
+  height: 400px; /* 캘린더 높이 */
   border-radius: 8px;
   background: #ffffff;
   border: 1px solid #e5e5e5;
@@ -39,7 +39,7 @@ export const CalendarBox = styled.div`
   box-sizing: border-box;
 `;
 
-// 하단 2개 카드 영역
+// 하단 2개 카드 영역 (좌: 공지, 우: 모집현황)
 export const CardRow = styled.div`
   display: flex;
   gap: 24px;

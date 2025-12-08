@@ -34,7 +34,7 @@ export default function LectureTabs({ value, onChange }: Props) {
 const TabBar = styled.div`
   display: flex;
   gap: 12px;
-  margin-bottom: 24px;
+  margin-bottom: 0px;
 `;
 
 const TabButton = styled.button<{ $active: boolean }>`

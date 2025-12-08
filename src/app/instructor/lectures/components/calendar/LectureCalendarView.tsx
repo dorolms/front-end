@@ -98,7 +98,8 @@ const LectureCalendarView: React.FC<LectureCalendarViewProps> = ({
 
 const Container = styled.div`
   width: 100%;
-  padding: 20px;
+  margin: 0 auto;
+  Max-width: 1200px;
 `;
 
 export default LectureCalendarView;

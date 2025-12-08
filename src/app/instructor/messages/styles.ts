@@ -23,10 +23,9 @@ export const Wrap = styled.div`
 `;
 
 export const Title = styled.h1`
-  font-size: 1.6rem;
-  font-weight: 800;
-  color: #1e293b;
-  margin-bottom: 16px; /* 간격 살짝 축소 */
+  font-size: 2rem;
+  font-weight: 700;
+  margin: 8px 0 24px;
 `;
 
 // 채팅 컨테이너

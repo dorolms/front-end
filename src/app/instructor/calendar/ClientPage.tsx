@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import {
   Wrap,
   CalendarBox,
+  Title
 } from './styles';
 import InstructorMonthlyCalendar from './components/InstructorMonthlyCalendar';
 import InstructorEventDetailModal from './components/InstructorEventDetailModal';
@@ -56,6 +57,8 @@ export default function InstructorClientPage() {
   };
 
   return (
+    <div>
+    <Title>나의 강의 캘린더</Title>
     <Wrap>
       <CalendarBox>
         <InstructorMonthlyCalendar
@@ -71,5 +74,6 @@ export default function InstructorClientPage() {
         />
       )}
     </Wrap>
+    </div>
   );
 }

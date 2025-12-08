@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import LectureTabs, { LectureTab } from "./components/LectureTabs";
 import LectureListView from "./components/list/LectureListView";
 import LectureCalendarView from "./components/calendar/LectureCalendarView";
-// 💡 LectureDetail 타입으로 변경
+import {Title} from '../../instructor/dashboard/styles'; // Title 스타일 import
 import type { LectureDetail } from "./types";
 
 const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
@@ -61,6 +61,7 @@ export default function ClientPage() {
 
   return (
     <div>
+      <Title>강의 신청 캘린더</Title>
       <LectureTabs value={tab} onChange={setTab} />
       {tab === "list" ? (
         // 💡 lectures는 LectureDetail[] 타입으로 전달됨

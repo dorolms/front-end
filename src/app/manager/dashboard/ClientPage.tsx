@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import {
-  Wrap, BreadCrumb, Title, Grid, CalendarBox, CardRow, LeftPanel, RightPanel
+  Wrap, Title, Grid, CalendarBox, CardRow, LeftPanel, RightPanel
 } from './styles';
 
 import ManagerWeeklyCalendar from './components/ManagerWeeklyCalendar';
@@ -64,8 +64,10 @@ export default function ManagerClientPage() {
   };
 
   return (
+    <>
+    <Title>대시보드</Title>
     <Wrap>
-      <Title>대시보드</Title>
+
 
       <Grid>
         {/* 1. 캘린더 */}
@@ -95,5 +97,6 @@ export default function ManagerClientPage() {
         />
       )}
     </Wrap>
+    </>
   );
 }

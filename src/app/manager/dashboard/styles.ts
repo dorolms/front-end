@@ -7,13 +7,6 @@ export const Wrap = styled.div`
   width: 100%;
   max-width: 1200px;
   margin: 0 auto;
-  padding: 20px;
-`;
-
-export const BreadCrumb = styled.div`
-  font-size: 0.9rem;
-  color: #777;
-  margin-bottom: 8px;
 `;
 
 export const Title = styled.h1`
