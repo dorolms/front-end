@@ -28,6 +28,7 @@ PageContainer,
   PortfolioContent,
   EmptyState,
   MajorWrapper, MajorBadge
+  , Title
 } from './styles';
 
 // --- Main Component ---
@@ -154,10 +155,11 @@ export default function InstructorLookupPage() {
   }
 
   return (
+    <>
+    <Title>{selectedInstructor ? '강사 상세 정보' : '강사 검색'}</Title>
     <PageContainer>
       <Header>
         {/* [수정] 강사 선택 여부에 따라 헤더 텍스트 변경 */}
-        <h1>{selectedInstructor ? '강사 상세 정보' : '강사 검색'}</h1>
         <p>
           {selectedInstructor 
             ? `${selectedInstructor.name} 강사의 프로필과 포트폴리오입니다.` 
@@ -269,5 +271,6 @@ export default function InstructorLookupPage() {
         </EmptyState>
       )}
     </PageContainer>
+    </>
   );
 }

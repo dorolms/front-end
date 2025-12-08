@@ -62,9 +62,9 @@ export default function InstructorClientPage() {
   };
 
   return (
+    <div>
+    <Title>대시보드</Title>
     <Wrap>
-      <Title>대시보드</Title>
-
       <Grid>
         <CalendarBox>
           <InstructorWeeklyCalendar
@@ -91,5 +91,6 @@ export default function InstructorClientPage() {
         />
       )}
     </Wrap>
+    </div>
   );
 }

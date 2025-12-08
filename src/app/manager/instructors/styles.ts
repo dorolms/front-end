@@ -4,6 +4,12 @@ import styled from 'styled-components';
 
 // --- Styled Components ---
 
+export const Title = styled.h1`
+  font-size: 2rem;
+  font-weight: 700;
+  margin: 8px 0 24px;
+`;
+
 export const PageContainer = styled.div`
   width: 100%;
   /* [유지] 상단 Nav 바 고려 패딩 (100px) */

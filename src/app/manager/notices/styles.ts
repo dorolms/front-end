@@ -18,10 +18,10 @@ export const Header = styled.div`
   margin-bottom: 24px;
 `;
 
-export const Title = styled.h2`
-  font-size: 1.5rem;
-  font-weight: 600;
-  margin: 0;
+export const Title = styled.h1`
+  font-size: 2rem;
+  font-weight: 700;
+  margin: 8px 0 24px;
 `;
 
 // '+ 새 공지' 버튼 스타일

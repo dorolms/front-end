@@ -215,9 +215,9 @@ export default function InstructorMessagesPage() {
   }, {} as Record<string, ChatMessage[]>);
 
   return (
+    <>
+    <S.Title>메시지</S.Title>
     <S.Wrap>
-      <S.Title>메시지</S.Title>
-
       <S.ChatContainer>
         {/* [왼쪽] 매니저 목록 */}
         <S.Sidebar>
@@ -320,5 +320,6 @@ export default function InstructorMessagesPage() {
         </S.ChatArea>
       </S.ChatContainer>
     </S.Wrap>
+    </>
   );
 }

@@ -232,7 +232,7 @@ export async function fetchLectureDetail(id: string) {
       content: data.content,
       location: data.location,
       instructors,
-      status: data.status,
+      status: data.status as LectureStatus,
 
       target: data.target,
       capacity: data.capacity,

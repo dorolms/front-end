@@ -7,6 +7,9 @@ import LectureListView from "./components/list/LectureListView";
 import LectureCalendarView from "./components/calendar/LectureCalendarView";
 import NewLectureButton from "./components/NewLectureButton";
 import type { Lecture } from "./types";
+import {
+  Wrap, Title, Grid, CalendarBox, CardRow, LeftPanel, RightPanel
+} from './styles';
 
 const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
 
@@ -59,6 +62,9 @@ export default function ClientPage() {
 
   return (
     <div>
+
+      <Title>강의 관리</Title>
+      
       <div
         style={{
           display: "flex",

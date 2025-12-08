@@ -27,7 +27,6 @@ const WidgetContainer = styled.div`
   background: transparent;
   box-shadow: none;
   border: none;
-  padding: 0;
 
   box-sizing: border-box;
   display: flex;
@@ -107,19 +106,6 @@ const CalendarWrapper = styled.div`
     color: #334155;
     font-size: 0.9rem;
   }
-
-  /* 오늘 날짜 숫자 강조 */
-  // .fc-day-today .fc-daygrid-day-number {
-  //   background: #3b82f6;
-  //   color: white;
-  //   border-radius: 50%;
-  //   width: 32px;
-  //   height: 32px;
-  //   display: flex;
-  //   align-items: center;
-  //   justify-content: center;
-  //   font-weight: 700;
-  // }
 
   /* 각 날짜 셀의 최소 높이 설정 */
   .fc-daygrid-day-frame {

@@ -38,9 +38,10 @@ export default function ClientPage() {
 
   return (
     <>
+              <Title>공지사항</Title>
       <Container>
         <Header>
-          <Title>공지사항</Title>
+
           {/* 검색창만 표시 */}
           <SearchBar
             value={query}

@@ -217,8 +217,10 @@ export default function ManagerMessagesPage() {
   }, {} as Record<string, ChatMessage[]>);
 
   return (
+    <>
+    <S.Title>메시지</S.Title>
     <S.Wrap>
-      <S.Title>메시지</S.Title>
+
 
       <S.ChatContainer>
         {/* [왼쪽] 강사 목록 */}
@@ -324,5 +326,6 @@ export default function ManagerMessagesPage() {
         </S.ChatArea>
       </S.ChatContainer>
     </S.Wrap>
+    </>
   );
 }
