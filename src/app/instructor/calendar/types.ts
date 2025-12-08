@@ -25,7 +25,7 @@ export type InstructorEventStatus =
 export type InstructorProfile = {
   name: string;
   phone: string;
-  role: "MAIN" | "ASSISTANT";
+  role: "MAIN" | "ASSISTANT" | "MANAGER";
 };
 
 // 기본 강의 정보
@@ -43,7 +43,22 @@ export type BaseEvent = {
 
 // 강사 대시보드용 이벤트 타입
 export type InstructorEventItem = BaseEvent & {
-  instructorStatus: InstructorEventStatus;
+  instructorStatus: InstructorEventStatus; // 나의 상태
+
+  // [상세 조회 필드 추가]
+  target?: string; // 대상 (고등학생 등)
+  capacity?: string; // 정원 (30명 등)
+  fee?: string; // 강사료
+  note?: string; // 특이 사항
+  attachment_url?: string; // 첨부 파일
+
+  // 다중 일정 배열
+  schedules?: Array<{
+    id: number;
+    date: string;
+    start_time: string;
+    end_time: string;
+  }>;
 };
 
 // 공지 타입 (매니저와 동일 형태)

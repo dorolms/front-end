@@ -94,7 +94,7 @@ const CalendarWrapper = styled.div`
     text-decoration: none !important;
     color: inherit !important;
   }
-  
+
   /* 오늘 날짜 배경 강조 */
   .fc-day-today {
     background: #fef3c7 !important;
@@ -109,17 +109,17 @@ const CalendarWrapper = styled.div`
   }
 
   /* 오늘 날짜 숫자 강조 */
-  .fc-day-today .fc-daygrid-day-number {
-    background: #3b82f6;
-    color: white;
-    border-radius: 50%;
-    width: 32px;
-    height: 32px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 700;
-  }
+  // .fc-day-today .fc-daygrid-day-number {
+  //   background: #3b82f6;
+  //   color: white;
+  //   border-radius: 50%;
+  //   width: 32px;
+  //   height: 32px;
+  //   display: flex;
+  //   align-items: center;
+  //   justify-content: center;
+  //   font-weight: 700;
+  // }
 
   /* 각 날짜 셀의 최소 높이 설정 */
   .fc-daygrid-day-frame {
@@ -270,7 +270,7 @@ export default function InstructorMonthlyCalendar({
       <CalendarWrapper>
         <FullCalendar
           plugins={[dayGridPlugin, interactionPlugin]}
-          initialView="dayGridMonth"  // 🔹 주간 → 월간으로 변경
+          initialView="dayGridMonth" // 🔹 주간 → 월간으로 변경
           locale="ko"
           headerToolbar={{
             left: "title",
@@ -292,7 +292,7 @@ export default function InstructorMonthlyCalendar({
               </HeaderContainer>
             );
           }}
-          dayMaxEventRows={3}  // 하루에 최대 3개까지 표시, 이상은 +더보기
+          dayMaxEventRows={3} // 하루에 최대 3개까지 표시, 이상은 +더보기
           moreLinkClick="popover"
           moreLinkContent={(args) => `+${args.num}개`}
           eventOrder="runTime"
