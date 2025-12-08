@@ -1,12 +1,8 @@
 'use client';
-
 import React, { useState, useRef, useCallback, useMemo, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
-// import { getLectureDetail, type LectureDetail, type Applicant, type LectureRole, type DbAssignmentStatus } from './api-mock';
 import { getLectureDetail, patchApplications, updateLecture, deleteLecture, type LectureDetail, type Application, type LectureRole, type AssignmentStatus, type UserInfo, type patchData } from './api';
-
 import { isTokenValid, getUserRole } from './jwt';
-
 import {
   PageContainer, Header, PageTitle,  BackButton,
   // StatusBadge,
@@ -34,14 +30,11 @@ interface MergedApplication {
   ui_read_status_text: string;
 };
 
-
-// [추가] 날짜 문자열(YYYY-MM-DD)을 받아 요일(월, 화..)을 반환하는 함수
 const getWeekday = (dateString: string) => {
   const days = ['일', '월', '화', '수', '목', '금', '토'];
   const date = new Date(dateString);
   return days[date.getDay()];
 };
-
 const getLecType = (type: string) => {
   const map: Record<string, string> = {
     "general": "일반",
@@ -60,10 +53,11 @@ const getLecStatus = (type: string) => {
   }
   return map[type];
 }
+
 export default function LectureDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
-
   const { id } = use(params);
+
   const [lecture, setLecture] = useState<LectureDetail | null>(null);
   const [applications, setApplications] = useState<Application[]>([]);
   const [initapplications, setInitApplications] = useState<Application[]>([]);
@@ -73,7 +67,6 @@ export default function LectureDetailPage({ params }: { params: Promise<{ id: st
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
-
   const [isAuthChecked, setIsAuthChecked] = useState(false);
   
     useEffect(() => {
@@ -98,7 +91,6 @@ export default function LectureDetailPage({ params }: { params: Promise<{ id: st
         return;
       }
       
-      // 통과! -> 데이터 로딩 시작...
       setIsAuthChecked(true);
   
     }, [router]);
@@ -109,27 +101,35 @@ export default function LectureDetailPage({ params }: { params: Promise<{ id: st
     applications: useRef<HTMLElement>(null),
   };
 
-  useEffect(() => {
-    const fetchData = async () => {
-      if (!isAuthChecked) return;
-      try {
-        setIsLoading(true);
-        const data = await getLectureDetail(parseInt(id));
-        setLecture(data);
-        setApplications(data.applications);
-        setInitApplications(JSON.parse(JSON.stringify(data.applications)));
-      } catch (error) {
-        console.error("Failed to load data", error);
-        alert("데이터 로딩 실패");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchData();
-  }, [id, isAuthChecked]);
+  // [신규] 데이터 로딩 함수 (재사용 가능)
+  // silent: true면 전체 화면 로딩(LoadingState)을 띄우지 않고 조용히 데이터만 갱신
+  const loadData = useCallback(async (silent = false) => {
+    if (!id) return;
+
+    try {
+      if (!silent) setIsLoading(true); // 초기 진입 시에만 로딩 표시
+      
+      const data = await getLectureDetail(parseInt(id));
+      
+      setLecture(data);
+      setApplications(data.applications);
+      setInitApplications(JSON.parse(JSON.stringify(data.applications)));
+      
+    } catch (error) {
+      console.error("데이터 로딩 실패", error);
+      alert("데이터를 불러오는 데 실패했습니다.");
+    } finally {
+      if (!silent) setIsLoading(false);
+    }
+  }, [id]);
+
+   useEffect(() => {
+    if (isAuthChecked) {
+      loadData(false);
+    }
+  }, [isAuthChecked, loadData]);
 
   const mergedList = useMemo(() => {
-    
     const readStatusMap = new Map<number, string>();
     
     // 원본 데이터를 순회하며 '배정됨(assigned)' 상태인 건만 체크
@@ -241,7 +241,6 @@ export default function LectureDetailPage({ params }: { params: Promise<{ id: st
 
   // [수정] 저장 버튼 핸들러: 변경된 것만 필터링
   const handleSaveChanges = async () => { // async 추가
-    // 1. 변경된 항목 찾기 (Dirty Checking)
     const changedItems = applications.filter(curApp => {
       // 원본에서 동일한 ID를 가진 지원을 찾음
       const originalApp = initapplications.find(init => init.id === curApp.id);
@@ -269,32 +268,61 @@ export default function LectureDetailPage({ params }: { params: Promise<{ id: st
       id: app.id, // API 스펙에 맞춘 ID
       lecture: app.lecture,
       assignment_status: app.assignment_status,
-      applied_role: app.applied_role
+      applied_role: app.applied_role,
+      _user_name: app.user.name
     }));
     
     console.log('🚀 [API Payload - Changed Only]', appPayload);
 
     try {
       
-      await Promise.all(appPayload.map(item => patchApplications(item)));
+      const results = await Promise.allSettled(appPayload.map(item => patchApplications(item)));
       
-      alert('저장되었습니다.');
-      
-      // [중요] 저장이 성공했으므로, 현재 상태를 다시 '원본'으로 갱신 (기준점 재설정)
-      const newAppsState = applications.map(app => {
-        const isChanged = changedItems.some(item => item.id === app.id);
-        if (isChanged) {
-          // 변경된 항목은 최신 배정 상태 유지 + 읽음 상태 초기화
-          return { ...app, is_notification_read: false };
+      const successfulIds: number[] = [];
+      const failedMessages: string[] = [];
+      results.forEach((result, index) => {
+        const targetItem = appPayload[index];
+
+        if (result.status === 'fulfilled') {
+          // 성공한 경우 ID 수집
+          successfulIds.push(targetItem.id);
+        } else {
+          // 실패한 경우 에러 메시지 추출
+          const reason = result.reason; // 에러 객체
+          const errData = reason.response?.data;
+          let msg = `[${targetItem._user_name}]: 저장 실패`;
+
+          if (errData?.assignment_status) {
+             // 중복 배정 등 백엔드 커스텀 에러
+             msg = Array.isArray(errData.assignment_status) 
+               ? errData.assignment_status.join(' ') 
+               : errData.assignment_status;
+          } else if (errData?.detail) {
+             msg = `[${targetItem._user_name}]: ${errData.detail}`;
+          }
+          
+          failedMessages.push(msg);
         }
-        return app; // 변경 안 된 항목은 그대로 유지
       });
-      setApplications(newAppsState);
-      setInitApplications(JSON.parse(JSON.stringify(newAppsState)));
-      
+
+      await loadData(true); 
+      // 5. 결과 알림
+      if (failedMessages.length === 0) {
+        alert('모든 변경사항이 성공적으로 저장되었습니다.');
+      } else {
+        // 일부 또는 전체 실패 시
+        const successCount = successfulIds.length;
+        const failCount = failedMessages.length;
+        
+        alert(
+          `처리 결과: 성공 ${successCount}건 / 실패 ${failCount}건\n\n` +
+          `[실패 사유]\n${failedMessages.join('\n')}`
+        );
+      }
+
     } catch (error) {
-      console.error(error);
-      alert('저장 중 오류가 발생했습니다.');
+      console.error('치명적인 오류:', error); 
+      alert('저장 프로세스 중 알 수 없는 치명적인 오류가 발생했습니다.');
     } finally {
       setIsSubmitting(false);
     }
@@ -321,9 +349,6 @@ export default function LectureDetailPage({ params }: { params: Promise<{ id: st
       setIsSubmitting(true);
       
       try {
-  
-        // const attachmentUrl = formData.file ? `` : null;
-        // 2. API Payload 구성
         const payload = {
           id: parseInt(id),
           title: formData.title,
@@ -353,16 +378,9 @@ export default function LectureDetailPage({ params }: { params: Promise<{ id: st
   
         // 성공 시
         alert('저장되었습니다.');
-        // 1. 최신 데이터를 서버에서 다시 가져와서 state 업데이트 (가장 안전함)
-      //    (formData를 직접 setLecture에 넣으면 타입 불일치나 누락된 필드 문제가 생길 수 있음)
-      const updatedData = await getLectureDetail(parseInt(id));
-      setLecture(updatedData);
+        await loadData(true); // 최신 정보로 갱신
+        setIsEditing(false);  // 뷰 모드로 전환
 
-      // 2. 수정 모드 종료
-      setIsEditing(false);
-
-      // 3. (선택사항) Next.js 캐시 갱신 (서버 컴포넌트 데이터 싱크)
-      router.refresh();
   
       } catch (error: any) {
         // 실패 시
