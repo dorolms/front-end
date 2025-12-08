@@ -1,4 +1,4 @@
-// src/app/page.tsx
+
 "use client";
 
 import Image from "next/image";
@@ -8,11 +8,13 @@ import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 
 const Shell = styled.div`
-  height: 100%;
+  height: calc(100vh - 60px); /* Fill viewport minus approx header height */
   display: grid;
   grid-template-columns: 300px 1fr 280px;
+  overflow: hidden; /* Prevent outer scroll */
 `;
 
+// --- Left Section (Preserved) ---
 const Left = styled.section`
   background-color: #2c2c2c;
   color: #fff;
@@ -20,6 +22,7 @@ const Left = styled.section`
   display: flex;
   flex-direction: column;
   gap: 12px;
+  overflow-y: auto; /* Allow scrolling if content is too tall */
 `;
 
 const Logo = styled.div`
@@ -79,8 +82,10 @@ const Button = styled.button`
   }
 `;
 
+// --- Center Section (Preserved) ---
 const Center = styled.section`
   position: relative;
+  height: 100%;
 `;
 
 const Overlay = styled.div`
@@ -104,10 +109,179 @@ const Overlay = styled.div`
   }
 `;
 
+// --- Right Section (Refined Design) ---
 const Right = styled.section`
-  background-color: #f8f8f8;
-  padding: 24px;
+  background-color: #f8f9fa;
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid #eaeaea;
+  height: 100%;
+  overflow: hidden;
 `;
+
+const SectionHeader = styled.div`
+  padding: 32px 24px 24px; /* Fixed header padding */
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+
+  h3 {
+    font-size: 16px;
+    font-weight: 700;
+    color: #222;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    /* Blue accent bar */
+    &::before {
+      content: '';
+      display: block;
+      width: 4px;
+      height: 16px;
+      background-color: #3478f6;
+      border-radius: 2px;
+    }
+  }
+`;
+
+const ScrollableContent = styled.div`
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 24px 32px; /* Scrollable area padding */
+
+  /* Custom scrollbar */
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  &::-webkit-scrollbar-thumb {
+    background-color: rgba(0, 0, 0, 0.1);
+    border-radius: 3px;
+  }
+  &::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(0, 0, 0, 0.2);
+  }
+`;
+
+const ListContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+`;
+
+const LectureCard = styled.div`
+  background: #fff;
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+  border: 1px solid transparent;
+  transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(52, 120, 246, 0.08);
+    border-color: rgba(52, 120, 246, 0.15);
+  }
+`;
+
+const DateBadge = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 50px;
+  height: 50px;
+  background-color: #f0f7ff;
+  border-radius: 12px;
+  color: #3478f6;
+  flex-shrink: 0;
+  margin-top: 2px;
+
+  .month {
+    font-size: 10px;
+    font-weight: 700;
+    color: #7aa5f9;
+    text-transform: uppercase;
+    line-height: 1;
+    margin-bottom: 2px;
+  }
+  .day {
+    font-size: 18px;
+    font-weight: 800;
+    line-height: 1;
+  }
+`;
+
+const InfoBox = styled.div`
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  overflow: hidden;
+`;
+
+const LectureTitle = styled.div`
+  font-size: 14px;
+  font-weight: 700;
+  color: #1a1a1a;
+  line-height: 1.4;
+  word-break: keep-all;
+`;
+
+const MetaRow = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  font-size: 12px;
+  color: #888;
+  font-weight: 500;
+`;
+
+const MetaItem = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 4px;
+
+  svg {
+    width: 14px;
+    height: 14px;
+    opacity: 0.6;
+    flex-shrink: 0;
+  }
+`;
+
+const EmptyState = styled.div`
+  padding: 40px;
+  text-align: center;
+  color: #999;
+  font-size: 13px;
+  background: #fff;
+  border-radius: 12px;
+  border: 1px dashed #e0e0e0;
+`;
+
+// Simple Icons
+const ClockIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="10"/>
+    <polyline points="12 6 12 12 16 14"/>
+  </svg>
+);
+
+const LocationIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+    <circle cx="12" cy="10" r="3"/>
+  </svg>
+);
 
 type UpcomingLecture = {
   id: number;
@@ -235,8 +409,8 @@ export default function LoginPage() {
 
         const data: UpcomingLecture[] = await response.json();
 
-        // 최대 5개만 사용
-        setUpcomingLectures((data || []).slice(0, 5));
+        // 최대 10개만 사용
+        setUpcomingLectures((data || []).slice(0, 10));
       } catch (err: any) {
         console.error(err);
         setUpcomingError(
@@ -250,18 +424,17 @@ export default function LoginPage() {
     fetchUpcomingLectures();
   }, []);
 
-  const formatDate = (dateStr: string) => {
-    // "YYYY-MM-DD" → "MM/DD"
-    if (!dateStr) return "";
-    const [year, month, day] = dateStr.split("-");
-    return `${month}/${day}`;
-  };
-
   const formatTimeRange = (start: string, end: string) => {
     // "HH:MM:SS" → "HH:MM"
     const s = start?.slice(0, 5) || "";
     const e = end?.slice(0, 5) || "";
-    return `${s}~${e}`;
+    return `${s} ~ ${e}`;
+  };
+
+  const getMonthDay = (dateStr: string) => {
+    if (!dateStr) return { month: "-", day: "-" };
+    const [year, month, day] = dateStr.split("-");
+    return { month: `${month}월`, day };
   };
 
   return (
@@ -322,28 +495,48 @@ export default function LoginPage() {
         </Center>
 
         <Right>
-          <h3>예정 강의</h3>
-          {isUpcomingLoading ? (
-            <p>예정 강의를 불러오는 중입니다...</p>
-          ) : upcomingError ? (
-            <p style={{ fontSize: 13, color: "#999" }}>{upcomingError}</p>
-          ) : upcomingLectures.length === 0 ? (
-            <p style={{ fontSize: 13, color: "#999" }}>
-              현재 예정된 강의가 없습니다.
-            </p>
-          ) : (
-            <ul style={{ paddingLeft: 16, marginTop: 8 }}>
-              {upcomingLectures.map((item) => (
-                <li key={item.id} style={{ marginBottom: 4, fontSize: 13 }}>
-                  <div>
-                    [{formatDate(item.date)}]{" "}
-                    {formatTimeRange(item.start_time, item.end_time)}
-                  </div>
-                  <div>{item.lecture_title}</div>
-                </li>
-              ))}
-            </ul>
-          )}
+          <SectionHeader>
+            <h3>예정 강의</h3>
+          </SectionHeader>
+
+          <ScrollableContent>
+            {isUpcomingLoading ? (
+              <EmptyState>일정을 불러오는 중입니다...</EmptyState>
+            ) : upcomingError ? (
+              <EmptyState style={{ color: "#ff6b6b" }}>{upcomingError}</EmptyState>
+            ) : upcomingLectures.length === 0 ? (
+              <EmptyState>현재 예정된 강의가 없습니다.</EmptyState>
+            ) : (
+              <ListContainer>
+                {upcomingLectures.map((item) => {
+                  const { month, day } = getMonthDay(item.date);
+                  return (
+                    <LectureCard key={item.id}>
+                      <DateBadge>
+                        <span className="month">{month}</span>
+                        <span className="day">{day}</span>
+                      </DateBadge>
+                      <InfoBox>
+                        <LectureTitle>{item.lecture_title}</LectureTitle>
+                        <MetaRow>
+                          <MetaItem>
+                            <ClockIcon />
+                            {formatTimeRange(item.start_time, item.end_time)}
+                          </MetaItem>
+                          {item.lecture_location && (
+                            <MetaItem>
+                              <LocationIcon />
+                              {item.lecture_location}
+                            </MetaItem>
+                          )}
+                        </MetaRow>
+                      </InfoBox>
+                    </LectureCard>
+                  );
+                })}
+              </ListContainer>
+            )}
+          </ScrollableContent>
         </Right>
       </Shell>
     </>
