@@ -65,9 +65,9 @@ export default function ClientPage() {
           justifyContent: "space-between",
           alignItems: "center",
           marginBottom: "20px",
-        }}>
-        <NewLectureButton />
+        }}>    
         <LectureTabs value={tab} onChange={setTab} />
+        <NewLectureButton />
       </div>
       {tab === "list" ? (
         <LectureListView lectures={lectures} />
